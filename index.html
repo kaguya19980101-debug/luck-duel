@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUCK DUEL - Good Luck</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-card">
+            <div class="branding">
+                <h1>LUCK DUEL</h1>
+                <p>Good Luck</p>
+            </div>
+            <button id="google-login-btn" class="google-btn">
+                <i class="fab fa-google"></i> 使用 Google 帳號登入
+            </button>
+            <div id="login-msg" style="margin-top:20px; font-size:0.9rem; color:#aaa; min-height:20px;"></div>
+        </div>
+    </div>
+
+    <div id="app-interface" class="hide">
+        <nav class="sidebar">
+            <div class="user-profile">
+                <img src="" alt="Avatar" id="user-avatar" class="avatar">
+                <div class="user-info">
+                    <h3 id="user-name">Player</h3>
+                    <span>ONLINE</span>
+                </div>
+            </div>
+            <div class="menu-items">
+                <button class="active"><i class="fas fa-gamepad"></i> 對戰大廳</button>
+                <button><i class="fas fa-history"></i> 歷史紀錄</button>
+                <button><i class="fas fa-users"></i> 好友列表</button>
+                <button style="margin-top: auto;" id="logout-btn"><i class="fas fa-sign-out-alt"></i> 登出</button>
+            </div>
+        </nav>
+        <main class="game-area">
+            <div class="game-frame">
+                <div id="lobby-view" style="text-align: center;">
+            <h2 style="color:#555; margin-bottom: 20px;">準備好迎接運氣決鬥了嗎？</h2>
+            <button id="find-match-btn" style="
+                padding: 15px 40px;
+                font-size: 1.5rem;
+                background: linear-gradient(45deg, #ff00cc, #3333ff);
+                color: white;
+                border: none;
+                border-radius: 50px;
+                cursor: pointer;
+                font-family: 'Orbitron';
+                box-shadow: 0 0 20px rgba(255, 0, 204, 0.4);
+                transition: 0.3s;
+            ">
+                START BATTLE
+            </button>
+            <p id="match-status" style="margin-top: 20px; color: #888; height: 20px;"></p>
+        </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

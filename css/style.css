@@ -1,0 +1,121 @@
+/* --- 全域設定 --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #e0c3fc, #8ec5fc, #e0eafc);
+            height: 100vh;
+            color: #333;
+            overflow: hidden;
+            display: flex; /* 讓內容置中或佈局用 */
+        }
+
+        /* 背景裝飾 */
+        body::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.03) 50%),
+                        linear-gradient(90deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.02));
+            background-size: 100% 3px, 3px 100%; pointer-events: none; z-index: -1;
+        }
+
+        /* 隱藏元素的 class */
+        .hide { display: none !important; }
+
+        /* =========================================
+           1. 登入畫面 (Login Screen)
+           ========================================= */
+        #login-screen {
+            width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            position: absolute; top: 0; left: 0;
+            z-index: 100; /* 確保蓋在最上面 */
+            transition: opacity 0.5s ease;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.85);
+            padding: 50px; border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(142, 197, 252, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            width: 380px; text-align: center;
+            backdrop-filter: blur(20px);
+        }
+
+        .branding h1 {
+            font-family: 'Orbitron', sans-serif; font-size: 2.5rem; font-weight: 900;
+            margin-bottom: 5px;
+            background: linear-gradient(to right, #4facfe, #a18cd1);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-transform: uppercase; letter-spacing: 2px;
+        }
+
+        .branding p {
+            font-family: 'Orbitron', sans-serif; color: #888; font-size: 1rem; margin-bottom: 40px; letter-spacing: 5px; text-transform: uppercase;
+        }
+
+        .google-btn {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 15px;
+            background: white; border: 1px solid #ddd; border-radius: 30px;
+            cursor: pointer; transition: all 0.3s;
+            font-weight: bold; color: #555; font-size: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .google-btn:hover {
+            transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); border-color: #4facfe; color: #4facfe;
+        }
+
+        /* =========================================
+           2. 遊戲主介面 (App Interface)
+           ========================================= */
+        #app-interface {
+            width: 100%; height: 100%;
+            display: flex; /* 左右佈局 */
+            opacity: 0; animation: fadeIn 0.8s forwards; /* 進場動畫 */
+        }
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        /* 左側選單 (Sidebar) */
+        .sidebar {
+            width: 250px; background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(15px); border-right: 1px solid rgba(255,255,255,0.5);
+            display: flex; flex-direction: column; padding: 20px;
+        }
+
+        .user-profile {
+            display: flex; align-items: center; gap: 10px; padding-bottom: 20px; border-bottom: 1px solid rgba(0,0,0,0.1); margin-bottom: 20px;
+        }
+        .avatar { width: 50px; height: 50px; border-radius: 50%; background: #ccc; object-fit: cover; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .user-info h3 { font-size: 1rem; color: #333; }
+        .user-info span { font-size: 0.8rem; color: #4facfe; font-family: 'Orbitron'; }
+
+        .menu-items button {
+            width: 100%; padding: 15px; margin-bottom: 10px;
+            border: none; background: transparent; text-align: left;
+            font-size: 1rem; color: #555; cursor: pointer; border-radius: 10px;
+            transition: 0.2s; display: flex; align-items: center; gap: 10px;
+        }
+        .menu-items button:hover, .menu-items button.active {
+            background: white; color: #4facfe; box-shadow: 0 4px 10px rgba(142, 197, 252, 0.2);
+        }
+
+        /* 中間遊戲區 (Game Container) */
+        .game-area {
+            flex: 1; padding: 30px;
+            display: flex; flex-direction: column;
+        }
+
+        .game-frame {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.5);
+            display: flex; justify-content: center; align-items: center;
+            position: relative;
+        }
+        
+        .game-placeholder-text {
+            font-family: 'Orbitron'; font-size: 2rem; color: rgba(0,0,0,0.1);
+            text-transform: uppercase; letter-spacing: 5px;
+        }
