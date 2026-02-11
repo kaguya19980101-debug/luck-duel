@@ -150,7 +150,15 @@ body::before {
 .placeholder-icon { font-size: 5rem; color: #555; animation: float 2s infinite ease-in-out; }
 @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
-.summon-actions { display: flex; gap: 15px; justify-content: center; }
+.summon-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    padding: 0 20px;
+    /* 加上這兩行確保它在最前面 */
+    position: relative; 
+    z-index: 100; 
+}
 .summon-btn {
     flex: 1; border: none; border-radius: 12px; padding: 15px;
     cursor: pointer; transition: transform 0.1s, box-shadow 0.3s;

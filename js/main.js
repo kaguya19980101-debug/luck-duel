@@ -31,6 +31,15 @@ onAuthStateChanged(auth, async (user) => {
 
         // 綁定配對按鈕 (原本的功能)
         setupMatchButton(user);
+        const btnSingle = document.querySelector('.btn-single');
+        const btnMulti = document.querySelector('.btn-multi');
+
+        if (btnSingle) {
+            btnSingle.onclick = () => window.handleSummon(1);
+        }
+        if (btnMulti) {
+            btnMulti.onclick = () => window.handleSummon(10);
+        }
     } else {
         UI.showLoginScreen();
     }
