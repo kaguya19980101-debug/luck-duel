@@ -119,3 +119,237 @@
             font-family: 'Orbitron'; font-size: 2rem; color: rgba(0,0,0,0.1);
             text-transform: uppercase; letter-spacing: 5px;
         }
+@media (max-width: 768px) {
+    /* 1. 質感導航列 */
+    .sidebar {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        top: auto !important;
+        width: 100% !important;
+        height: 70px !important;
+        
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-evenly !important;
+        align-items: center !important;
+        
+        /* ★ 這裡改漂亮了 ★ */
+        background: rgba(18, 18, 28, 0.9) !important; 
+        backdrop-filter: blur(10px) !important;
+        border-top: 1px solid rgba(255,255,255,0.1) !important;
+        box-shadow: 0 -4px 15px rgba(0,0,0,0.4) !important;
+        
+        z-index: 999999 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* 2. 隱藏不必要的 */
+    .sidebar .logo, .sidebar .user-profile { display: none !important; }
+
+    /* 3. 按鈕容器炸開 */
+    .sidebar > div, .sidebar > ul {
+        display: flex !important;
+        flex-direction: row !important;
+        width: 100% !important;
+        height: 100% !important;
+        justify-content: space-evenly !important;
+        align-items: center !important;
+        margin: 0 !important; padding: 0 !important; list-style: none !important;
+    }
+
+    /* 4. 按鈕本體 */
+    .sidebar button, .sidebar .nav-btn, .sidebar a {
+        flex: 1 !important; height: 100% !important;
+        border: none !important; background: transparent !important;
+        display: flex !important; flex-direction: column !important;
+        justify-content: center !important; align-items: center !important;
+        padding: 0 !important; margin: 0 !important; text-decoration: none !important;
+    }
+
+    /* 5. 圖示美化 */
+    .sidebar i, .sidebar svg {
+        font-size: 22px !important; display: block !important;
+        margin: 0 !important; padding: 0 !important; line-height: 1 !important;
+        margin-bottom: 5px !important;
+        
+        /* ★ 顏色改這裡：淡紫色 ★ */
+        color: #d8b4fe !important; 
+        text-shadow: 0 0 8px rgba(216, 180, 254, 0.4) !important;
+    }
+    
+    /* 6. 文字美化 */
+    .sidebar span {
+        font-size: 11px !important; display: block !important;
+        margin: 0 !important; padding: 0 !important; line-height: 1.1 !important;
+        color: rgba(255,255,255,0.7) !important; /* 稍微淡一點的白 */
+    }
+
+    /* 7. 內容防擋 */
+    .main-content {
+        margin-left: 0 !important; width: 100% !important;
+        padding-bottom: 120px !important; box-sizing: border-box !important;
+    }
+    body { padding-bottom: 80px !important; }
+}
+/* ====================
+   ✨ 召喚系統 (Summon System)
+   ==================== */
+
+/* 1. 頂部金幣列 */
+.summon-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 15px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glow-text {
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.coin-display {
+    background: linear-gradient(90deg, #1a1a1a, #333);
+    padding: 8px 15px;
+    border-radius: 20px;
+    border: 1px solid #ffd700;
+    color: #ffd700;
+    font-family: 'Orbitron', monospace;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.coin-icon {
+    color: #ffd700;
+    animation: spinCoin 3s infinite linear; /* 讓金幣轉動 */
+}
+
+/* 2. 中央舞台 */
+.gacha-stage {
+    height: 200px;
+    background: radial-gradient(circle, #2a2a40 0%, #000 100%);
+    border: 2px solid #444;
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.placeholder-icon {
+    font-size: 5rem;
+    color: #555;
+    animation: float 2s infinite ease-in-out;
+}
+
+/* 3. 按鈕設計 */
+.summon-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.summon-btn {
+    flex: 1;
+    border: none;
+    border-radius: 12px;
+    padding: 15px;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.3s;
+    position: relative;
+    overflow: hidden;
+    color: white;
+}
+
+.summon-btn:active { transform: scale(0.95); }
+
+/* 單抽 - 藍色系 */
+.btn-single {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    box-shadow: 0 4px 0 #143360;
+}
+
+/* 十抽 - 紫金色系 (高級感) */
+.btn-multi {
+    background: linear-gradient(135deg, #8e2de2, #4a00e0);
+    box-shadow: 0 4px 0 #3a00b0;
+    border: 1px solid rgba(255, 215, 0, 0.5);
+}
+
+.btn-title { display: block; font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+.btn-cost { display: block; font-size: 0.9rem; opacity: 0.9; }
+
+.tag-bonus {
+    position: absolute;
+    top: 0; right: 0;
+    background: #ffd700;
+    color: black;
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-bottom-left-radius: 8px;
+    font-weight: bold;
+}
+
+/* 4. 結果彈窗 (Overlay) */
+.result-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.95);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.result-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* 一排 5 個 */
+    gap: 10px;
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 20px;
+}
+
+.result-card {
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    animation: popIn 0.3s forwards;
+    opacity: 0; /* 預設隱藏，動畫顯示 */
+}
+
+/* 稀有度框色 */
+.border-R { border-color: #3b82f6; box-shadow: 0 0 5px #3b82f6; }
+.border-SR { border-color: #a855f7; box-shadow: 0 0 10px #a855f7; }
+.border-SSR { border-color: #ffd700; box-shadow: 0 0 15px #ffd700; background: linear-gradient(135deg, #333, #554400); }
+
+.close-btn {
+    padding: 10px 40px;
+    background: white;
+    color: black;
+    border: none;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+@keyframes spinCoin { 0% { transform: rotateY(0); } 100% { transform: rotateY(360deg); } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
