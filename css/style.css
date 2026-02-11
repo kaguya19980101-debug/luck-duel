@@ -1,355 +1,384 @@
-/* --- 全域設定 --- */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #e0c3fc, #8ec5fc, #e0eafc);
-            height: 100vh;
-            color: #333;
-            overflow: hidden;
-            display: flex; /* 讓內容置中或佈局用 */
-        }
+/* =========================================
+   0. 全域設定 (Global & Reset)
+   ========================================= */
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-        /* 背景裝飾 */
-        body::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.03) 50%),
-                        linear-gradient(90deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.02));
-            background-size: 100% 3px, 3px 100%; pointer-events: none; z-index: -1;
-        }
+body {
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #e0c3fc, #8ec5fc, #e0eafc);
+    height: 100vh;
+    color: #333;
+    overflow: hidden; 
+    display: flex;
+}
 
-        /* 隱藏元素的 class */
-        .hide { display: none !important; }
+body::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.03) 50%),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.02));
+    background-size: 100% 3px, 3px 100%; pointer-events: none; z-index: -1;
+}
 
-        /* =========================================
-           1. 登入畫面 (Login Screen)
-           ========================================= */
-        #login-screen {
-            width: 100%; height: 100%;
-            display: flex; justify-content: center; align-items: center;
-            position: absolute; top: 0; left: 0;
-            z-index: 100; /* 確保蓋在最上面 */
-            transition: opacity 0.5s ease;
-        }
+.hide { display: none !important; }
 
-        .login-card {
-            background: rgba(255, 255, 255, 0.85);
-            padding: 50px; border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(142, 197, 252, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            width: 380px; text-align: center;
-            backdrop-filter: blur(20px);
-        }
+/* =========================================
+   1. 登入畫面 (Login Screen)
+   ========================================= */
+#login-screen {
+    width: 100%; height: 100%;
+    display: flex; justify-content: center; align-items: center;
+    position: absolute; top: 0; left: 0; z-index: 100;
+    transition: opacity 0.5s ease;
+}
 
-        .branding h1 {
-            font-family: 'Orbitron', sans-serif; font-size: 2.5rem; font-weight: 900;
-            margin-bottom: 5px;
-            background: linear-gradient(to right, #4facfe, #a18cd1);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            text-transform: uppercase; letter-spacing: 2px;
-        }
+.login-card {
+    background: rgba(255, 255, 255, 0.85);
+    padding: 50px; border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(142, 197, 252, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    width: 380px; text-align: center;
+    backdrop-filter: blur(20px);
+}
 
-        .branding p {
-            font-family: 'Orbitron', sans-serif; color: #888; font-size: 1rem; margin-bottom: 40px; letter-spacing: 5px; text-transform: uppercase;
-        }
+.branding h1 {
+    font-family: 'Orbitron', sans-serif; font-size: 2.5rem; font-weight: 900;
+    margin-bottom: 5px;
+    background: linear-gradient(to right, #4facfe, #a18cd1);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    text-transform: uppercase; letter-spacing: 2px;
+}
 
-        .google-btn {
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            width: 100%; padding: 15px;
-            background: white; border: 1px solid #ddd; border-radius: 30px;
-            cursor: pointer; transition: all 0.3s;
-            font-weight: bold; color: #555; font-size: 1rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-        
-        .google-btn:hover {
-            transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); border-color: #4facfe; color: #4facfe;
-        }
+.branding p { font-family: 'Orbitron', sans-serif; color: #888; font-size: 1rem; margin-bottom: 40px; letter-spacing: 5px; text-transform: uppercase; }
 
-        /* =========================================
-           2. 遊戲主介面 (App Interface)
-           ========================================= */
-        #app-interface {
-            width: 100%; height: 100%;
-            display: flex; /* 左右佈局 */
-            opacity: 0; animation: fadeIn 0.8s forwards; /* 進場動畫 */
-        }
-        @keyframes fadeIn { to { opacity: 1; } }
+.google-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; padding: 15px;
+    background: white; border: 1px solid #ddd; border-radius: 30px;
+    cursor: pointer; transition: all 0.3s;
+    font-weight: bold; color: #555; font-size: 1rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+.google-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); border-color: #4facfe; color: #4facfe; }
 
-        /* 左側選單 (Sidebar) */
-        .sidebar {
-            width: 250px; background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(15px); border-right: 1px solid rgba(255,255,255,0.5);
-            display: flex; flex-direction: column; padding: 20px;
-        }
+/* =========================================
+   2. 主介面與側邊欄 (App Interface)
+   ========================================= */
+#app-interface {
+    width: 100%; height: 100%; display: flex; opacity: 0; animation: fadeIn 0.8s forwards;
+}
+@keyframes fadeIn { to { opacity: 1; } }
 
-        .user-profile {
-            display: flex; align-items: center; gap: 10px; padding-bottom: 20px; border-bottom: 1px solid rgba(0,0,0,0.1); margin-bottom: 20px;
-        }
-        .avatar { width: 50px; height: 50px; border-radius: 50%; background: #ccc; object-fit: cover; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .user-info h3 { font-size: 1rem; color: #333; }
-        .user-info span { font-size: 0.8rem; color: #4facfe; font-family: 'Orbitron'; }
+.sidebar {
+    width: 250px; background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(15px); border-right: 1px solid rgba(255,255,255,0.5);
+    display: flex; flex-direction: column; padding: 20px;
+}
 
-        .menu-items button {
-            width: 100%; padding: 15px; margin-bottom: 10px;
-            border: none; background: transparent; text-align: left;
-            font-size: 1rem; color: #555; cursor: pointer; border-radius: 10px;
-            transition: 0.2s; display: flex; align-items: center; gap: 10px;
-        }
-        .menu-items button:hover, .menu-items button.active {
-            background: white; color: #4facfe; box-shadow: 0 4px 10px rgba(142, 197, 252, 0.2);
-        }
+.user-profile { display: flex; align-items: center; gap: 10px; padding-bottom: 20px; border-bottom: 1px solid rgba(0,0,0,0.1); margin-bottom: 20px; }
+.avatar { width: 50px; height: 50px; border-radius: 50%; background: #ccc; object-fit: cover; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+.user-info h3 { font-size: 1rem; color: #333; }
+.user-info span { font-size: 0.8rem; color: #4facfe; font-family: 'Orbitron'; }
 
-        /* 中間遊戲區 (Game Container) */
-        .game-area {
-            flex: 1; padding: 30px;
-            display: flex; flex-direction: column;
-        }
+.menu-items button {
+    width: 100%; padding: 15px; margin-bottom: 10px;
+    border: none; background: transparent; text-align: left;
+    font-size: 1rem; color: #555; cursor: pointer; border-radius: 10px;
+    transition: 0.2s; display: flex; align-items: center; gap: 10px;
+}
+.menu-items button:hover, .menu-items button.active { background: white; color: #4facfe; box-shadow: 0 4px 10px rgba(142, 197, 252, 0.2); }
 
-        .game-frame {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.5);
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            border-radius: 20px;
-            box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.5);
-            display: flex; justify-content: center; align-items: center;
-            position: relative;
-        }
-        
-        .game-placeholder-text {
-            font-family: 'Orbitron'; font-size: 2rem; color: rgba(0,0,0,0.1);
-            text-transform: uppercase; letter-spacing: 5px;
-        }
+.game-area { flex: 1; padding: 30px; display: flex; flex-direction: column; }
+.game-frame {
+    flex: 1; background: rgba(255, 255, 255, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    border-radius: 20px;
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.5);
+    display: flex; justify-content: center; align-items: center;
+    position: relative;
+}
+
+/* =========================================
+   3. 遊戲內部樣式 (Game Board & Duel)
+   ★ 這裡是我剛剛不小心刪掉的，補回來了！
+   ========================================= */
+/* 棋盤格子 */
+#chess-board div { transition: all 0.2s; }
+#chess-board div:hover { filter: brightness(1.2); }
+
+/* 決鬥視窗 */
+#duel-modal {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.95); z-index: 999;
+    display: none; /* 預設隱藏 */
+    flex-direction: column; justify-content: center; align-items: center;
+    color: white; border-radius: 20px;
+}
+
+/* 剪刀石頭布按鈕 */
+.rps-btn {
+    font-size: 3rem; padding: 20px; margin: 0 10px;
+    background: #333; border: 2px solid #555; border-radius: 50%;
+    cursor: pointer; transition: 0.2s;
+}
+.rps-btn:hover { background: #555; transform: scale(1.1); border-color: #ffd700; }
+.rps-btn:active { transform: scale(0.9); }
+
+/* =========================================
+   4. 召喚系統 (Summon)
+   ========================================= */
+.summon-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 20px; background: rgba(0, 0, 0, 0.6);
+    border-radius: 15px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.glow-text { color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.8); margin: 0; font-size: 1.5rem; }
+.coin-display {
+    background: linear-gradient(90deg, #1a1a1a, #333);
+    padding: 8px 15px; border-radius: 20px; border: 1px solid #ffd700;
+    color: #ffd700; font-family: 'Orbitron', monospace; font-size: 1.2rem;
+    display: flex; align-items: center; gap: 8px; box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+.coin-icon { color: #ffd700; animation: spinCoin 3s infinite linear; }
+@keyframes spinCoin { 0% { transform: rotateY(0); } 100% { transform: rotateY(360deg); } }
+
+.gacha-stage {
+    height: 200px; background: radial-gradient(circle, #2a2a40 0%, #000 100%);
+    border: 2px solid #444; border-radius: 12px;
+    display: flex; justify-content: center; align-items: center;
+    margin-bottom: 20px; position: relative; overflow: hidden;
+}
+.placeholder-icon { font-size: 5rem; color: #555; animation: float 2s infinite ease-in-out; }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+.summon-actions { display: flex; gap: 15px; justify-content: center; }
+.summon-btn {
+    flex: 1; border: none; border-radius: 12px; padding: 15px;
+    cursor: pointer; transition: transform 0.1s, box-shadow 0.3s;
+    position: relative; overflow: hidden; color: white;
+}
+.summon-btn:active { transform: scale(0.95); }
+.btn-single { background: linear-gradient(135deg, #1e3c72, #2a5298); box-shadow: 0 4px 0 #143360; }
+.btn-multi { background: linear-gradient(135deg, #8e2de2, #4a00e0); box-shadow: 0 4px 0 #3a00b0; border: 1px solid rgba(255, 215, 0, 0.5); }
+.btn-title { display: block; font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+.btn-cost { display: block; font-size: 0.9rem; opacity: 0.9; }
+.tag-bonus {
+    position: absolute; top: 0; right: 0;
+    background: #ffd700; color: black; font-size: 0.6rem;
+    padding: 2px 6px; border-bottom-left-radius: 8px; font-weight: bold;
+}
+
+/* 抽卡結果遮罩 */
+.result-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.95); z-index: 10000;
+    display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
+}
+.result-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+    width: 100%; max-width: 600px; margin-bottom: 20px;
+}
+.result-card {
+    background: #222; border: 1px solid #444; border-radius: 8px; padding: 10px;
+    text-align: center; animation: popIn 0.3s forwards; opacity: 0;
+}
+.border-R { border-color: #3b82f6; box-shadow: 0 0 5px #3b82f6; }
+.border-SR { border-color: #a855f7; box-shadow: 0 0 10px #a855f7; }
+.border-SSR { border-color: #ffd700; box-shadow: 0 0 15px #ffd700; background: linear-gradient(135deg, #333, #554400); }
+@keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.close-btn { padding: 10px 40px; background: white; color: black; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; }
+
+/* =========================================
+   5. 背包系統 (Inventory Grid)
+   ★ 這裡加了 !important 強制讓它變成網格！
+   ========================================= */
+.char-grid {
+    display: grid !important; /* 強制網格 */
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); /* 自動填滿 */
+    gap: 15px;
+    padding: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.char-card {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+    overflow: hidden;
+}
+.char-card:active { transform: scale(0.95); }
+
+.char-grid::-webkit-scrollbar { width: 6px; }
+.char-grid::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+.char-grid::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+/* =========================================
+   6. 手機版 RWD (Mobile)
+   ========================================= */
 @media (max-width: 768px) {
-    /* 1. 質感導航列 */
     .sidebar {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        top: auto !important;
-        width: 100% !important;
-        height: 70px !important;
-        
-        display: flex !important;
-        flex-direction: row !important;
-        justify-content: space-evenly !important;
-        align-items: center !important;
-        
-        /* ★ 這裡改漂亮了 ★ */
-        background: rgba(18, 18, 28, 0.9) !important; 
-        backdrop-filter: blur(10px) !important;
+        position: fixed !important; bottom: 0 !important; left: 0 !important; top: auto !important;
+        width: 100% !important; height: 70px !important;
+        display: flex !important; flex-direction: row !important;
+        justify-content: space-evenly !important; align-items: center !important;
+        background: rgba(18, 18, 28, 0.9) !important; backdrop-filter: blur(10px) !important;
         border-top: 1px solid rgba(255,255,255,0.1) !important;
         box-shadow: 0 -4px 15px rgba(0,0,0,0.4) !important;
-        
-        z-index: 999999 !important;
-        padding: 0 !important;
-        margin: 0 !important;
+        z-index: 999999 !important; padding: 0 !important; margin: 0 !important;
     }
-
-    /* 2. 隱藏不必要的 */
     .sidebar .logo, .sidebar .user-profile { display: none !important; }
-
-    /* 3. 按鈕容器炸開 */
     .sidebar > div, .sidebar > ul {
-        display: flex !important;
-        flex-direction: row !important;
-        width: 100% !important;
-        height: 100% !important;
-        justify-content: space-evenly !important;
-        align-items: center !important;
+        display: flex !important; flex-direction: row !important; width: 100% !important;
+        height: 100% !important; justify-content: space-evenly !important; align-items: center !important;
         margin: 0 !important; padding: 0 !important; list-style: none !important;
     }
-
-    /* 4. 按鈕本體 */
     .sidebar button, .sidebar .nav-btn, .sidebar a {
-        flex: 1 !important; height: 100% !important;
-        border: none !important; background: transparent !important;
-        display: flex !important; flex-direction: column !important;
-        justify-content: center !important; align-items: center !important;
+        flex: 1 !important; height: 100% !important; border: none !important; background: transparent !important;
+        display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important;
         padding: 0 !important; margin: 0 !important; text-decoration: none !important;
     }
-
-    /* 5. 圖示美化 */
     .sidebar i, .sidebar svg {
-        font-size: 22px !important; display: block !important;
-        margin: 0 !important; padding: 0 !important; line-height: 1 !important;
-        margin-bottom: 5px !important;
-        
-        /* ★ 顏色改這裡：淡紫色 ★ */
-        color: #d8b4fe !important; 
+        font-size: 22px !important; display: block !important; margin: 0 !important; padding: 0 !important;
+        line-height: 1 !important; margin-bottom: 5px !important; color: #d8b4fe !important;
         text-shadow: 0 0 8px rgba(216, 180, 254, 0.4) !important;
     }
-    
-    /* 6. 文字美化 */
     .sidebar span {
-        font-size: 11px !important; display: block !important;
-        margin: 0 !important; padding: 0 !important; line-height: 1.1 !important;
-        color: rgba(255,255,255,0.7) !important; /* 稍微淡一點的白 */
+        font-size: 11px !important; display: block !important; margin: 0 !important; padding: 0 !important;
+        line-height: 1.1 !important; color: rgba(255,255,255,0.7) !important;
     }
 
-    /* 7. 內容防擋 */
-    .main-content {
-        margin-left: 0 !important; width: 100% !important;
+    .main-content, .game-area {
+        margin-left: 0 !important; width: 100% !important; padding: 15px !important;
         padding-bottom: 120px !important; box-sizing: border-box !important;
     }
     body { padding-bottom: 80px !important; }
-}
-/* ====================
-   ✨ 召喚系統 (Summon System)
-   ==================== */
 
-/* 1. 頂部金幣列 */
-.summon-header {
+    /* 手機版背包修正：一排3個 */
+    .char-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 8px !important;
+    }
+    .result-grid { grid-template-columns: repeat(3, 1fr) !important; }
+}
+/* =========================================
+   🖥️ 電腦版顯示修正 (Desktop Force Fix)
+   請貼在 style.css 的最下面，確保權重最高
+   ========================================= */
+
+/* =========================================
+   🖥️ 電腦版智慧排版 (Smart Auto Grid)
+   ========================================= */
+
+@media (min-width: 769px) {
+    
+    /* 1. 確保背包頁面寬度全開 */
+    #char-view {
+        width: 100% !important;
+        max-width: 100% !important; /* 拿掉限制，讓它跟隨螢幕 */
+        padding: 0 20px;
+    }
+
+    /* 2. 智慧網格設定 */
+    .char-grid {
+        display: grid !important;
+        
+        /* ★★★ 核心魔法在這裡 ★★★ */
+        /* 意思：每一張卡最小 100px。 */
+        /* 瀏覽器會自己算：現在螢幕寬度能塞幾張 100px？能塞 8 張就排 8 張，能塞 10 張就排 10 張 */
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important; 
+        
+        gap: 15px !important;     /* 卡片間距 */
+        padding: 20px !important;
+        
+        /* 讓頁面自然長高 */
+        max-height: none !important;
+        overflow-y: visible !important;
+    }
+
+    /* 3. 卡片大小限制 */
+    .char-card {
+        width: 100% !important;
+        aspect-ratio: 3/4 !important; /* 維持漂亮的長方形 */
+    }
+}
+/* =========================================
+   ⚔️ 隊伍編制樣式 (Team Builder - 修正版)
+   ========================================= */
+
+/* 1. 上層容器：改為全寬，加強背景質感 */
+.team-section {
+    width: 100%; /* 撐滿 */
+    background: linear-gradient(180deg, rgba(40,40,40,0.95), rgba(20,20,20,0.95));
+    padding: 20px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    z-index: 10;
+}
+
+/* 2. 格子排列：讓它平均分佈，但不要太窄 */
+.team-row {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px;
-    background: rgba(0, 0, 0, 0.6);
-    border-radius: 15px;
-    margin-bottom: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    justify-content: center; /* 置中 */
+    gap: 15px; /* 格子間距加大 */
+    width: 100%;
+    max-width: 800px; /* 限制最大寬度，避免在大螢幕拉太長 */
+    margin: 0 auto;
 }
 
-.glow-text {
-    color: #ffd700;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
-    margin: 0;
-    font-size: 1.5rem;
-}
-
-.coin-display {
-    background: linear-gradient(90deg, #1a1a1a, #333);
-    padding: 8px 15px;
-    border-radius: 20px;
-    border: 1px solid #ffd700;
-    color: #ffd700;
-    font-family: 'Orbitron', monospace;
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-}
-
-.coin-icon {
-    color: #ffd700;
-    animation: spinCoin 3s infinite linear; /* 讓金幣轉動 */
-}
-
-/* 2. 中央舞台 */
-.gacha-stage {
-    height: 200px;
-    background: radial-gradient(circle, #2a2a40 0%, #000 100%);
-    border: 2px solid #444;
-    border-radius: 12px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 20px;
-    position: relative;
-    overflow: hidden;
-}
-
-.placeholder-icon {
-    font-size: 5rem;
-    color: #555;
-    animation: float 2s infinite ease-in-out;
-}
-
-/* 3. 按鈕設計 */
-.summon-actions {
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-}
-
-.summon-btn {
-    flex: 1;
-    border: none;
-    border-radius: 12px;
-    padding: 15px;
+/* 3. 單個格子：變大一點，加發光效果 */
+.team-slot {
+    flex: 1; 
+    max-width: 100px; /* 限制單格最大寬度 */
+    aspect-ratio: 3/4; /* 保持卡片比例 */
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px dashed #666;
+    border-radius: 10px;
     cursor: pointer;
-    transition: transform 0.1s, box-shadow 0.3s;
     position: relative;
-    overflow: hidden;
-    color: white;
-}
-
-.summon-btn:active { transform: scale(0.95); }
-
-/* 單抽 - 藍色系 */
-.btn-single {
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
-    box-shadow: 0 4px 0 #143360;
-}
-
-/* 十抽 - 紫金色系 (高級感) */
-.btn-multi {
-    background: linear-gradient(135deg, #8e2de2, #4a00e0);
-    box-shadow: 0 4px 0 #3a00b0;
-    border: 1px solid rgba(255, 215, 0, 0.5);
-}
-
-.btn-title { display: block; font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
-.btn-cost { display: block; font-size: 0.9rem; opacity: 0.9; }
-
-.tag-bonus {
-    position: absolute;
-    top: 0; right: 0;
-    background: #ffd700;
-    color: black;
-    font-size: 0.6rem;
-    padding: 2px 6px;
-    border-bottom-left-radius: 8px;
-    font-weight: bold;
-}
-
-/* 4. 結果彈窗 (Overlay) */
-.result-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.95);
-    z-index: 10000;
+    transition: all 0.2s;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 20px;
+    color: #555;
 }
 
-.result-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr); /* 一排 5 個 */
-    gap: 10px;
-    width: 100%;
-    max-width: 600px;
-    margin-bottom: 20px;
+.team-slot:hover {
+    border-color: #ffd700;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
 }
 
-.result-card {
+.team-slot.filled {
+    border: 2px solid #ffd700;
     background: #222;
-    border: 1px solid #444;
-    border-radius: 8px;
-    padding: 10px;
-    text-align: center;
-    animation: popIn 0.3s forwards;
-    opacity: 0; /* 預設隱藏，動畫顯示 */
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
 }
 
-/* 稀有度框色 */
-.border-R { border-color: #3b82f6; box-shadow: 0 0 5px #3b82f6; }
-.border-SR { border-color: #a855f7; box-shadow: 0 0 10px #a855f7; }
-.border-SSR { border-color: #ffd700; box-shadow: 0 0 15px #ffd700; background: linear-gradient(135deg, #333, #554400); }
-
-.close-btn {
-    padding: 10px 40px;
-    background: white;
-    color: black;
-    border: none;
-    border-radius: 20px;
-    font-weight: bold;
-    cursor: pointer;
+/* 4. 下方背包容器 */
+.inventory-container {
+    flex: 1;
+    width: 100%;
+    overflow-y: auto; /* 只有下面這塊可以滑動 */
+    background: rgba(0,0,0,0.2);
 }
 
-@keyframes spinCoin { 0% { transform: rotateY(0); } 100% { transform: rotateY(360deg); } }
-@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-@keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+/* 5. 確保背包格子跟上面不要差太多 */
+.char-grid {
+    padding: 20px !important;
+    padding-bottom: 150px !important;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* 手機版微調 */
+@media (max-width: 768px) {
+    .team-slot {
+        border-width: 1px;
+        border-radius: 6px;
+    }
+    .team-row {
+        gap: 8px;
+    }
+}

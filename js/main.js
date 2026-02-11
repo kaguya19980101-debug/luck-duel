@@ -1,177 +1,307 @@
-// js/main.js
-import { auth } from "./firebase-config.js";
+// js/main.js [終極修正版]
+
+// 1. 統一引入區 (絕對不要改動這裡)
+import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import * as AuthUser from "./auth.js"; // 引入所有 Auth 功能
-import * as UI from "./ui.js";         // 引入所有 UI 功能
+import { ref, get, update, push, set, onValue, remove, off, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { CHARACTERS } from "./data.js";
+import * as AuthUser from "./auth.js";
+import * as UI from "./ui.js";
 import * as Matchmaking from "./matchmaking.js";
 
+// 2. 全域變數 (用來存隊伍和背包)
+let currentTeam = [null, null, null, null, null];
+let myInventoryData = {};
 
-// 1. 綁定按鈕事件
-document.getElementById('google-login-btn').addEventListener('click', async () => {
-    UI.showLoading(true);
-    try {
-        await AuthUser.loginWithGoogle();
-        // 登入成功後，onAuthStateChanged 會自動處理畫面，所以這裡不用寫跳轉
-    } catch (error) {
-        UI.showLoginError("登入失敗: " + error.message);
-    }
-});
+console.log("系統: main.js 已載入");
 
-document.getElementById('logout-btn').addEventListener('click', () => {
-    AuthUser.logoutUser();
-});
-
-let isSearching = false;
-// 2. 監聽系統狀態 (這是程式的核心心跳)
-onAuthStateChanged(auth,async (user) => {
+// ==========================================
+// 3. 系統核心監聽
+// ==========================================
+onAuthStateChanged(auth, async (user) => {
     if (user) {
         console.log("系統: 使用者已連線", user.uid);
-        
-        
-        // 儲存資料... (保留您之前的 saveUserProfile)
-        // UI.showAppInterface(user); (保留)
         UI.showAppInterface(user);
-        await initUserData(user);
-        // ★ 當介面顯示後，綁定「開始配對」按鈕
-        const findMatchBtn = document.getElementById('find-match-btn');
-        const matchStatus = document.getElementById('match-status');
+        document.getElementById('lobby-view').style.display = 'block';
+        document.getElementById('char-view').style.display = 'none';
+        document.getElementById('summon-view').style.display = 'none';        
+        // 登入後，馬上啟動這兩個功能
+        await initUserData(user);  // 1. 初始化金幣
+        loadMyInventory(user);     // 2. 讀取背包與隊伍
 
-        if (findMatchBtn) {
-            // 每次重新登入都重置按鈕
-            findMatchBtn.onclick = async () => {
-                if (!isSearching) {
-                    // === 狀態：開始尋找 ===
-                    isSearching = true;
-                    
-                    // 1. 改變按鈕外觀 -> 變成紅色取消鍵
-                    findMatchBtn.innerText = "CANCEL SEARCH";
-                    findMatchBtn.style.background = "#ff4444"; // 紅色
-                    findMatchBtn.style.boxShadow = "none";
-                    matchStatus.innerText = "正在尋找對手...";
-                    matchStatus.style.color = "#4facfe";
-
-                    // 2. 執行配對
-                    await Matchmaking.findMatch(user);
-
-                } else {
-                    // === 狀態：取消尋找 ===
-                    isSearching = false;
-
-                    // 1. 恢復按鈕外觀
-                    findMatchBtn.innerText = "START BATTLE";
-                    findMatchBtn.style.background = "linear-gradient(45deg, #ff00cc, #3333ff)";
-                    findMatchBtn.style.boxShadow = "0 0 20px rgba(255, 0, 204, 0.4)";
-                    matchStatus.innerText = "已取消配對";
-                    matchStatus.style.color = "#888";
-
-                    // 2. 執行取消邏輯
-                    await Matchmaking.cancelMatch(user);
-                }
-            };
-        }
-
+        // 綁定配對按鈕 (原本的功能)
+        setupMatchButton(user);
     } else {
-        // ... (登出邏輯保持不變) ...
         UI.showLoginScreen();
     }
     UI.showLoading(false);
 });
-import { db } from "./firebase-config.js";
-import { ref, get, update, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import { CHARACTERS } from "./data.js";
-// ===================================
-// 💰 用戶資料初始化 (金幣系統)
-// ===================================
-async function initUserData(user) {
-    const userRef = ref(db, `users/${user.uid}`);
-    const snapshot = await get(userRef);
-    const data = snapshot.val() || {};
 
-    // 1. 如果沒有金幣，預設給 10000
-    if (data.coins === undefined) {
-        console.log("新用戶！發放初始資金 10000 G");
-        await update(userRef, { coins: 10000 });
-        updateCoinDisplay(10000);
-    } else {
-        updateCoinDisplay(data.coins);
+// 綁定登入/登出按鈕
+const loginBtn = document.getElementById('google-login-btn');
+if(loginBtn) loginBtn.addEventListener('click', AuthUser.loginWithGoogle);
+
+const logoutBtn = document.getElementById('logout-btn');
+if(logoutBtn) logoutBtn.addEventListener('click', AuthUser.logoutUser);
+
+
+// ==========================================
+// 4. 讀取與渲染 (背包 & 隊伍)
+// ==========================================
+function loadMyInventory(user) {
+    console.log("系統: 開始讀取背包...");
+    const inventoryRef = ref(db, `users/${user.uid}/inventory`);
+    const teamRef = ref(db, `users/${user.uid}/team`);
+
+    // A. 監聽背包
+    onValue(inventoryRef, (invSnap) => {
+        myInventoryData = invSnap.val() || {};
+        console.log("系統: 背包資料更新", Object.keys(myInventoryData).length + " 張卡");
+
+        // B. 監聽隊伍 (等背包讀完再讀隊伍)
+        onValue(teamRef, (teamSnap) => {
+            currentTeam = teamSnap.val() || [null, null, null, null, null];
+            // 防呆: 確保一定是5格
+            if (!Array.isArray(currentTeam)) currentTeam = [null, null, null, null, null];
+            while(currentTeam.length < 5) currentTeam.push(null);
+            
+            console.log("系統: 隊伍資料更新", currentTeam);
+
+            // C. 兩個都有了，開始畫畫面
+            renderTeamDisplay();
+            renderInventoryGrid();
+        });
+    });
+}
+
+function renderTeamDisplay() {
+    const slots = document.querySelectorAll('.team-slot');
+    slots.forEach((slot, index) => {
+        const cardId = currentTeam[index];
+        slot.innerHTML = ''; 
+        slot.className = 'team-slot'; // 重置
+
+        if (cardId && myInventoryData[cardId]) {
+            const char = myInventoryData[cardId];
+            slot.classList.add('filled');
+            const icon = char.attribute === 'fire' ? '🔥' : (char.attribute === 'water' ? '💧' : '🌿');
+            slot.innerHTML = `
+                <div style="font-size:1.5rem;">${icon}</div>
+                <div style="font-size:0.7rem; font-weight:bold;">${char.name}</div>
+            `;
+        } else {
+            slot.innerHTML = `<span style="opacity:0.3; font-size:2rem;">+</span>`;
+        }
+    });
+}
+
+function renderInventoryGrid() {
+    const grid = document.getElementById('inventory-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const cards = Object.entries(myInventoryData);
+    // 排序: 新的在前
+    cards.sort((a, b) => b[1].obtainedAt - a[1].obtainedAt);
+
+    cards.forEach(([key, char]) => {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'char-card';
+        
+        // 檢查是否在隊伍中
+        if (currentTeam.includes(key)) {
+            cardEl.classList.add('in-team');
+        }
+
+        // ★★★ 關鍵修正：點擊事件 ★★★
+        cardEl.onclick = function() {
+            console.log("使用者點擊了卡片:", key);
+            window.addToTeam(key); // 呼叫全域函式
+        };
+
+        const icon = char.attribute === 'fire' ? '🔥' : (char.attribute === 'water' ? '💧' : '🌿');
+        let border = char.rarity === 'SSR' ? '2px solid gold' : '1px solid #555';
+
+        cardEl.style.cssText = `border:${border}; background:#222; padding:10px; border-radius:8px; text-align:center; cursor:pointer;`;
+        cardEl.innerHTML = `
+            <div style="font-size:2rem;">${icon}</div>
+            <div style="color:white; font-size:0.8rem;">${char.name}</div>
+        `;
+
+        grid.appendChild(cardEl);
+    });
+}
+
+
+// ==========================================
+// 5. 互動功能 (掛載到 Window 確保 HTML 點得到)
+// ==========================================
+
+// 動作 A: 加入隊伍
+window.addToTeam = async function(cardId) {
+    const user = auth.currentUser;
+    if (!user) return alert("請先登入");
+
+    console.log("嘗試加入隊伍:", cardId);
+
+    // 檢查重複
+    if (currentTeam.includes(cardId)) {
+        return alert("這張卡已經在隊伍裡了！");
+    }
+
+    // 找空格
+    const emptyIndex = currentTeam.indexOf(null);
+    if (emptyIndex === -1) {
+        return alert("隊伍已滿！請先點擊上方格子移除成員。");
+    }
+
+    // 更新
+    currentTeam[emptyIndex] = cardId;
+    
+    // 存檔
+    try {
+        await update(ref(db, `users/${user.uid}`), { team: currentTeam });
+        console.log("存檔成功！");
+    } catch(e) {
+        console.error("存檔失敗:", e);
     }
 }
 
-// 更新畫面上顯示的金幣
+// 動作 B: 移除隊伍
+window.handleTeamSlotClick = async function(index) {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    if (currentTeam[index] === null) return; // 點空格沒反應
+
+    console.log("移除隊伍成員:", index);
+    currentTeam[index] = null;
+
+    await update(ref(db, `users/${user.uid}`), { team: currentTeam });
+}
+
+// 動作 C: 抽卡 (完整版)
+window.handleSummon = async function(count) {
+    const user = auth.currentUser;
+    if (!user) return alert("請先登入");
+
+    // 1. 設定費用
+    const cost = count === 1 ? 100 : 1000;
+
+    // 2. 檢查錢夠不夠
+    const userRef = ref(db, `users/${user.uid}`);
+    const snapshot = await get(userRef);
+    const userData = snapshot.val() || {};
+    const currentCoins = userData.coins || 0;
+
+    if (currentCoins < cost) {
+        return alert(`金幣不足！需要 ${cost} G，你只有 ${currentCoins} G`);
+    }
+
+    // 3. 執行抽卡
+    const newCoins = currentCoins - cost;
+    const newCards = [];
+
+    for (let i = 0; i < count; i++) {
+        const randomChar = CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)];
+        newCards.push({
+            ...randomChar,
+            obtainedAt: Date.now(),
+            isNew: true
+        });
+    }
+
+    // 4. 寫入資料庫
+    const updates = {};
+    updates[`users/${user.uid}/coins`] = newCoins;
+
+    const inventoryRef = ref(db, `users/${user.uid}/inventory`);
+    newCards.forEach(card => {
+        const newKey = push(inventoryRef).key;
+        updates[`users/${user.uid}/inventory/${newKey}`] = card;
+    });
+
+    try {
+        await update(ref(db), updates);
+        
+        // 更新畫面上的錢
+        updateCoinDisplay(newCoins);
+
+        // ★★★ 關鍵：顯示抽卡結果視窗 ★★★
+        showSummonResults(newCards);
+
+    } catch (e) {
+        console.error("抽卡失敗:", e);
+        alert("系統忙碌中，請稍後再試");
+    }
+}
+
+// ==========================================
+// 6. 輔助函式 (金幣與配對)
+// ==========================================
+async function initUserData(user) {
+    const userRef = ref(db, `users/${user.uid}`);
+    const s = await get(userRef);
+    if (!s.exists() || s.val().coins === undefined) {
+        await update(userRef, { coins: 10000 });
+    }
+    // 顯示金幣
+    const el = document.getElementById('user-coins');
+    if(el && s.exists()) el.innerText = s.val().coins || 0;
+}
+
+function setupMatchButton(user) {
+    const btn = document.getElementById('find-match-btn');
+    let isSearching = false;
+    if(!btn) return;
+    
+    btn.onclick = async () => {
+        if(!isSearching) {
+            isSearching = true;
+            btn.innerText = "CANCEL";
+            btn.style.background = "red";
+            await Matchmaking.findMatch(user);
+        } else {
+            isSearching = false;
+            btn.innerText = "START BATTLE";
+            btn.style.background = "blue";
+            await Matchmaking.cancelMatch(user);
+        }
+    }
+}
+// js/main.js - 請貼在檔案最下方
+
+// 1. 更新金幣顯示
 function updateCoinDisplay(amount) {
     const el = document.getElementById('user-coins');
     if(el) el.innerText = amount;
 }
 
-// ===================================
-// ✨ 抽卡核心邏輯
-// ===================================
-window.handleSummon = async function(count) {
-    const user = firebase.auth().currentUser; // 假設你有全域 firebase 或 import auth
-    if (!user) return alert("請先登入");
-
-    // 1. 計算費用
-    const cost = count === 1 ? 100 : 1000;
-    
-    // 2. 檢查錢夠不夠
-    const userRef = ref(db, `users/${user.uid}`);
-    const snapshot = await get(userRef);
-    let currentCoins = snapshot.val()?.coins || 0;
-
-    if (currentCoins < cost) {
-        alert(`金幣不足！需要 ${cost} G，你只有 ${currentCoins} G`);
-        return;
-    }
-
-    // 3. 開始抽卡 (扣款 + 隨機)
-    const newCoins = currentCoins - cost;
-    let results = [];
-
-    for(let i=0; i<count; i++) {
-        // 簡單抽卡邏輯 (之後可以加權重)
-        const randomChar = CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)];
-        // 標記獲得時間
-        const charData = { ...randomChar, obtainedAt: Date.now(), isNew: true };
-        results.push(charData);
-    }
-
-    // 4. 寫入資料庫 (原子操作：同時更新錢和背包)
-    const updates = {};
-    updates[`users/${user.uid}/coins`] = newCoins;
-    
-    // 產生每一張卡片的 ID 並存入
-    const inventoryRef = ref(db, `users/${user.uid}/inventory`);
-    results.forEach(char => {
-        const newKey = push(inventoryRef).key; // 產生 ID
-        updates[`users/${user.uid}/inventory/${newKey}`] = char;
-    });
-
-    try {
-        await update(ref(db), updates); // 一次寫入所有變更
-        
-        // 5. 更新畫面
-        updateCoinDisplay(newCoins);
-        showSummonResults(results); // 顯示結果
-        
-    } catch (err) {
-        console.error("抽卡失敗", err);
-        alert("系統連線錯誤，請稍後再試");
-    }
-}
-
-// 顯示抽卡結果動畫
+// 2. 顯示抽卡結果視窗 (Overlay)
 function showSummonResults(cards) {
     const overlay = document.getElementById('gacha-result-overlay');
     const grid = document.getElementById('result-grid');
-    grid.innerHTML = '';
     
+    // 如果 HTML 裡找不到這些元素，就只跳 alert (防呆)
+    if(!overlay || !grid) {
+        let msg = "獲得角色:\n";
+        cards.forEach(c => msg += `- ${c.name}\n`);
+        return alert(msg);
+    }
+
+    grid.innerHTML = ''; // 清空舊的
     overlay.style.display = 'flex'; // 顯示遮罩
 
+    // 一張一張產生卡片
     cards.forEach((card, index) => {
         const el = document.createElement('div');
-        el.className = `result-card border-${card.rarity}`;
-        // 讓卡片一張一張跳出來 (延遲動畫)
-        el.style.animationDelay = `${index * 0.1}s`; 
+        // 設定邊框顏色
+        let borderClass = 'border-R';
+        if(card.rarity === 'SR') borderClass = 'border-SR';
+        if(card.rarity === 'SSR') borderClass = 'border-SSR';
+
+        el.className = `result-card ${borderClass}`;
+        el.style.animationDelay = `${index * 0.1}s`; // 延遲動畫
         
         const icon = card.attribute === 'fire' ? '🔥' : (card.attribute === 'water' ? '💧' : '🌿');
         
@@ -184,6 +314,76 @@ function showSummonResults(cards) {
     });
 }
 
+// 3. 關閉結果視窗 (綁定給按鈕用)
 window.closeGachaResult = function() {
-    document.getElementById('gacha-result-overlay').style.display = 'none';
+    const overlay = document.getElementById('gacha-result-overlay');
+    if(overlay) overlay.style.display = 'none';
 }
+// ==========================================
+// 🛠️ 開發者測試工具 (Dev Tools)
+// 這些功能是給你測試用的，上線前可以刪除
+// ==========================================
+
+// 1. 給自己加錢
+// 用法: 在 Console 輸入 test_addCoins(50000)
+window.test_addCoins = async function(amount) {
+    const user = auth.currentUser;
+    if (!user) return console.error("❌ 請先登入！");
+
+    const userRef = ref(db, `users/${user.uid}`);
+    
+    // 先讀取現在有多少錢
+    const snapshot = await get(userRef);
+    const currentCoins = snapshot.val()?.coins || 0;
+    const newAmount = currentCoins + amount;
+
+    await update(userRef, { coins: newAmount });
+    console.log(`✅ 成功！金幣已更新：${currentCoins} -> ${newAmount}`);
+}
+
+// 2. 清空我的所有卡片 (重置背包)
+// 用法: 在 Console 輸入 test_clearCards()
+window.test_clearCards = async function() {
+    const user = auth.currentUser;
+    if (!user) return console.error("❌ 請先登入！");
+
+    // 確認一下，避免手殘
+    if (!confirm("⚠️ 警告：確定要刪除所有卡片嗎？這動作無法復原！")) return;
+
+    // 直接移除 inventory 節點
+    await remove(ref(db, `users/${user.uid}/inventory`));
+    
+    // 也要順便清空隊伍，不然會出錯
+    await remove(ref(db, `users/${user.uid}/team`));
+
+    console.log("🗑️ 背包與隊伍已清空！");
+}
+
+// 3. 刪除「特定一張」卡片
+// 用法: test_deleteCard("-Nzb123...")  <-- 括號裡放卡片的 ID
+window.test_deleteCard = async function(cardId) {
+    const user = auth.currentUser;
+    if (!user) return console.error("❌ 請先登入！");
+
+    if (!cardId) return console.error("❌ 請輸入卡片 ID，例如: test_deleteCard('-Nz...')");
+
+    // 1. 從背包移除
+    await remove(ref(db, `users/${user.uid}/inventory/${cardId}`));
+
+    // 2. 檢查隊伍裡有沒有這張卡，有的話也要拿掉
+    // (這裡簡單做：直接讀取隊伍，如果有就設為 null)
+    const teamRef = ref(db, `users/${user.uid}/team`);
+    const teamSnap = await get(teamRef);
+    let currentTeam = teamSnap.val();
+    
+    if (Array.isArray(currentTeam) && currentTeam.includes(cardId)) {
+        // 把該位置變成 null
+        currentTeam = currentTeam.map(id => id === cardId ? null : id);
+        await update(ref(db, `users/${user.uid}`), { team: currentTeam });
+        console.log("🔄 該卡片也從隊伍中移除了");
+    }
+
+    console.log(`🗑️ 卡片 ${cardId} 已刪除！`);
+}
+
+console.log("🛠️ 測試工具已載入：輸入 test_addCoins(1000) 來加錢");
