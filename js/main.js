@@ -12,7 +12,23 @@ import * as Matchmaking from "./matchmaking.js";
 // 2. 全域變數 (用來存隊伍和背包)
 let currentTeam = [null, null, null, null, null];
 let myInventoryData = {};
-
+// 在 let myInventoryData = {}; 下面加入：
+let currentSortMode = 'date'; // 預設依時間排序 ('date' 或 'id')
+// 定義屬性外觀 (圖示與顏色)
+const ATTR_CONFIG = {
+    'fire':  { icon: '🔥', color: '#ff5555', label: '火' },
+    'water': { icon: '💧', color: '#3b82f6', label: '水' },
+    'grass': { icon: '🌿', color: '#22c55e', label: '草' }, // 注意：資料庫請用 'grass'
+    'light': { icon: '✨', color: '#fbbf24', label: '光' },
+    'dark':  { icon: '🟣', color: '#a855f7', label: '暗' },
+    // 相容舊資料 (如果您舊資料是用 wood)
+    'wood':  { icon: '🌿', color: '#22c55e', label: '草' }
+};
+// 輔助函式：取得屬性樣式
+function getAttrStyle(attr) {
+    const key = (attr || '').toLowerCase();
+    return ATTR_CONFIG[key] || { icon: '❓', color: '#999', label: '?' };
+}
 console.log("系統: main.js 已載入");
 
 // ==========================================
@@ -84,64 +100,170 @@ function loadMyInventory(user) {
 }
 
 function renderTeamDisplay() {
-    const slots = document.querySelectorAll('.team-slot');
-    slots.forEach((slot, index) => {
-        const cardId = currentTeam[index];
-        slot.innerHTML = ''; 
-        slot.className = 'team-slot'; // 重置
+    // 遍歷 5 個隊伍格子
+    for (let i = 0; i < 5; i++) {
+        const slotEl = document.getElementById(`team-slot-${i}`);
+        const charId = currentTeam[i]; // 取得該位置的角色 ID
 
-        if (cardId && myInventoryData[cardId]) {
-            const char = myInventoryData[cardId];
-            slot.classList.add('filled');
-            const icon = char.attribute === 'fire' ? '🔥' : (char.attribute === 'water' ? '💧' : '🌿');
-            slot.innerHTML = `
-                <div style="font-size:1.5rem;">${icon}</div>
-                <div style="font-size:0.7rem; font-weight:bold;">${char.name}</div>
+        if (charId && myInventoryData[charId]) {
+            // 如果有角色，讀取資料
+            const char = myInventoryData[charId];
+            const attrStyle = getAttrStyle(char.attribute);
+
+            // 設定稀有度顏色
+            let borderColor = '#666'; 
+            let glow = '';
+            if(char.rarity === 'SR') borderColor = '#a855f7';
+            if(char.rarity === 'SSR') { 
+                borderColor = '#ffd700'; 
+                glow = 'box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);';
+            }
+
+            // 渲染格子內容 (圖示 + 名字)
+            slotEl.innerHTML = `
+                <div style="font-size:1.5rem; filter: drop-shadow(0 0 5px ${attrStyle.color});">
+                    ${attrStyle.icon}
+                </div>
+                <div style="font-size:0.7rem; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%;">
+                    ${char.name}
+                </div>
+                <div style="font-size:0.6rem; color:${borderColor}; position:absolute; top:2px; right:4px;">
+                    ${char.rarity}
+                </div>
             `;
+            
+            // 設定邊框與背景
+            slotEl.style.borderColor = borderColor;
+            slotEl.style.background = 'rgba(0,0,0,0.5)';
+            if (glow) slotEl.style.cssText += glow;
+            
         } else {
-            slot.innerHTML = `<span style="opacity:0.3; font-size:2rem;">+</span>`;
+            // 如果是空格
+            slotEl.innerHTML = '<span style="color:#444; font-size:1.5rem;">+</span>';
+            slotEl.style.borderColor = '#333';
+            slotEl.style.background = 'transparent';
+            slotEl.style.boxShadow = 'none';
         }
-    });
+    }
 }
+
 
 function renderInventoryGrid() {
     const grid = document.getElementById('inventory-grid');
-    if (!grid) return;
+    // 獲取包裹格子的外層容器，用來處理灰底問題
+    const container = document.querySelector('.inventory-container');
+    
+    if (!grid || !container) return;
+
     grid.innerHTML = '';
 
-    const cards = Object.entries(myInventoryData);
-    // 排序: 新的在前
-    cards.sort((a, b) => b[1].obtainedAt - a[1].obtainedAt);
+    // --- 情況 A：背包是空的 ---
+    if (!myInventoryData || Object.keys(myInventoryData).length === 0) {
+        // 1. 強制把外層容器的背景變透明，消除「灰底」感
+        container.style.background = 'transparent';
+        container.style.boxShadow = 'none';
+        container.style.border = 'none';
 
+        // 2. 讓 Grid 變成置中模式
+        grid.style.display = 'flex';
+        grid.style.flexDirection = 'column';
+        grid.style.justifyContent = 'center';
+        grid.style.alignItems = 'center';
+        grid.style.minHeight = '200px'; 
+        
+        grid.innerHTML = `
+            <div style="color: rgb(250, 191, 27); font-size: 1rem; margin-top: 5px; white-space: nowrap;">去「角色召喚」尋找你的第一位夥伴吧！</div>
+        `;
+        return;
+    }
+
+    // --- 情況 B：背包有卡片 ---
+    // 1. 恢復容器原本該有的設計感樣式（這裡依照你 CSS 的設定）
+    container.style.background = 'rgba(255, 255, 255, 0.03)'; 
+    container.style.boxShadow = ''; // 恢復 CSS 預設
+    
+    // 2. 恢復 Grid 的排列模式
+    grid.style.display = 'grid';
+    grid.style.minHeight = 'auto';
+
+    const cards = Object.entries(myInventoryData);
+    
+    // 排序邏輯保持不變
+    cards.sort((a, b) => {
+        if (typeof currentSortMode !== 'undefined' && currentSortMode === 'id') {
+            return a[0].localeCompare(b[0]);
+        }
+        return (b[1].obtainedAt || 0) - (a[1].obtainedAt || 0);
+    });
+
+    // 渲染卡片
     cards.forEach(([key, char]) => {
+        if (!char || !char.name) return;
+
         const cardEl = document.createElement('div');
         cardEl.className = 'char-card';
         
-        // 檢查是否在隊伍中
-        if (currentTeam.includes(key)) {
+        if (typeof currentTeam !== 'undefined' && currentTeam.includes(key)) {
             cardEl.classList.add('in-team');
         }
 
-        // ★★★ 關鍵修正：點擊事件 ★★★
         cardEl.onclick = function() {
-            console.log("使用者點擊了卡片:", key);
-            window.addToTeam(key); // 呼叫全域函式
+            if(window.addToTeam) window.addToTeam(key);
         };
 
-        const icon = char.attribute === 'fire' ? '🔥' : (char.attribute === 'water' ? '💧' : '🌿');
-        let border = char.rarity === 'SSR' ? '2px solid gold' : '1px solid #555';
+        const attrKey = (char.attribute || '').toLowerCase();
+        const attrData = ATTR_CONFIG[attrKey] || { icon: '❓', color: '#999', label: '?' };
+        
+        let rarityColor = '#ccc';
+        let borderColor = '#444'; 
+        if(char.rarity === 'SR') { rarityColor = '#a855f7'; borderColor = '#a855f7'; }
+        if(char.rarity === 'SSR') { rarityColor = '#ffd700'; borderColor = '#ffd700'; }
 
-        cardEl.style.cssText = `border:${border}; background:#222; padding:10px; border-radius:8px; text-align:center; cursor:pointer;`;
+        if(attrKey === 'light') borderColor = '#fbbf24';
+        if(attrKey === 'dark') borderColor = '#a855f7';
+
+        cardEl.style.border = `1px solid ${borderColor}`;
+        if(char.rarity === 'SSR') {
+            cardEl.style.boxShadow = `0 0 8px ${borderColor}40`;
+        }
+
+        const hp = char.hp || 100;
+        const atk = char.attack || char.atk || 50;
+
         cardEl.innerHTML = `
-            <div style="font-size:2rem;">${icon}</div>
-            <div style="color:white; font-size:0.8rem;">${char.name}</div>
+            <div class="card-top">
+                <span class="card-attr" style="text-shadow: 0 0 5px ${attrData.color}">${attrData.icon}</span>
+                <span class="card-rarity" style="color:${rarityColor}; border:1px solid ${rarityColor}">${char.rarity || 'N'}</span>
+            </div>
+            <div class="card-center">
+                <div class="card-main-icon" style="filter: drop-shadow(0 0 5px ${attrData.color}80);">${attrData.icon}</div>
+                <div class="card-name">${char.name}</div>
+            </div>
+            <div class="card-stats">
+                <div class="stat-box atk-val">
+                    <span>⚔️</span> <span>${atk}</span>
+                </div>
+                <div class="stat-box hp-val">
+                    <span>❤️</span> <span>${hp}</span>
+                </div>
+            </div>
         `;
 
         grid.appendChild(cardEl);
     });
 }
-
-
+// 切換排序模式
+window.toggleSort = function() {
+    if (currentSortMode === 'date') {
+        currentSortMode = 'id';
+        document.getElementById('sort-btn-text').innerText = "排序: 代號";
+    } else {
+        currentSortMode = 'date';
+        document.getElementById('sort-btn-text').innerText = "排序: 時間";
+    }
+    // 切換完馬上重新渲染
+    renderInventoryGrid();
+}
 // ==========================================
 // 5. 互動功能 (掛載到 Window 確保 HTML 點得到)
 // ==========================================
@@ -151,26 +273,44 @@ window.addToTeam = async function(cardId) {
     const user = auth.currentUser;
     if (!user) return alert("請先登入");
 
-    console.log("嘗試加入隊伍:", cardId);
+    console.log("處理隊伍變更:", cardId);
 
-    // 檢查重複
-    if (currentTeam.includes(cardId)) {
-        return alert("這張卡已經在隊伍裡了！");
+    // 1. 檢查這張卡是否已經在隊伍裡？
+    const existingIndex = currentTeam.indexOf(cardId);
+
+    if (existingIndex !== -1) {
+        // ★★★ 情況 A: 已經在隊伍裡 -> 移除並替補 (Remove & Shift) ★★★
+        
+        // 邏輯：留下「不是 null」且「不是這張卡」的隊員
+        let newTeam = currentTeam.filter(id => id !== null && id !== cardId);
+        
+        // 補滿 5 個位置 (補 null)
+        while (newTeam.length < 5) {
+            newTeam.push(null);
+        }
+        
+        currentTeam = newTeam;
+        console.log("已移除成員，隊伍重組:", currentTeam);
+
+    } else {
+        // ★★★ 情況 B: 不在隊伍裡 -> 加入 (Add) ★★★
+        
+        // 找第一個空格
+        const emptyIndex = currentTeam.indexOf(null);
+        
+        if (emptyIndex === -1) {
+            return alert("隊伍已滿！請先移除成員。");
+        }
+
+        // 填入空格
+        currentTeam[emptyIndex] = cardId;
+        console.log("已加入成員:", currentTeam);
     }
 
-    // 找空格
-    const emptyIndex = currentTeam.indexOf(null);
-    if (emptyIndex === -1) {
-        return alert("隊伍已滿！請先點擊上方格子移除成員。");
-    }
-
-    // 更新
-    currentTeam[emptyIndex] = cardId;
-    
-    // 存檔
+    // 2. 存檔到 Firebase
     try {
         await update(ref(db, `users/${user.uid}`), { team: currentTeam });
-        console.log("存檔成功！");
+        // 畫面會因為 onValue 自動更新，不需要手動呼叫 render
     } catch(e) {
         console.error("存檔失敗:", e);
     }
@@ -178,15 +318,19 @@ window.addToTeam = async function(cardId) {
 
 // 動作 B: 移除隊伍
 window.handleTeamSlotClick = async function(index) {
-    const user = auth.currentUser;
-    if (!user) return;
+// 1. 取得這個位置目前的卡片 ID
+    const cardId = currentTeam[index];
 
-    if (currentTeam[index] === null) return; // 點空格沒反應
-
-    console.log("移除隊伍成員:", index);
-    currentTeam[index] = null;
-
-    await update(ref(db, `users/${user.uid}`), { team: currentTeam });
+    // 2. 如果這個位置有卡片，就直接呼叫 addToTeam
+    // 因為我們剛剛已經把 addToTeam 改成「如果在隊伍裡就移除」，所以這裡直接用它就行！
+    if (cardId) {
+        console.log(`點擊隊伍槽 ${index}，移除卡片 ${cardId}`);
+        window.addToTeam(cardId);
+    } else {
+        // 如果是空的，提示玩家
+        // alert("請從下方背包點選卡片加入");
+        console.log("點擊了空位");
+    }
 }
 
 // 動作 C: 抽卡 (完整版)
@@ -194,50 +338,95 @@ window.handleSummon = async function(count) {
     const user = auth.currentUser;
     if (!user) return alert("請先登入");
 
-    // 1. 設定費用
+    // 費用設定
     const cost = count === 1 ? 100 : 1000;
 
-    // 2. 檢查錢夠不夠
-    const userRef = ref(db, `users/${user.uid}`);
-    const snapshot = await get(userRef);
-    const userData = snapshot.val() || {};
-    const currentCoins = userData.coins || 0;
-
-    if (currentCoins < cost) {
-        return alert(`金幣不足！需要 ${cost} G，你只有 ${currentCoins} G`);
-    }
-
-    // 3. 執行抽卡
-    const newCoins = currentCoins - cost;
-    const newCards = [];
-
-    for (let i = 0; i < count; i++) {
-        const randomChar = CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)];
-        newCards.push({
-            ...randomChar,
-            obtainedAt: Date.now(),
-            isNew: true
-        });
-    }
-
-    // 4. 寫入資料庫
-    const updates = {};
-    updates[`users/${user.uid}/coins`] = newCoins;
-
-    const inventoryRef = ref(db, `users/${user.uid}/inventory`);
-    newCards.forEach(card => {
-        const newKey = push(inventoryRef).key;
-        updates[`users/${user.uid}/inventory/${newKey}`] = card;
-    });
-
     try {
-        await update(ref(db), updates);
-        
-        // 更新畫面上的錢
-        updateCoinDisplay(newCoins);
+        // 1. 檢查金幣
+        const userRef = ref(db, `users/${user.uid}`);
+        const snapshot = await get(userRef);
+        const userData = snapshot.val() || {};
+        const currentCoins = userData.coins || 0;
 
-        // ★★★ 關鍵：顯示抽卡結果視窗 ★★★
-        showSummonResults(newCards);
+        if (currentCoins < cost) {
+            return alert(`金幣不足！需要 ${cost} G`);
+        }
+
+        // 2. 抽卡邏輯 (機率控制核心)
+        const displayCards = []; 
+        const storageMap = {};   
+        const seenInThisSession = new Set(); 
+
+        for (let i = 0; i < count; i++) {
+            // --- 機率判定開始 ---
+            const rand = Math.random() * 100; // 產生 0 ~ 100 的隨機數
+            let targetRarity = 'R';
+
+            if (rand < 70) {
+                targetRarity = 'R';    // 0~69.99 (70%)
+            } else if (rand < 95) {
+                targetRarity = 'SR';   // 70~94.99 (25%)
+            } else {
+                targetRarity = 'SSR';  // 95~100 (5%)
+            }
+
+            // 從全角色列表中，篩選出符合該稀有度的角色
+            const pool = CHARACTERS.filter(c => c.rarity === targetRarity);
+            
+            // 防呆：如果該稀有度沒卡片 (例如資料庫填錯)，就從全部隨機抽
+            const finalPool = pool.length > 0 ? pool : CHARACTERS;
+
+            // 從池子裡隨機挑一張
+            const randomChar = finalPool[Math.floor(Math.random() * finalPool.length)];
+            const cardId = randomChar.id;
+            // --- 機率判定結束 ---
+
+            // A. 處理顯示資料
+            const isNewInBag = !myInventoryData[cardId]; 
+            const isFirstTimeSeen = !seenInThisSession.has(cardId);
+            const showNewTag = isNewInBag && isFirstTimeSeen;
+
+            displayCards.push({
+                ...randomChar,
+                isNew: showNewTag
+            });
+
+            seenInThisSession.add(cardId);
+
+            // B. 處理存檔數據
+            if (!storageMap[cardId]) {
+                storageMap[cardId] = { data: randomChar, count: 0 };
+            }
+            storageMap[cardId].count++;
+        }
+
+        // 3. 寫入資料庫
+        const newCoins = currentCoins - cost;
+        const updates = {};
+        updates[`users/${user.uid}/coins`] = newCoins;
+
+        for (const [cardId, info] of Object.entries(storageMap)) {
+            const existingCard = myInventoryData[cardId];
+            const pullCount = info.count;
+
+            if (existingCard) {
+                const finalCount = (existingCard.count || 1) + pullCount;
+                updates[`users/${user.uid}/inventory/${cardId}/count`] = finalCount;
+            } else {
+                const newCardData = {
+                    ...info.data,
+                    count: pullCount,
+                    obtainedAt: Date.now()
+                };
+                updates[`users/${user.uid}/inventory/${cardId}`] = newCardData;
+            }
+        }
+
+        await update(ref(db), updates);
+
+        // 4. 更新畫面
+        updateCoinDisplay(newCoins);
+        showSummonResults(displayCards);
 
     } catch (e) {
         console.error("抽卡失敗:", e);
@@ -287,11 +476,12 @@ function updateCoinDisplay(amount) {
 }
 
 // 2. 顯示抽卡結果視窗 (Overlay)
-function showSummonResults(cards) {
+window.showSummonResults = function(cards) {
+    // 1. 使用您原本 HTML 裡的 ID
     const overlay = document.getElementById('gacha-result-overlay');
     const grid = document.getElementById('result-grid');
     
-    // 如果 HTML 裡找不到這些元素，就只跳 alert (防呆)
+    // 防呆
     if(!overlay || !grid) {
         let msg = "獲得角色:\n";
         cards.forEach(c => msg += `- ${c.name}\n`);
@@ -301,25 +491,69 @@ function showSummonResults(cards) {
     grid.innerHTML = ''; // 清空舊的
     overlay.style.display = 'flex'; // 顯示遮罩
 
-    // 一張一張產生卡片
-    cards.forEach((card, index) => {
-        const el = document.createElement('div');
-        // 設定邊框顏色
-        let borderClass = 'border-R';
-        if(card.rarity === 'SR') borderClass = 'border-SR';
-        if(card.rarity === 'SSR') borderClass = 'border-SSR';
+    // 2. 一張一張產生卡片
+    cards.forEach((char, index) => {
+        const cardEl = document.createElement('div');
+        
+        // ★ 重點：使用 'char-card' 類別，這樣才會跟背包長得一模一樣
+        cardEl.className = 'char-card'; 
+        
+        // 加入動畫效果 (預設隱藏，透過動畫顯示)
+        cardEl.style.opacity = '0';
+        cardEl.style.animation = `popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards`;
+        cardEl.style.animationDelay = `${index * 0.1}s`; // 您的延遲邏輯
 
-        el.className = `result-card ${borderClass}`;
-        el.style.animationDelay = `${index * 0.1}s`; // 延遲動畫
+        // --- 以下是跟背包一樣的視覺邏輯 ---
+
+        // A. 取得屬性樣式 (支援光、暗、草等)
+        const attrStyle = getAttrStyle(char.attribute);
+
+        // B. 設定顏色與邊框
+        let rarityColor = '#ccc';
+        let borderColor = '#444';
         
-        const icon = card.attribute === 'fire' ? '🔥' : (card.attribute === 'water' ? '💧' : '🌿');
-        
-        el.innerHTML = `
-            <div style="font-size:2rem; margin-bottom:5px;">${icon}</div>
-            <div style="font-weight:bold; color:white;">${card.name}</div>
-            <div style="font-size:0.8rem; color:${card.rarity === 'SSR'?'gold':'#aaa'}">${card.rarity}</div>
+        if(char.rarity === 'SR') { rarityColor = '#a855f7'; borderColor = '#a855f7'; }
+        if(char.rarity === 'SSR') { rarityColor = '#ffd700'; borderColor = '#ffd700'; }
+
+        // 光暗屬性特殊邊框
+        if(char.attribute === 'light') borderColor = '#fbbf24';
+        if(char.attribute === 'dark') borderColor = '#a855f7';
+
+        // C. NEW 標籤 (如果是新卡)
+        const newTag = char.isNew ? 
+            `<div style="position:absolute; top:35%; left:-10px; background:#ff4757; color:white; font-size:0.6rem; padding:2px 8px; transform:rotate(-15deg); z-index:10; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.5); border:1px solid white;">NEW</div>` : '';
+
+        // D. 設定樣式
+        cardEl.style.border = `1px solid ${borderColor}`;
+        if(char.rarity === 'SSR') {
+            cardEl.style.boxShadow = `0 0 15px ${borderColor}60`;
+        }
+
+        // E. 數據欄位 (相容您 data.js 的 attack 寫法)
+        const hp = char.hp || char.max_hp || 100;
+        const atk = char.attack || char.atk || 50;
+
+        // F. 組裝 HTML (四角佈局)
+        cardEl.innerHTML = `
+            ${newTag}
+            
+            <div class="card-top">
+                <span class="card-attr" style="text-shadow: 0 0 5px ${attrStyle.color}">${attrStyle.icon}</span>
+                <span class="card-rarity" style="color:${rarityColor}; border:1px solid ${rarityColor}">${char.rarity}</span>
+            </div>
+
+            <div class="card-center">
+                <div class="card-main-icon" style="filter: drop-shadow(0 0 8px ${attrStyle.color}80);">${attrStyle.icon}</div>
+                <div class="card-name">${char.name}</div>
+            </div>
+
+            <div class="card-stats">
+                <div class="stat-box atk-val"><span>⚔️</span><span>${atk}</span></div>
+                <div class="stat-box hp-val"><span>❤️</span><span>${hp}</span></div>
+            </div>
         `;
-        grid.appendChild(el);
+
+        grid.appendChild(cardEl);
     });
 }
 
@@ -396,3 +630,47 @@ window.test_deleteCard = async function(cardId) {
 }
 
 console.log("🛠️ 測試工具已載入：輸入 test_addCoins(1000) 來加錢");
+// js/main.js - 屬性相剋邏輯
+
+/**
+ * 定義攻擊倍率表 (Attacker -> Defender)
+ * 根據您的設定：只有特定剋制是 1.5 倍，其餘預設 1.0
+ */
+const TYPE_CHART = {
+    'water': { 'fire': 1.5 },
+    'fire':  { 'grass': 1.5 },
+    'grass': { 'water': 1.5 }, 
+    'dark':  { 'light': 1.5 },
+    'light': { 'dark': 1.5 }
+};
+
+/**
+ * 計算傷害倍率函式
+ * @param {string} atkAttr - 攻擊者的屬性 (例如 'water')
+ * @param {string} defAttr - 防禦者的屬性 (例如 'fire')
+ * @returns {number} 倍率 (1.5 或 1.0)
+ */
+window.getDamageMultiplier = function(atkAttr, defAttr) {
+    if (!atkAttr || !defAttr) return 1.0;
+    
+    // 轉小寫避免大小寫錯誤
+    const a = atkAttr.toLowerCase();
+    const d = defAttr.toLowerCase();
+
+    // 查表
+    if (TYPE_CHART[a] && TYPE_CHART[a][d]) {
+        return TYPE_CHART[a][d];
+    }
+    
+    // 如果表中沒定義，預設為 1.0 (無加成)
+    // 註：通常RPG中被剋制會變 0.5 (例如火打水)，如果您需要這個設定我們可以之後加上
+    return 1.0;
+}
+
+// === 測試工具 ===
+// 您可以在 Console 輸入 test_damage('water', 'fire') 來測試
+window.test_damage = function(a, d) {
+    const multi = window.getDamageMultiplier(a, d);
+    console.log(`[傷害測試] ${a} 攻擊 ${d} -> 倍率: x${multi}`);
+    if (multi > 1) console.log("✨ 效果絕佳 (Super Effective)!");
+}

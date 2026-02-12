@@ -210,10 +210,120 @@ body::before {
     overflow-y: auto;
 }
 
+/* css/style.css - 卡片最終美化版 */
+
 .char-card {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+    position: relative; /* 關鍵：讓內部的 absolute 元素對齊這張卡 */
+    background: linear-gradient(160deg, #2b2b2b, #1a1a1a);
+    border-radius: 10px;
+    padding: 8px;
+    aspect-ratio: 3/4.2; /* 稍微拉長一點點，讓下方資訊不那麼擠 */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+    transition: transform 0.2s;
+    overflow: visible; /* 改成 visible，讓數量標籤可以稍微凸出去一點 */
+}
+
+.char-card:hover {
+    transform: translateY(-5px);
+    z-index: 10;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+}
+
+/* 1. 數量標籤 (圓形徽章) - 修正那個黑色直條問題 */
+.card-count-tag {
+    position: absolute;
+    top: -5px;   /* 往上凸出一點 */
+    right: -5px; /* 往右凸出一點 */
+    width: 24px;
+    height: 24px;
+    background: #ffd700; /* 金色背景 */
+    color: #000;
+    border: 2px solid #222;
+    border-radius: 50%; /* 變成正圓形 */
+    font-size: 0.75rem;
+    font-weight: 900;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 20; /* 確保在最上層 */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+/* 2. 上方資訊 (屬性 + 稀有度) */
+.card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.card-attr { font-size: 1.2rem; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5)); }
+.card-rarity { 
+    font-size: 0.65rem; 
+    font-weight: bold; 
+    padding: 1px 6px; 
+    border-radius: 4px; 
+    background: rgba(0,0,0,0.3);
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+    z-index: 2;
+}
+
+/* 3. 中間 (圖示 + 名字) */
+.card-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 5px 0;
+}
+.card-main-icon { font-size: 2.8rem; margin-bottom: 5px; }
+.card-name {
+    color: #eee;
+    font-size: 0.9rem; /* 字體適中 */
+    font-weight: bold;
+    text-shadow: 0 2px 4px #000;
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* 4. 下方數據 (攻擊 + 血量) - 修正擠在一起的問題 */
+.card-stats {
+    display: flex;
+    justify-content: space-between; /* 左右撐開 */
+    align-items: center;
+    background: rgba(0, 0, 0, 0.5); /* 半透明黑底 */
+    border-radius: 6px;
+    padding: 4px 6px;
+    margin-top: 5px;
+}
+.stat-box {
+    display: flex;
+    align-items: center;
+    gap: 4px; /* 圖示跟數字的距離 */
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem; /* 字體縮小，避免爆開 */
+    font-weight: bold;
+}
+.atk-val { color: #ff6b6b; }
+.hp-val { color: #51cf66; }
+
+/* 隊伍遮罩 */
+.char-card.in-team::after {
+    content: 'IN TEAM';
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex; justify-content: center; align-items: center;
+    color: white; font-weight: bold; font-family: 'Orbitron';
+    border-radius: 10px;
+    z-index: 15;
+    border: 2px solid rgba(255,255,255,0.3);
 }
 .char-card:active { transform: scale(0.95); }
 
@@ -221,53 +331,128 @@ body::before {
 .char-grid::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
 .char-grid::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
 
+/* css/style.css - 隱藏捲軸專用 */
+
+.inventory-container {
+    /* Firefox */
+    scrollbar-width: none; 
+    /* IE, Edge */
+    -ms-overflow-style: none;  
+}
+
+/* Chrome, Safari, Opera */
+.inventory-container::-webkit-scrollbar {
+    display: none;
+}
 /* =========================================
-   6. 手機版 RWD (Mobile)
+   6. 手機版 RWD (Mobile) - 完整修正版
    ========================================= */
 @media (max-width: 768px) {
+    
+    /* --- A. 底部導航列 (Sidebar變Bottom Bar) --- */
     .sidebar {
         position: fixed !important; bottom: 0 !important; left: 0 !important; top: auto !important;
         width: 100% !important; height: 70px !important;
         display: flex !important; flex-direction: row !important;
         justify-content: space-evenly !important; align-items: center !important;
-        background: rgba(18, 18, 28, 0.9) !important; backdrop-filter: blur(10px) !important;
+        background: rgba(18, 18, 28, 0.95) !important; /*稍微深一點比較清楚*/
+        backdrop-filter: blur(10px) !important;
         border-top: 1px solid rgba(255,255,255,0.1) !important;
         box-shadow: 0 -4px 15px rgba(0,0,0,0.4) !important;
         z-index: 999999 !important; padding: 0 !important; margin: 0 !important;
     }
-    .sidebar .logo, .sidebar .user-profile { display: none !important; }
-    .sidebar > div, .sidebar > ul {
+    /* 隱藏電腦版才需要的頭像與 Logo */
+    .sidebar .logo, .sidebar .user-profile, .sidebar .branding { display: none !important; }
+    
+    /* 強制讓選單項目橫向排列 */
+    .sidebar > div, .sidebar > ul, .menu-items {
         display: flex !important; flex-direction: row !important; width: 100% !important;
         height: 100% !important; justify-content: space-evenly !important; align-items: center !important;
         margin: 0 !important; padding: 0 !important; list-style: none !important;
     }
+    /* 按鈕樣式 */
     .sidebar button, .sidebar .nav-btn, .sidebar a {
         flex: 1 !important; height: 100% !important; border: none !important; background: transparent !important;
         display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important;
         padding: 0 !important; margin: 0 !important; text-decoration: none !important;
+        color: #888 !important; /* 預設顏色 */
     }
+    /* 選中狀態高亮 */
+    .sidebar button.active, .sidebar button:active {
+        color: #d8b4fe !important;
+        background: radial-gradient(circle, rgba(216, 180, 254, 0.15) 0%, transparent 70%) !important;
+    }
+
     .sidebar i, .sidebar svg {
-        font-size: 22px !important; display: block !important; margin: 0 !important; padding: 0 !important;
-        line-height: 1 !important; margin-bottom: 5px !important; color: #d8b4fe !important;
-        text-shadow: 0 0 8px rgba(216, 180, 254, 0.4) !important;
+        font-size: 20px !important; margin-bottom: 4px !important; 
+        color: inherit !important; /* 跟隨文字顏色 */
     }
     .sidebar span {
-        font-size: 11px !important; display: block !important; margin: 0 !important; padding: 0 !important;
-        line-height: 1.1 !important; color: rgba(255,255,255,0.7) !important;
+        font-size: 10px !important; transform: scale(0.9); /* 讓字更小一點 */
     }
 
+    /* --- B. 主內容區調整 --- */
     .main-content, .game-area {
-        margin-left: 0 !important; width: 100% !important; padding: 15px !important;
-        padding-bottom: 120px !important; box-sizing: border-box !important;
+        margin-left: 0 !important; width: 100% !important; 
+        padding: 10px !important;
+        padding-bottom: 100px !important; /* 留給底部導航的空間 */
+        box-sizing: border-box !important;
     }
-    body { padding-bottom: 80px !important; }
+    body { padding-bottom: 0 !important; overflow: hidden; } /* 防止Body雙重捲軸 */
 
-    /* 手機版背包修正：一排3個 */
+    /* --- C. 背包與網格系統 (核心修正) --- */
+    
+    /* 1. 容器設定：隱藏捲軸但可滑動 */
+    .inventory-container {
+        padding: 10px 10px 80px 10px !important; /* 底部多留白以免被導航擋住 */
+        width: 100% !important;
+        box-sizing: border-box !important;
+        /* 隱藏捲軸語法 */
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none;  /* IE */
+    }
+    .inventory-container::-webkit-scrollbar { 
+        display: none; /* Chrome/Safari */
+    }
+
+    /* 2. 網格設定：強制 3 欄 */
     .char-grid {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important; 
+        gap: 8px !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    /* 3. 卡片微調 */
+    .char-card {
+        width: 100%;
+        aspect-ratio: 3/4.2;
+    }
+    /* ★★★ 新增：手機版字體縮小，避免爆版 ★★★ */
+    .card-name { font-size: 0.75rem !important; }
+    .card-attr { font-size: 1rem !important; }
+    .card-main-icon { font-size: 2rem !important; }
+    .stat-box { font-size: 0.6rem !important; gap: 2px !important; }
+
+    /* --- D. 隊伍欄位微調 --- */
+    .team-section { padding: 10px 5px !important; }
+    .team-row {
+        gap: 5px;
+        padding: 0 5px;
+    }
+    /* 格子邊框變細，比較不佔空間 */
+    .team-slot {
+        border-width: 1px !important;
+        border-radius: 6px !important;
+        font-size: 0.7rem !important;
+    }
+
+    /* --- E. 抽卡結果視窗 (也改成3欄) --- */
+    .result-grid {
         grid-template-columns: repeat(3, 1fr) !important;
         gap: 8px !important;
     }
-    .result-grid { grid-template-columns: repeat(3, 1fr) !important; }
 }
 /* =========================================
    🖥️ 電腦版顯示修正 (Desktop Force Fix)
@@ -389,4 +574,46 @@ body::before {
     .team-row {
         gap: 8px;
     }
+}
+.card-count-tag {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: rgba(0, 0, 0, 0.7);
+    color: var(--gold);
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    z-index: 2;
+}
+/* css/style.css - 排序按鈕美化 */
+
+.sort-btn {
+    background: rgba(0, 0, 0, 0.6);   /* 半透明黑底 */
+    border: 1px solid #ffd700;        /* 金色邊框 */
+    color: #ffd700;                   /* 金色文字 */
+    padding: 6px 15px;
+    border-radius: 20px;              /* 圓角 */
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 5px rgba(255, 215, 0, 0.2);
+}
+
+.sort-btn:hover {
+    background: #ffd700;              /* 滑鼠移過去變全金 */
+    color: #000;                      /* 文字變黑 */
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.6); /* 發光 */
+    transform: translateY(-2px);
+}
+
+.sort-btn:active {
+    transform: scale(0.95);
 }
