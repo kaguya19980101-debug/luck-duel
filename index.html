@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LUCK DUEL - Good Luck</title>
     <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body>
 
     <div id="login-screen">
@@ -36,11 +40,11 @@
                 <button class="active" onclick="switchView('lobby-view', this)">
                     <i class="fas fa-gamepad"></i> 對戰大廳
                 </button>
-                
+
                 <button onclick="switchView('char-view', this)">
                     <i class="fas fa-user-astronaut"></i> 我的角色
                 </button>
-                
+
                 <button onclick="switchView('summon-view', this)">
                     <i class="fas fa-meteor"></i> 角色召喚
                 </button>
@@ -54,101 +58,106 @@
                 </button>
             </div>
         </nav>
-    <main class="game-area">
-    <div class="game-frame">
-        
-        <div id="lobby-view" style="text-align: center; width: 100%;">
-            <h2 style="color:#eee; margin-bottom: 20px; font-weight:bold;">準備好迎接運氣決鬥了嗎？</h2>
-            <button id="find-match-btn" style="
+        <main class="game-area">
+            <div class="game-frame">
+
+                <div id="lobby-view" style="text-align: center; width: 100%;">
+                    <h2 style="color:#eee; margin-bottom: 20px; font-weight:bold;">準備好迎接運氣決鬥了嗎？</h2>
+                    <button id="find-match-btn" style="
                 padding: 15px 40px; font-size: 1.5rem;
                 background: linear-gradient(45deg, #ff00cc, #3333ff);
                 color: white; border: none; border-radius: 50px; cursor: pointer;
                 font-family: 'Orbitron'; box-shadow: 0 0 20px rgba(255, 0, 204, 0.4);
                 transition: 0.3s;">
-                START BATTLE
-            </button>
-            <p id="match-status" style="margin-top: 20px; color: #888; height: 20px;"></p>
-        </div>
-
-        <div id="char-view" style="display: none; width: 100%; height: 100%; flex-direction: column;">
-            <div class="team-section">
-                <h2 style="color:white; text-align:center; margin-bottom:15px; font-family:'Orbitron'; letter-spacing:2px;">
-                    MY TEAM <span style="font-size:0.8rem; color:#aaa;">(5/5)</span>
-                </h2>
-                <div class="team-row">
-                    <div class="team-slot" onclick="handleTeamSlotClick(0)" id="team-slot-0"></div>
-                    <div class="team-slot" onclick="handleTeamSlotClick(1)" id="team-slot-1"></div>
-                    <div class="team-slot" onclick="handleTeamSlotClick(2)" id="team-slot-2"></div>
-                    <div class="team-slot" onclick="handleTeamSlotClick(3)" id="team-slot-3"></div>
-                    <div class="team-slot" onclick="handleTeamSlotClick(4)" id="team-slot-4"></div>
+                        START BATTLE
+                    </button>
+                    <p id="match-status" style="margin-top: 20px; color: #888; height: 20px;"></p>
                 </div>
-            </div> <div class="inventory-container">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 class="inventory-title" style="margin: 0;">MY CARDS</h3>
-                    <button onclick="toggleSort()" class="sort-btn">
-                        <i class="fas fa-sort"></i> 
-                        <span id="sort-btn-text">排序: 時間</span>
-                    </button>         
-                </div>
-                <div id="inventory-grid" class="char-grid"></div>
-            </div>
-        </div>
 
-        <div id="summon-view" style="display: none; width: 100%;">
-            <div class="summon-header">
-                <h2 class="glow-text">✨ 命運召喚 ✨</h2>
-                <div class="coin-display">
-                    <i class="fas fa-coins coin-icon"></i>
-                    <span id="user-coins">---</span>
+                <div id="char-view" style="display: none; width: 100%; height: 100%; flex-direction: column;">
+                    <div class="team-section">
+                        <h2
+                            style="color:white; text-align:center; margin-bottom:15px; font-family:'Orbitron'; letter-spacing:2px;">
+                            MY TEAM <span style="font-size:0.8rem; color:#aaa;">(5/5)</span>
+                        </h2>
+                        <div class="team-row">
+                            <div class="team-slot" onclick="handleTeamSlotClick(0)" id="team-slot-0"></div>
+                            <div class="team-slot" onclick="handleTeamSlotClick(1)" id="team-slot-1"></div>
+                            <div class="team-slot" onclick="handleTeamSlotClick(2)" id="team-slot-2"></div>
+                            <div class="team-slot" onclick="handleTeamSlotClick(3)" id="team-slot-3"></div>
+                            <div class="team-slot" onclick="handleTeamSlotClick(4)" id="team-slot-4"></div>
+                        </div>
+                    </div>
+                    <div class="inventory-container">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 class="inventory-title" style="margin: 0;">MY CARDS</h3>
+                            <button onclick="toggleSort()" class="sort-btn">
+                                <i class="fas fa-sort"></i>
+                                <span id="sort-btn-text">排序: 時間</span>
+                            </button>
+                        </div>
+                        <div id="inventory-grid" class="char-grid"></div>
+                    </div>
                 </div>
-            </div>
-            <div class="gacha-machine">
-                <div id="gacha-stage" class="gacha-stage">
-                    <div class="placeholder-icon">?</div>
+
+                <div id="summon-view" style="display: none; width: 100%;">
+                    <div class="summon-header">
+                        <h2 class="glow-text">✨ 命運召喚 ✨</h2>
+                        <div class="coin-display">
+                            <i class="fas fa-coins coin-icon"></i>
+                            <span id="user-coins">---</span>
+                        </div>
+                    </div>
+                    <div class="gacha-machine">
+                        <div id="gacha-stage" class="gacha-stage">
+                            <div class="placeholder-icon">?</div>
+                        </div>
+                    </div>
+                    <div class="summon-actions">
+                        <button class="summon-btn btn-single" onclick="handleSummon(1)">
+                            <span class="btn-title">單次召喚</span>
+                            <span class="btn-cost"><i class="fas fa-coins"></i> 100</span>
+                        </button>
+                        <button class="summon-btn btn-multi" onclick="handleSummon(10)">
+                            <span class="btn-title">十連召喚</span>
+                            <span class="btn-cost"><i class="fas fa-coins"></i> 1000</span>
+                            <div class="tag-bonus">必中 SR!</div>
+                        </button>
+                    </div>
+                    <div id="gacha-result-overlay" class="result-overlay" style="display: none;">
+                        <h3 style="color:white; margin-bottom:20px;">召喚結果</h3>
+                        <div id="result-grid" class="result-grid"></div>
+                        <button class="close-btn" onclick="closeGachaResult()">確認</button>
+                    </div>
                 </div>
-            </div>
-            <div class="summon-actions">
-                <button class="summon-btn btn-single" onclick="handleSummon(1)">
-                    <span class="btn-title">單次召喚</span>
-                    <span class="btn-cost"><i class="fas fa-coins"></i> 100</span>
-                </button>
-                <button class="summon-btn btn-multi" onclick="handleSummon(10)">
-                    <span class="btn-title">十連召喚</span>
-                    <span class="btn-cost"><i class="fas fa-coins"></i> 1000</span>
-                    <div class="tag-bonus">必中 SR!</div>
-                </button>
-            </div>
-            <div id="gacha-result-overlay" class="result-overlay" style="display: none;">
-                <h3 style="color:white; margin-bottom:20px;">召喚結果</h3>
-                <div id="result-grid" class="result-grid"></div>
-                <button class="close-btn" onclick="closeGachaResult()">確認</button>
-            </div>
-        </div>
 
-        <div id="history-view" style="display: none; text-align: center;">
-            <h2 style="color:white;">HISTORY</h2>
-        </div>
+                <div id="history-view" style="display: none; text-align: center;">
+                    <h2 style="color:white;">HISTORY</h2>
+                </div>
 
-    </div> </main>
+            </div>
+        </main>
     </div>
-<script>
-    // 簡單的頁面切換功能
-    function switchView(viewId, btn) {
-        // 1. 隱藏所有頁面
-        document.getElementById('lobby-view').style.display = 'none';
-        document.getElementById('char-view').style.display = 'none';
-        document.getElementById('summon-view').style.display = 'none';
-        document.getElementById('history-view').style.display = 'none';
+    <script>
+        // 簡單的頁面切換功能
+        function switchView(viewId, btn) {
+            // 1. 隱藏所有頁面
+            document.getElementById('lobby-view').style.display = 'none';
+            document.getElementById('char-view').style.display = 'none';
+            document.getElementById('summon-view').style.display = 'none';
+            document.getElementById('history-view').style.display = 'none';
 
-        // 2. 顯示選到的頁面
-        const target = document.getElementById(viewId);
-        if(target) target.style.display = 'block';
+            // 2. 顯示選到的頁面
+            const target = document.getElementById(viewId);
+            if (target) target.style.display = 'block';
 
-        // 3. 按鈕變色
-        document.querySelectorAll('.menu-items button').forEach(b => b.classList.remove('active'));
-        if(btn) btn.classList.add('active');
-    }
-</script>
+            // 3. 按鈕變色
+            document.querySelectorAll('.menu-items button').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+        }
+    </script>
     <script type="module" src="js/main.js"></script>
 </body>
+
 </html>

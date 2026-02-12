@@ -16,13 +16,13 @@ let myInventoryData = {};
 let currentSortMode = 'date'; // 預設依時間排序 ('date' 或 'id')
 // 定義屬性外觀 (圖示與顏色)
 const ATTR_CONFIG = {
-    'fire':  { icon: '🔥', color: '#ff5555', label: '火' },
+    'fire': { icon: '🔥', color: '#ff5555', label: '火' },
     'water': { icon: '💧', color: '#3b82f6', label: '水' },
     'grass': { icon: '🌿', color: '#22c55e', label: '草' }, // 注意：資料庫請用 'grass'
     'light': { icon: '✨', color: '#fbbf24', label: '光' },
-    'dark':  { icon: '🟣', color: '#a855f7', label: '暗' },
+    'dark': { icon: '🟣', color: '#a855f7', label: '暗' },
     // 相容舊資料 (如果您舊資料是用 wood)
-    'wood':  { icon: '🌿', color: '#22c55e', label: '草' }
+    'wood': { icon: '🌿', color: '#22c55e', label: '草' }
 };
 // 輔助函式：取得屬性樣式
 function getAttrStyle(attr) {
@@ -40,7 +40,7 @@ onAuthStateChanged(auth, async (user) => {
         UI.showAppInterface(user);
         document.getElementById('lobby-view').style.display = 'block';
         document.getElementById('char-view').style.display = 'none';
-        document.getElementById('summon-view').style.display = 'none';        
+        document.getElementById('summon-view').style.display = 'none';
         // 登入後，馬上啟動這兩個功能
         await initUserData(user);  // 1. 初始化金幣
         loadMyInventory(user);     // 2. 讀取背包與隊伍
@@ -64,10 +64,10 @@ onAuthStateChanged(auth, async (user) => {
 
 // 綁定登入/登出按鈕
 const loginBtn = document.getElementById('google-login-btn');
-if(loginBtn) loginBtn.addEventListener('click', AuthUser.loginWithGoogle);
+if (loginBtn) loginBtn.addEventListener('click', AuthUser.loginWithGoogle);
 
 const logoutBtn = document.getElementById('logout-btn');
-if(logoutBtn) logoutBtn.addEventListener('click', AuthUser.logoutUser);
+if (logoutBtn) logoutBtn.addEventListener('click', AuthUser.logoutUser);
 
 
 // ==========================================
@@ -88,8 +88,8 @@ function loadMyInventory(user) {
             currentTeam = teamSnap.val() || [null, null, null, null, null];
             // 防呆: 確保一定是5格
             if (!Array.isArray(currentTeam)) currentTeam = [null, null, null, null, null];
-            while(currentTeam.length < 5) currentTeam.push(null);
-            
+            while (currentTeam.length < 5) currentTeam.push(null);
+
             console.log("系統: 隊伍資料更新", currentTeam);
 
             // C. 兩個都有了，開始畫畫面
@@ -111,11 +111,11 @@ function renderTeamDisplay() {
             const attrStyle = getAttrStyle(char.attribute);
 
             // 設定稀有度顏色
-            let borderColor = '#666'; 
+            let borderColor = '#666';
             let glow = '';
-            if(char.rarity === 'SR') borderColor = '#a855f7';
-            if(char.rarity === 'SSR') { 
-                borderColor = '#ffd700'; 
+            if (char.rarity === 'SR') borderColor = '#a855f7';
+            if (char.rarity === 'SSR') {
+                borderColor = '#ffd700';
                 glow = 'box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);';
             }
 
@@ -131,12 +131,12 @@ function renderTeamDisplay() {
                     ${char.rarity}
                 </div>
             `;
-            
+
             // 設定邊框與背景
             slotEl.style.borderColor = borderColor;
             slotEl.style.background = 'rgba(0,0,0,0.5)';
             if (glow) slotEl.style.cssText += glow;
-            
+
         } else {
             // 如果是空格
             slotEl.innerHTML = '<span style="color:#444; font-size:1.5rem;">+</span>';
@@ -152,7 +152,7 @@ function renderInventoryGrid() {
     const grid = document.getElementById('inventory-grid');
     // 獲取包裹格子的外層容器，用來處理灰底問題
     const container = document.querySelector('.inventory-container');
-    
+
     if (!grid || !container) return;
 
     grid.innerHTML = '';
@@ -169,8 +169,8 @@ function renderInventoryGrid() {
         grid.style.flexDirection = 'column';
         grid.style.justifyContent = 'center';
         grid.style.alignItems = 'center';
-        grid.style.minHeight = '200px'; 
-        
+        grid.style.minHeight = '200px';
+
         grid.innerHTML = `
             <div style="color: rgb(250, 191, 27); font-size: 1rem; margin-top: 5px; white-space: nowrap;">去「角色召喚」尋找你的第一位夥伴吧！</div>
         `;
@@ -179,15 +179,15 @@ function renderInventoryGrid() {
 
     // --- 情況 B：背包有卡片 ---
     // 1. 恢復容器原本該有的設計感樣式（這裡依照你 CSS 的設定）
-    container.style.background = 'rgba(255, 255, 255, 0.03)'; 
+    container.style.background = 'rgba(255, 255, 255, 0.03)';
     container.style.boxShadow = ''; // 恢復 CSS 預設
-    
+
     // 2. 恢復 Grid 的排列模式
     grid.style.display = 'grid';
     grid.style.minHeight = 'auto';
 
     const cards = Object.entries(myInventoryData);
-    
+
     // 排序邏輯保持不變
     cards.sort((a, b) => {
         if (typeof currentSortMode !== 'undefined' && currentSortMode === 'id') {
@@ -202,28 +202,28 @@ function renderInventoryGrid() {
 
         const cardEl = document.createElement('div');
         cardEl.className = 'char-card';
-        
+
         if (typeof currentTeam !== 'undefined' && currentTeam.includes(key)) {
             cardEl.classList.add('in-team');
         }
 
-        cardEl.onclick = function() {
-            if(window.addToTeam) window.addToTeam(key);
+        cardEl.onclick = function () {
+            if (window.addToTeam) window.addToTeam(key);
         };
 
         const attrKey = (char.attribute || '').toLowerCase();
         const attrData = ATTR_CONFIG[attrKey] || { icon: '❓', color: '#999', label: '?' };
-        
-        let rarityColor = '#ccc';
-        let borderColor = '#444'; 
-        if(char.rarity === 'SR') { rarityColor = '#a855f7'; borderColor = '#a855f7'; }
-        if(char.rarity === 'SSR') { rarityColor = '#ffd700'; borderColor = '#ffd700'; }
 
-        if(attrKey === 'light') borderColor = '#fbbf24';
-        if(attrKey === 'dark') borderColor = '#a855f7';
+        let rarityColor = '#ccc';
+        let borderColor = '#444';
+        if (char.rarity === 'SR') { rarityColor = '#a855f7'; borderColor = '#a855f7'; }
+        if (char.rarity === 'SSR') { rarityColor = '#ffd700'; borderColor = '#ffd700'; }
+
+        if (attrKey === 'light') borderColor = '#fbbf24';
+        if (attrKey === 'dark') borderColor = '#a855f7';
 
         cardEl.style.border = `1px solid ${borderColor}`;
-        if(char.rarity === 'SSR') {
+        if (char.rarity === 'SSR') {
             cardEl.style.boxShadow = `0 0 8px ${borderColor}40`;
         }
 
@@ -253,7 +253,7 @@ function renderInventoryGrid() {
     });
 }
 // 切換排序模式
-window.toggleSort = function() {
+window.toggleSort = function () {
     if (currentSortMode === 'date') {
         currentSortMode = 'id';
         document.getElementById('sort-btn-text').innerText = "排序: 代號";
@@ -269,7 +269,7 @@ window.toggleSort = function() {
 // ==========================================
 
 // 動作 A: 加入隊伍
-window.addToTeam = async function(cardId) {
+window.addToTeam = async function (cardId) {
     const user = auth.currentUser;
     if (!user) return alert("請先登入");
 
@@ -280,24 +280,24 @@ window.addToTeam = async function(cardId) {
 
     if (existingIndex !== -1) {
         // ★★★ 情況 A: 已經在隊伍裡 -> 移除並替補 (Remove & Shift) ★★★
-        
+
         // 邏輯：留下「不是 null」且「不是這張卡」的隊員
         let newTeam = currentTeam.filter(id => id !== null && id !== cardId);
-        
+
         // 補滿 5 個位置 (補 null)
         while (newTeam.length < 5) {
             newTeam.push(null);
         }
-        
+
         currentTeam = newTeam;
         console.log("已移除成員，隊伍重組:", currentTeam);
 
     } else {
         // ★★★ 情況 B: 不在隊伍裡 -> 加入 (Add) ★★★
-        
+
         // 找第一個空格
         const emptyIndex = currentTeam.indexOf(null);
-        
+
         if (emptyIndex === -1) {
             return alert("隊伍已滿！請先移除成員。");
         }
@@ -311,14 +311,14 @@ window.addToTeam = async function(cardId) {
     try {
         await update(ref(db, `users/${user.uid}`), { team: currentTeam });
         // 畫面會因為 onValue 自動更新，不需要手動呼叫 render
-    } catch(e) {
+    } catch (e) {
         console.error("存檔失敗:", e);
     }
 }
 
 // 動作 B: 移除隊伍
-window.handleTeamSlotClick = async function(index) {
-// 1. 取得這個位置目前的卡片 ID
+window.handleTeamSlotClick = async function (index) {
+    // 1. 取得這個位置目前的卡片 ID
     const cardId = currentTeam[index];
 
     // 2. 如果這個位置有卡片，就直接呼叫 addToTeam
@@ -334,7 +334,7 @@ window.handleTeamSlotClick = async function(index) {
 }
 
 // 動作 C: 抽卡 (完整版)
-window.handleSummon = async function(count) {
+window.handleSummon = async function (count) {
     const user = auth.currentUser;
     if (!user) return alert("請先登入");
 
@@ -353,9 +353,9 @@ window.handleSummon = async function(count) {
         }
 
         // 2. 抽卡邏輯 (機率控制核心)
-        const displayCards = []; 
-        const storageMap = {};   
-        const seenInThisSession = new Set(); 
+        const displayCards = [];
+        const storageMap = {};
+        const seenInThisSession = new Set();
 
         for (let i = 0; i < count; i++) {
             // --- 機率判定開始 ---
@@ -372,7 +372,7 @@ window.handleSummon = async function(count) {
 
             // 從全角色列表中，篩選出符合該稀有度的角色
             const pool = CHARACTERS.filter(c => c.rarity === targetRarity);
-            
+
             // 防呆：如果該稀有度沒卡片 (例如資料庫填錯)，就從全部隨機抽
             const finalPool = pool.length > 0 ? pool : CHARACTERS;
 
@@ -382,7 +382,7 @@ window.handleSummon = async function(count) {
             // --- 機率判定結束 ---
 
             // A. 處理顯示資料
-            const isNewInBag = !myInventoryData[cardId]; 
+            const isNewInBag = !myInventoryData[cardId];
             const isFirstTimeSeen = !seenInThisSession.has(cardId);
             const showNewTag = isNewInBag && isFirstTimeSeen;
 
@@ -445,16 +445,16 @@ async function initUserData(user) {
     }
     // 顯示金幣
     const el = document.getElementById('user-coins');
-    if(el && s.exists()) el.innerText = s.val().coins || 0;
+    if (el && s.exists()) el.innerText = s.val().coins || 0;
 }
 
 function setupMatchButton(user) {
     const btn = document.getElementById('find-match-btn');
     let isSearching = false;
-    if(!btn) return;
-    
+    if (!btn) return;
+
     btn.onclick = async () => {
-        if(!isSearching) {
+        if (!isSearching) {
             isSearching = true;
             btn.innerText = "CANCEL";
             btn.style.background = "red";
@@ -472,32 +472,34 @@ function setupMatchButton(user) {
 // 1. 更新金幣顯示
 function updateCoinDisplay(amount) {
     const el = document.getElementById('user-coins');
-    if(el) el.innerText = amount;
+    if (el) el.innerText = amount;
 }
 
 // 2. 顯示抽卡結果視窗 (Overlay)
-window.showSummonResults = function(cards) {
+window.showSummonResults = function (cards) {
     // 1. 使用您原本 HTML 裡的 ID
     const overlay = document.getElementById('gacha-result-overlay');
     const grid = document.getElementById('result-grid');
-    
+
     // 防呆
-    if(!overlay || !grid) {
+    if (!overlay || !grid) {
         let msg = "獲得角色:\n";
         cards.forEach(c => msg += `- ${c.name}\n`);
         return alert(msg);
     }
 
+    // 手機版優化：確保開啟時 body 不會捲動，按鈕才不會跑位
+    document.body.style.overflow = 'hidden';
     grid.innerHTML = ''; // 清空舊的
     overlay.style.display = 'flex'; // 顯示遮罩
 
     // 2. 一張一張產生卡片
     cards.forEach((char, index) => {
         const cardEl = document.createElement('div');
-        
+
         // ★ 重點：使用 'char-card' 類別，這樣才會跟背包長得一模一樣
-        cardEl.className = 'char-card'; 
-        
+        cardEl.className = 'char-card';
+
         // 加入動畫效果 (預設隱藏，透過動畫顯示)
         cardEl.style.opacity = '0';
         cardEl.style.animation = `popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards`;
@@ -511,21 +513,21 @@ window.showSummonResults = function(cards) {
         // B. 設定顏色與邊框
         let rarityColor = '#ccc';
         let borderColor = '#444';
-        
-        if(char.rarity === 'SR') { rarityColor = '#a855f7'; borderColor = '#a855f7'; }
-        if(char.rarity === 'SSR') { rarityColor = '#ffd700'; borderColor = '#ffd700'; }
+
+        if (char.rarity === 'SR') { rarityColor = '#a855f7'; borderColor = '#a855f7'; }
+        if (char.rarity === 'SSR') { rarityColor = '#ffd700'; borderColor = '#ffd700'; }
 
         // 光暗屬性特殊邊框
-        if(char.attribute === 'light') borderColor = '#fbbf24';
-        if(char.attribute === 'dark') borderColor = '#a855f7';
+        if (char.attribute === 'light') borderColor = '#fbbf24';
+        if (char.attribute === 'dark') borderColor = '#a855f7';
 
         // C. NEW 標籤 (如果是新卡)
-        const newTag = char.isNew ? 
+        const newTag = char.isNew ?
             `<div style="position:absolute; top:35%; left:-10px; background:#ff4757; color:white; font-size:0.6rem; padding:2px 8px; transform:rotate(-15deg); z-index:10; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.5); border:1px solid white;">NEW</div>` : '';
 
         // D. 設定樣式
         cardEl.style.border = `1px solid ${borderColor}`;
-        if(char.rarity === 'SSR') {
+        if (char.rarity === 'SSR') {
             cardEl.style.boxShadow = `0 0 15px ${borderColor}60`;
         }
 
@@ -558,9 +560,10 @@ window.showSummonResults = function(cards) {
 }
 
 // 3. 關閉結果視窗 (綁定給按鈕用)
-window.closeGachaResult = function() {
+window.closeGachaResult = function () {
     const overlay = document.getElementById('gacha-result-overlay');
-    if(overlay) overlay.style.display = 'none';
+    if (overlay) overlay.style.display = 'none';
+    document.body.style.overflow = 'auto'; // 還原捲動
 }
 // ==========================================
 // 🛠️ 開發者測試工具 (Dev Tools)
@@ -569,12 +572,12 @@ window.closeGachaResult = function() {
 
 // 1. 給自己加錢
 // 用法: 在 Console 輸入 test_addCoins(50000)
-window.test_addCoins = async function(amount) {
+window.test_addCoins = async function (amount) {
     const user = auth.currentUser;
     if (!user) return console.error("❌ 請先登入！");
 
     const userRef = ref(db, `users/${user.uid}`);
-    
+
     // 先讀取現在有多少錢
     const snapshot = await get(userRef);
     const currentCoins = snapshot.val()?.coins || 0;
@@ -586,7 +589,7 @@ window.test_addCoins = async function(amount) {
 
 // 2. 清空我的所有卡片 (重置背包)
 // 用法: 在 Console 輸入 test_clearCards()
-window.test_clearCards = async function() {
+window.test_clearCards = async function () {
     const user = auth.currentUser;
     if (!user) return console.error("❌ 請先登入！");
 
@@ -595,7 +598,7 @@ window.test_clearCards = async function() {
 
     // 直接移除 inventory 節點
     await remove(ref(db, `users/${user.uid}/inventory`));
-    
+
     // 也要順便清空隊伍，不然會出錯
     await remove(ref(db, `users/${user.uid}/team`));
 
@@ -604,7 +607,7 @@ window.test_clearCards = async function() {
 
 // 3. 刪除「特定一張」卡片
 // 用法: test_deleteCard("-Nzb123...")  <-- 括號裡放卡片的 ID
-window.test_deleteCard = async function(cardId) {
+window.test_deleteCard = async function (cardId) {
     const user = auth.currentUser;
     if (!user) return console.error("❌ 請先登入！");
 
@@ -618,7 +621,7 @@ window.test_deleteCard = async function(cardId) {
     const teamRef = ref(db, `users/${user.uid}/team`);
     const teamSnap = await get(teamRef);
     let currentTeam = teamSnap.val();
-    
+
     if (Array.isArray(currentTeam) && currentTeam.includes(cardId)) {
         // 把該位置變成 null
         currentTeam = currentTeam.map(id => id === cardId ? null : id);
@@ -638,9 +641,9 @@ console.log("🛠️ 測試工具已載入：輸入 test_addCoins(1000) 來加�
  */
 const TYPE_CHART = {
     'water': { 'fire': 1.5 },
-    'fire':  { 'grass': 1.5 },
-    'grass': { 'water': 1.5 }, 
-    'dark':  { 'light': 1.5 },
+    'fire': { 'grass': 1.5 },
+    'grass': { 'water': 1.5 },
+    'dark': { 'light': 1.5 },
     'light': { 'dark': 1.5 }
 };
 
@@ -650,9 +653,9 @@ const TYPE_CHART = {
  * @param {string} defAttr - 防禦者的屬性 (例如 'fire')
  * @returns {number} 倍率 (1.5 或 1.0)
  */
-window.getDamageMultiplier = function(atkAttr, defAttr) {
+window.getDamageMultiplier = function (atkAttr, defAttr) {
     if (!atkAttr || !defAttr) return 1.0;
-    
+
     // 轉小寫避免大小寫錯誤
     const a = atkAttr.toLowerCase();
     const d = defAttr.toLowerCase();
@@ -661,7 +664,7 @@ window.getDamageMultiplier = function(atkAttr, defAttr) {
     if (TYPE_CHART[a] && TYPE_CHART[a][d]) {
         return TYPE_CHART[a][d];
     }
-    
+
     // 如果表中沒定義，預設為 1.0 (無加成)
     // 註：通常RPG中被剋制會變 0.5 (例如火打水)，如果您需要這個設定我們可以之後加上
     return 1.0;
@@ -669,7 +672,7 @@ window.getDamageMultiplier = function(atkAttr, defAttr) {
 
 // === 測試工具 ===
 // 您可以在 Console 輸入 test_damage('water', 'fire') 來測試
-window.test_damage = function(a, d) {
+window.test_damage = function (a, d) {
     const multi = window.getDamageMultiplier(a, d);
     console.log(`[傷害測試] ${a} 攻擊 ${d} -> 倍率: x${multi}`);
     if (multi > 1) console.log("✨ 效果絕佳 (Super Effective)!");
