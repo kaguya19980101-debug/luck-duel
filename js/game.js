@@ -10,69 +10,72 @@ let selectedIndex = -1;
 let timerInterval = null;
 let isResolving = false; // 防止重複結算
 
-// 初始化
+// 初始化遊戲棋盤 (強制置中版)
 export function initGameBoard(gameId, role) {
     currentGameId = gameId;
-    currentRole = role; // 記住我是房主還是加入者
+    currentRole = role;
     myUid = auth.currentUser.uid;
     isResolving = false;
 
     const gameArea = document.querySelector('.game-frame');
 
-    // 1. UI 結構 (修復比例問題)
+    // ★★★ 介面重繪區 ★★★
     gameArea.innerHTML = `
-    <div id="game-hud" style="
-        display: flex;
-        flex-direction: column;     /* 垂直排列 */
-        align-items: center;        /* 水平置中 */
-        justify-content: center;
-        width: 100%;
-        margin-bottom: 15px;
-        position: relative;
-    ">
-        <div id="timer-box" style="
-            background: rgba(0, 0, 0, 0.6);
-            border: 2px solid #555;
-            border-radius: 20px;
-            padding: 5px 0;
-            width: 100px;           /* ★ 關鍵：固定寬度，防止數字跳動推擠 */
-            text-align: center;
-            margin-bottom: 8px;     /* 與下方文字的距離 */
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        <div id="game-hud" style="
+            display: flex;
+            flex-direction: column;      /* 關鍵：讓東西由上往下排 */
+            align-items: center;         /* 關鍵：讓東西左右置中 */
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 20px;
+            position: relative;
         ">
-            <span id="timer-text" style="
-                color: #ff4444; 
-                font-weight: bold; 
-                font-size: 1.5rem; 
-                font-family: 'Orbitron', monospace; /* 使用等寬字體 */
-                font-variant-numeric: tabular-nums; /* 強制數字等寬 */
-            ">30s</span>
-        </div>
+            <div id="timer-box" style="
+                background: rgba(0, 0, 0, 0.8);
+                border: 2px solid #555;
+                border-radius: 12px;
+                padding: 5px 0;
+                width: 120px;            /* 固定寬度，防止跳動 */
+                text-align: center;
+                margin-bottom: 10px;     /* 與下方文字的距離 */
+                box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+                z-index: 10;
+            ">
+                <span id="timer-text" style="
+                    color: #ff4444; 
+                    font-weight: bold; 
+                    font-size: 1.8rem; 
+                    font-family: monospace; /* 等寬字體 */
+                    letter-spacing: 2px;
+                ">30s</span>
+            </div>
 
-        <div id="turn-text" style="
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1rem;
-            font-weight: bold;
-            color: white;
-            text-shadow: 0 0 5px rgba(255,255,255,0.3);
-            height: 24px; /* 固定高度，防止文字變換時高度跳動 */
-        ">
-            等待同步...
+            <div id="turn-text" style="
+                font-family: sans-serif;
+                font-size: 1.1rem;
+                font-weight: bold;
+                color: white;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+                background: rgba(255,255,255,0.1);
+                padding: 4px 15px;
+                border-radius: 20px;
+            ">
+                等待同步...
+            </div>
         </div>
-    </div>
-    
-    <div style="width:100%; display:flex; justify-content:center;">
-        <div id="chess-board" style="
-            display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(6, 1fr);
-            gap: 4px; width: 100%; max-width: 450px; aspect-ratio: 5/6;
-            background: #2b2b2b; padding: 6px; border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        "></div>
-    </div>
-    
-    <div id="duel-modal" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:999; flex-direction:column; justify-content:center; align-items:center; color:white;">
+        
+        <div style="width:100%; display:flex; justify-content:center;">
+            <div id="chess-board" style="
+                display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(6, 1fr);
+                gap: 4px; width: 100%; max-width: 450px; aspect-ratio: 5/6;
+                background: #2b2b2b; padding: 6px; border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            "></div>
         </div>
-`;
+        
+        <div id="duel-modal" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:999; flex-direction:column; justify-content:center; align-items:center; color:white;">
+            </div>
+    `;
 
     // 綁定決鬥按鈕
     document.querySelectorAll('.rps-btn').forEach(btn => {
@@ -308,7 +311,50 @@ async function triggerDuel(attackerIdx, defenderIdx) {
         }
     });
 }
+// 1. 新增揭曉函式 (負責動畫)
+function revealDuelChoices(gameData) {
+    const modal = document.getElementById('duel-modal');
+    // 取得雙方出的拳
+    const p1Choice = gameData.duel.p1_choice;
+    const p2Choice = gameData.duel.p2_choice;
 
+    // 定義圖示
+    const icons = { 'rock': '✊', 'paper': '✋', 'scissors': '✌️' };
+
+    // 判斷我是 P1 還是 P2，來決定顯示位置 (左邊是我，右邊是對手)
+    const amIP1 = (currentRole === 'host');
+    const myMove = amIP1 ? p1Choice : p2Choice;
+    const oppMove = amIP1 ? p2Choice : p1Choice;
+
+    // 修改 Modal 內容為揭曉畫面
+    modal.innerHTML = `
+        <div style="display:flex; flex-direction:column; align-items:center; width:100%;">
+            <h1 style="color:#ff00cc; font-family:'Orbitron'; margin-bottom:20px; text-shadow:0 0 10px #ff00cc;">⚔️ 決鬥揭曉 ⚔️</h1>
+            
+            <div style="display:flex; justify-content:space-around; width:100%; align-items:center;">
+                <div style="text-align:center;">
+                    <div style="font-size:1.2rem; color:#4facfe; margin-bottom:10px;">YOU</div>
+                    <div class="move-icon bounce-in" style="font-size:5rem; filter:drop-shadow(0 0 15px #4facfe);">
+                        ${icons[myMove]}
+                    </div>
+                </div>
+
+                <div style="font-size:2rem; color:white; font-weight:bold; font-style:italic;">VS</div>
+
+                <div style="text-align:center;">
+                    <div style="font-size:1.2rem; color:#ff4444; margin-bottom:10px;">ENEMY</div>
+                    <div class="move-icon bounce-in" style="font-size:5rem; filter:drop-shadow(0 0 15px #ff4444); animation-delay:0.3s;">
+                        ${icons[oppMove]}
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top:30px; color:#ffd700; font-size:1.2rem; letter-spacing:2px;">
+                計算傷害中...
+            </div>
+        </div>
+    `;
+}
 function checkDuelState(gameData) {
     const modal = document.getElementById('duel-modal');
     if (!gameData.duel) {
@@ -488,51 +534,6 @@ async function resolveDuel(gameData) {
 
         // 3. 寫入 Firebase
         await update(ref(db, `games/${currentGameId}`), updates);
-    }
-
-    // 1. 新增揭曉函式 (負責動畫)
-    function revealDuelChoices(gameData) {
-        const modal = document.getElementById('duel-modal');
-        // 取得雙方出的拳
-        const p1Choice = gameData.duel.p1_choice;
-        const p2Choice = gameData.duel.p2_choice;
-
-        // 定義圖示
-        const icons = { 'rock': '✊', 'paper': '✋', 'scissors': '✌️' };
-
-        // 判斷我是 P1 還是 P2，來決定顯示位置 (左邊是我，右邊是對手)
-        const amIP1 = (currentRole === 'host');
-        const myMove = amIP1 ? p1Choice : p2Choice;
-        const oppMove = amIP1 ? p2Choice : p1Choice;
-
-        // 修改 Modal 內容為揭曉畫面
-        modal.innerHTML = `
-        <div style="display:flex; flex-direction:column; align-items:center; width:100%;">
-            <h1 style="color:#ff00cc; font-family:'Orbitron'; margin-bottom:20px; text-shadow:0 0 10px #ff00cc;">⚔️ 決鬥揭曉 ⚔️</h1>
-            
-            <div style="display:flex; justify-content:space-around; width:100%; align-items:center;">
-                <div style="text-align:center;">
-                    <div style="font-size:1.2rem; color:#4facfe; margin-bottom:10px;">YOU</div>
-                    <div class="move-icon bounce-in" style="font-size:5rem; filter:drop-shadow(0 0 15px #4facfe);">
-                        ${icons[myMove]}
-                    </div>
-                </div>
-
-                <div style="font-size:2rem; color:white; font-weight:bold; font-style:italic;">VS</div>
-
-                <div style="text-align:center;">
-                    <div style="font-size:1.2rem; color:#ff4444; margin-bottom:10px;">ENEMY</div>
-                    <div class="move-icon bounce-in" style="font-size:5rem; filter:drop-shadow(0 0 15px #ff4444); animation-delay:0.3s;">
-                        ${icons[oppMove]}
-                    </div>
-                </div>
-            </div>
-            
-            <div style="margin-top:30px; color:#ffd700; font-size:1.2rem; letter-spacing:2px;">
-                計算傷害中...
-            </div>
-        </div>
-    `;
     }
 
     // 寫入資料庫，並解除決鬥狀態 (null)
