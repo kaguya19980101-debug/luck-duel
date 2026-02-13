@@ -6,9 +6,8 @@ import { getRandomTeam } from "./data.js";
 // 狀態旗標：用來標記「現在是否正在排隊」，防止重複執行或誤判
 let isSearching = false;
 
-// 1. 尋找配對主函式
-export async function findMatch(user) {
-    // 如果已經在找了，就不要再執行，避免重複
+// 接收 myTeam 參數
+export async function findMatch(user, myTeam) { 
     if (isSearching) return;
     isSearching = true;
 
@@ -16,98 +15,74 @@ export async function findMatch(user) {
     const snapshot = await get(queueRef);
 
     if (snapshot.exists()) {
-        // --- 【有別人】 -> 我是加入者 (Joiner) ---
         const queueData = snapshot.val();
-        
-        // ★ 找出對手 (排除自己)
         const opponentId = Object.keys(queueData).find(id => id !== user.uid);
 
-        // 如果找不到別人 (代表只有自己在清單裡)，那就乖乖去排隊
         if (!opponentId) {
-            await joinQueue(user);
+            await joinQueue(user, myTeam); // 傳入隊伍
             return;
         }
 
+        // --- 【配對成功：我是 Joiner】 ---
+        const opponentData = queueData[opponentId]; // 取得對手的資料
+        const opponentTeam = opponentData.team;    // 取得對手的真實隊伍
+
         console.log(`配對成功！對手是: ${opponentId}`);
 
-        // 移除排隊單 (防止其他人又配到他)
-        // 建議先把兩個人都從 Queue 移掉，避免第三個人撞進來
         await remove(ref(db, `matchQueue/${opponentId}`));
         await remove(ref(db, `matchQueue/${user.uid}`));
 
-        // 建立房間 ID
-        const newGameId = `game_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        const newGameId = `game_${Date.now()}`;
         const gameRef = ref(db, `games/${newGameId}`);
 
-        // --- 初始化棋盤與角色 ---
-        // 1. 產生空白棋盤 (30格)
         let initialBoard = new Array(30).fill(null);
 
-        // 2. 幫雙方抽卡 (每人 5 隻)
-        const team1 = getRandomTeam(5); // 對手 (Host, P1)
-        const team2 = getRandomTeam(5); // 我 (Joiner, P2)
+        // ★ 關鍵：不再用 getRandomTeam，改用雙方的真實隊伍 ★
+        const team1 = opponentTeam; // 對手原本就存放在 Queue 裡的隊伍
+        const team2 = myTeam;       // 我剛剛傳進來的隊伍
 
-        // 3. 放置棋子
-        // Team1 (Host) 放在最上面一排 (0-4) - 紅隊
+        // 放置棋子 (邏輯不變，但資料來源變了)
         team1.forEach((char, index) => {
-            initialBoard[index] = { 
-                ...char, 
-                owner: opponentId, 
-                max_hp: char.hp, // 確保有 max_hp 供血條計算
-                team: "red" 
-            };
+            initialBoard[index] = { ...char, owner: opponentId, team: "red" };
         });
-
-        // Team2 (Joiner) 放在最下面一排 (25-29) - 藍隊
         team2.forEach((char, index) => {
-            initialBoard[25 + index] = { 
-                ...char, 
-                owner: user.uid, 
-                max_hp: char.hp,
-                team: "blue" 
-            };
+            initialBoard[25 + index] = { ...char, owner: user.uid, team: "blue" };
         });
 
-        // 4. 寫入 Firebase
         await set(gameRef, {
-            player1: opponentId, // Host
-            player2: user.uid,   // Joiner
+            player1: opponentId,
+            player2: user.uid,
             status: "playing",
-            turn: opponentId,    // 預設 Host 先攻
-            turn_start_time: Date.now(),
-            board: initialBoard, // 這裡寫入的是陣列
-            duel: null
+            board: initialBoard,
+            turn: opponentId
         });
 
-        // 5. 通知對方 (Host)
-        await set(ref(db, `matches/${opponentId}`), {
-            gameId: newGameId,
-            role: "host"
-        });
-        
-        // 6. 自己進入遊戲 (Joiner)
+        // 通知對方進入
+        await set(ref(db, `matches/${opponentId}`), { gameId: newGameId, role: "host" });
         enterGame(newGameId, "joiner");
 
     } else {
-        // --- 【沒人】 -> 我是開房者 (Host) ---
-        await joinQueue(user);
+        await joinQueue(user, myTeam); // 傳入隊伍
     }
 }
 
-// 2. 排隊函式
-async function joinQueue(user) {
-    console.log("加入排隊清單...");
+// 2. 修改 joinQueue 也要接收並儲存隊伍
+async function joinQueue(user, myTeam) {
+    // 如果傳進來的隊伍是空的或未定義，給一個空物件或報錯
     
+    if (!myTeam || myTeam.length === 0) {
+        console.error("嘗試加入排隊但隊伍資料為空");
+        return;
+    }
+
     const myQueueRef = ref(db, `matchQueue/${user.uid}`);
     
-    // 寫入排隊資料
     await set(myQueueRef, {
         username: user.displayName || "Unknown Warrior",
+        team: myTeam, // 現在確保這裡一定是有效的陣列
         timestamp: Date.now()
     });
 
-    // ★★★ 關鍵救命符：設定斷線自動刪除 ★★★
-    // 這一行是告訴伺服器：只要這個人連線一斷，馬上刪除這筆資料！
     onDisconnect(myQueueRef).remove();
 
     // 監聽有沒有人配對到我

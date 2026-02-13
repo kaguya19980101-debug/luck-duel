@@ -94,7 +94,7 @@
                             <h3 class="inventory-title" style="margin: 0;">MY CARDS</h3>
                             <button onclick="toggleSort()" class="sort-btn">
                                 <i class="fas fa-sort"></i>
-                                <span id="sort-btn-text">排序: 時間</span>
+                                <span id="sort-btn-text">排序: 代號</span>
                             </button>
                         </div>
                         <div id="inventory-grid" class="char-grid"></div>
@@ -155,6 +155,10 @@
             // 3. 按鈕變色
             document.querySelectorAll('.menu-items button').forEach(b => b.classList.remove('active'));
             if (btn) btn.classList.add('active');
+            // ★★★ 新增：進入大廳時檢查隊伍 ★★★
+            if (viewId === 'lobby-view') {
+                checkTeamStatus();
+            }
         }
     </script>
     <script type="module" src="js/main.js"></script>

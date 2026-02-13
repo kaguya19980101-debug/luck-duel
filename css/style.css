@@ -1024,24 +1024,19 @@ body::before {
 /* css/style.css - 排序按鈕美化 */
 
 .sort-btn {
-    background: rgba(0, 0, 0, 0.6);
-    /* 半透明黑底 */
-    border: 1px solid #ffd700;
-    /* 金色邊框 */
-    color: #ffd700;
-    /* 金色文字 */
-    padding: 6px 15px;
+background: #ffd700; /* 預設就是黃色 */
+    color: #000;
+    border: none;
+    padding: 5px 12px;
     border-radius: 20px;
-    /* 圓角 */
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem;
     font-weight: bold;
+    cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-    box-shadow: 0 0 5px rgba(255, 215, 0, 0.2);
+    gap: 5px;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
 }
 
 .sort-btn:hover {
@@ -1056,4 +1051,67 @@ body::before {
 
 .sort-btn:active {
     transform: scale(0.95);
+}
+/* css/style.css - 結算畫面 */
+
+#game-over-modal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 10000;
+    display: none; /* 預設隱藏 */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.result-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 4rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    text-shadow: 0 0 20px currentColor;
+}
+
+.victory { color: #ffd700; } /* 金色勝利 */
+.defeat { color: #ff4444; }  /* 紅色戰敗 */
+
+.reward-box {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px 40px;
+    border-radius: 15px;
+    text-align: center;
+    margin-bottom: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.reward-coins {
+    font-size: 2rem;
+    color: #ffd700;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.home-btn {
+    padding: 15px 50px;
+    font-size: 1.2rem;
+    border: 2px solid white;
+    background: transparent;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: 'Orbitron', sans-serif;
+    border-radius: 30px;
+}
+
+.home-btn:hover {
+    background: white;
+    color: black;
+    box-shadow: 0 0 15px white;
 }

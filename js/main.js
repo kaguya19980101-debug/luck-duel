@@ -13,7 +13,7 @@ import * as Matchmaking from "./matchmaking.js";
 let currentTeam = [null, null, null, null, null];
 let myInventoryData = {};
 // 在 let myInventoryData = {}; 下面加入：
-let currentSortMode = 'date'; // 預設依時間排序 ('date' 或 'id')
+let currentSortMode = 'id'; // 預設依時間排序 ('rare' 或 'id')
 // 定義屬性外觀 (圖示與顏色)
 const ATTR_CONFIG = {
     'fire': { icon: '🔥', color: '#ff5555', label: '火' },
@@ -46,15 +46,9 @@ onAuthStateChanged(auth, async (user) => {
         loadMyInventory(user);     // 2. 讀取背包與隊伍
 
         // 綁定配對按鈕 (原本的功能)
-        setupMatchButton(user);
-        const btnSingle = document.querySelector('.btn-single');
-        const btnMulti = document.querySelector('.btn-multi');
-
-        if (btnSingle) {
-            btnSingle.onclick = () => window.handleSummon(1);
-        }
-        if (btnMulti) {
-            btnMulti.onclick = () => window.handleSummon(10);
+        const battleBtn = document.getElementById('find-match-btn');
+        if (battleBtn) {
+            battleBtn.onclick = () => window.handleFindMatch();
         }
     } else {
         UI.showLoginScreen();
@@ -95,6 +89,11 @@ function loadMyInventory(user) {
             // C. 兩個都有了，開始畫畫面
             renderTeamDisplay();
             renderInventoryGrid();
+
+            // 讓大廳按鈕與紅字即時更新
+            if (window.checkTeamStatus) {
+                window.checkTeamStatus();
+            }
         });
     });
 }
@@ -187,13 +186,30 @@ function renderInventoryGrid() {
     grid.style.minHeight = 'auto';
 
     const cards = Object.entries(myInventoryData);
-
+    // 1. 定義稀有度權重
+    const rarityOrder = { 'SSR': 3, 'SR': 2, 'R': 1 };
     // 排序邏輯保持不變
     cards.sort((a, b) => {
+        const idA = a[0]; // 例如 "0001"
+        const idB = b[0];
+        const charA = a[1];
+        const charB = b[1];
+
+        // 判斷目前的排序模式
         if (typeof currentSortMode !== 'undefined' && currentSortMode === 'id') {
-            return a[0].localeCompare(b[0]);
+            // --- 模式 A: 依代號 上到下 (0001 -> 0015) ---
+            return idA.localeCompare(idB);
+        } else {
+            // --- 模式 B: 依稀有度 上到下 (SSR -> SR -> R) ---
+            const weightA = rarityOrder[charA.rarity] || 0;
+            const weightB = rarityOrder[charB.rarity] || 0;
+
+            if (weightA !== weightB) {
+                return weightB - weightA; // 權重大的排前面
+            }
+            // 若稀有度相同，預設用代號排序
+            return idA.localeCompare(idB);
         }
-        return (b[1].obtainedAt || 0) - (a[1].obtainedAt || 0);
     });
 
     // 渲染卡片
@@ -219,8 +235,8 @@ function renderInventoryGrid() {
         if (char.rarity === 'SR') { rarityColor = '#a855f7'; borderColor = '#a855f7'; }
         if (char.rarity === 'SSR') { rarityColor = '#ffd700'; borderColor = '#ffd700'; }
 
-        if (attrKey === 'light') borderColor = '#fbbf24';
-        if (attrKey === 'dark') borderColor = '#a855f7';
+        //if (attrKey === 'light') borderColor = '#fbbf24';
+        //if (attrKey === 'dark') borderColor = '#a855f7';
 
         cardEl.style.border = `1px solid ${borderColor}`;
         if (char.rarity === 'SSR') {
@@ -254,12 +270,12 @@ function renderInventoryGrid() {
 }
 // 切換排序模式
 window.toggleSort = function () {
-    if (currentSortMode === 'date') {
-        currentSortMode = 'id';
-        document.getElementById('sort-btn-text').innerText = "排序: 代號";
+    if (currentSortMode === 'id') {
+        currentSortMode = 'rare';
+        document.getElementById('sort-btn-text').innerText = "排序:稀有度";
     } else {
-        currentSortMode = 'date';
-        document.getElementById('sort-btn-text').innerText = "排序: 時間";
+        currentSortMode = 'id';
+        document.getElementById('sort-btn-text').innerText = "排序:代號";
     }
     // 切換完馬上重新渲染
     renderInventoryGrid();
@@ -448,26 +464,6 @@ async function initUserData(user) {
     if (el && s.exists()) el.innerText = s.val().coins || 0;
 }
 
-function setupMatchButton(user) {
-    const btn = document.getElementById('find-match-btn');
-    let isSearching = false;
-    if (!btn) return;
-
-    btn.onclick = async () => {
-        if (!isSearching) {
-            isSearching = true;
-            btn.innerText = "CANCEL";
-            btn.style.background = "red";
-            await Matchmaking.findMatch(user);
-        } else {
-            isSearching = false;
-            btn.innerText = "START BATTLE";
-            btn.style.background = "blue";
-            await Matchmaking.cancelMatch(user);
-        }
-    }
-}
-// js/main.js - 請貼在檔案最下方
 
 // 1. 更新金幣顯示
 function updateCoinDisplay(amount) {
@@ -518,8 +514,8 @@ window.showSummonResults = function (cards) {
         if (char.rarity === 'SSR') { rarityColor = '#ffd700'; borderColor = '#ffd700'; }
 
         // 光暗屬性特殊邊框
-        if (char.attribute === 'light') borderColor = '#fbbf24';
-        if (char.attribute === 'dark') borderColor = '#a855f7';
+        //if (char.attribute === 'light') borderColor = '#fbbf24';
+        //if (char.attribute === 'dark') borderColor = '#a855f7';
 
         // C. NEW 標籤 (如果是新卡)
         const newTag = char.isNew ?
@@ -677,3 +673,68 @@ window.test_damage = function (a, d) {
     console.log(`[傷害測試] ${a} 攻擊 ${d} -> 倍率: x${multi}`);
     if (multi > 1) console.log("✨ 效果絕佳 (Super Effective)!");
 }
+let isSearching = false; // 在函式外面定義狀態
+
+window.handleFindMatch = async function () {
+    const user = auth.currentUser;
+    if (!user) return alert("請先登入");
+    const btn = document.getElementById('find-match-btn');
+
+    if (!isSearching) {
+        // --- A. 開始排隊邏輯 ---
+        const myTeamData = currentTeam.map(id => {
+            if (!id) return null;
+            const char = myInventoryData[id];
+            return char ? { ...char, max_hp: char.hp || 100 } : null;
+        }).filter(t => t !== null);
+
+        if (myTeamData.length < 5) return alert("請先配置 5 人隊伍！");
+
+        isSearching = true;
+        btn.innerText = "CANCEL";
+        btn.style.background = "red";
+
+        console.log("帶著隊伍出發:", myTeamData);
+        await Matchmaking.findMatch(user, myTeamData);
+    } else {
+        // --- B. 取消排隊邏輯 ---
+        isSearching = false;
+        btn.innerText = "START BATTLE";
+        btn.style.background = "linear-gradient(45deg, #ff00cc, #3333ff)";
+        await Matchmaking.cancelMatch(user);
+    }
+};
+// js/main.js
+
+window.checkTeamStatus = function () {
+    const statusText = document.getElementById('match-status');
+    const battleBtn = document.getElementById('find-match-btn');
+    if (!statusText || !battleBtn) return;
+
+    // 計算隊伍中有幾個人 (非 null 的數量)
+    const memberCount = currentTeam.filter(id => id !== null).length;
+
+    if (memberCount < 5) {
+        // 情況 A：人數不足 5 人
+        statusText.innerHTML = `<i class="fas fa-exclamation-triangle"></i> 您的隊伍目前不完整 (${memberCount}/5)`;
+        statusText.style.color = "#ff4444"; // 顯示紅字
+
+        // 讓按鈕變灰且無法點擊
+        battleBtn.style.opacity = "0.5";
+        battleBtn.style.filter = "grayscale(1)";
+        battleBtn.style.cursor = "not-allowed";
+        battleBtn.disabled = true;
+    } else {
+        // 情況 B：隊伍已滿
+        statusText.innerHTML = `<i class="fas fa-check-circle"></i> 隊伍已就緒，準備出戰！`;
+        statusText.style.color = "#44ff44"; // 顯示綠字
+
+        // 恢復按鈕樣式
+        battleBtn.style.opacity = "1";
+        battleBtn.style.filter = "none";
+        battleBtn.style.cursor = "pointer";
+        battleBtn.disabled = false;
+    }
+}
+// 加入這一行：同步更新大廳狀態
+if (window.checkTeamStatus) window.checkTeamStatus();
