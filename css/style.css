@@ -1115,3 +1115,25 @@ background: #ffd700; /* 預設就是黃色 */
     color: black;
     box-shadow: 0 0 15px white;
 }
+/* css/style.css - 加在最下面 */
+
+/* 修正版：兼顧遊戲排列與大廳置中 */
+.game-frame {
+    display: flex !important;           /* 保持 Flex 彈性佈局 */
+    flex-direction: column !important;  /* ★ 關鍵：強制由上往下排列 (解決計時器被擠到左邊的問題) */
+    justify-content: center !important; /* ★ 關鍵：內容垂直置中 (讓 Start Battle 回到螢幕中間) */
+    align-items: center !important;     /* 水平置中 */
+    width: 100%;
+    height: 100%;                       /* 確保有高度可以置中 */
+    box-sizing: border-box;             /* 防止 padding 撐大版面 */
+}
+
+/* 確保 HUD 乖乖排好 */
+#game-hud {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* margin-top: auto; 如果您希望遊戲畫面偏下，可以加這行，不然不用加 */
+}

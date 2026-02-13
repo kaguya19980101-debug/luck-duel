@@ -34,19 +34,19 @@ export function initGameBoard(gameId, role) {
                 background: rgba(0, 0, 0, 0.8);
                 border: 2px solid #555;
                 border-radius: 12px;
-                padding: 5px 0;
-                width: 120px;            /* 固定寬度，防止跳動 */
+                padding: 2px 0;          /* 減少內距，讓盒子變矮 */
+                width: 80px;             /* ★ 寬度縮小：原本 120px -> 改為 80px */
                 text-align: center;
-                margin-bottom: 10px;     /* 與下方文字的距離 */
-                box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+                margin-bottom: 8px;      /* 下方間距微調 */
+                box-shadow: 0 4px 10px rgba(0,0,0,0.5);
                 z-index: 10;
             ">
                 <span id="timer-text" style="
                     color: #ff4444; 
                     font-weight: bold; 
-                    font-size: 1.8rem; 
-                    font-family: monospace; /* 等寬字體 */
-                    letter-spacing: 2px;
+                    font-size: 1.2rem;   /* ★ 字體縮小：原本 1.8rem -> 改為 1.2rem */
+                    font-family: monospace; 
+                    letter-spacing: 1px; /* 字距微調 */
                 ">30s</span>
             </div>
 
