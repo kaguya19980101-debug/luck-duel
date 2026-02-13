@@ -9,7 +9,20 @@ let myUid = null;
 let selectedIndex = -1;
 let timerInterval = null;
 let isResolving = false; // 防止重複結算
-
+// 定義屬性圖示與顏色 (與 main.js 保持一致)
+const BATTLE_ATTR_CONFIG = {
+    'fire': { icon: '🔥', color: '#ff5555' },
+    'water': { icon: '💧', color: '#3b82f6' },
+    'grass': { icon: '🌿', color: '#22c55e' },
+    'wood': { icon: '🌿', color: '#22c55e' }, // 相容舊資料
+    'light': { icon: '✨', color: '#fbbf24' },
+    'dark': { icon: '🟣', color: '#a855f7' }
+};
+// 輔助函式：安全取得屬性設定
+function getBattleAttr(attr) {
+    const key = (attr || '').toLowerCase();
+    return BATTLE_ATTR_CONFIG[key] || { icon: '❓', color: '#999' };
+}
 // 初始化遊戲棋盤 (強制置中版)
 export function initGameBoard(gameId, role) {
     currentGameId = gameId;
@@ -164,25 +177,26 @@ function renderBoard(gameData) {
         if (cell) {
             const isMine = cell.owner === myUid;
 
-            // ★ 顏色設定：自己永遠是藍底，敵人永遠是紅底
-            // 這樣最直覺，不用管 P1 P2
+            // ★ 1. 使用新的 helper 取得正確圖示與顏色
+            const attrData = getBattleAttr(cell.attribute);
+
             div.style.background = isMine ?
-                "linear-gradient(135deg, #1cb5e0, #000046)" : // 我: 藍色系
-                "linear-gradient(135deg, #ee0979, #ff6a00)"; // 敵: 紅色系
+                "linear-gradient(135deg, #1cb5e0, #000046)" :
+                "linear-gradient(135deg, #ee0979, #ff6a00)";
 
             div.innerHTML = `
-                <div style="text-align:center; width:100%; pointer-events:none;">
-                    <div style="font-size:1.5rem; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">
-                        ${cell.attribute === 'fire' ? '🔥' : cell.attribute === 'water' ? '💧' : '🌿'}
-                    </div>
-                    
-                    <div style="background:rgba(0,0,0,0.6); height:6px; width:80%; margin: 2px auto; border-radius:3px; overflow:hidden; border:1px solid rgba(255,255,255,0.2);">
-                        <div style="background:${isMine ? '#00ff00' : '#ff0000'}; height:100%; width:${(cell.hp / cell.max_hp) * 100}%"></div>
-                    </div>
-                    
-                    <div style="font-size:0.7rem; color:white; font-weight:bold; text-shadow:0 0 2px black;">${cell.hp}</div>
+            <div style="text-align:center; width:100%; pointer-events:none;">
+                <div style="font-size:1.5rem; text-shadow: 0 2px 5px rgba(0,0,0,0.8); color: ${attrData.color};">
+                    ${attrData.icon}
                 </div>
-            `;
+                
+                <div style="background:rgba(0,0,0,0.6); height:6px; width:80%; margin: 2px auto; border-radius:3px; overflow:hidden; border:1px solid rgba(255,255,255,0.2);">
+                    <div style="background:${isMine ? '#00ff00' : '#ff0000'}; height:100%; width:${(cell.hp / cell.max_hp) * 100}%"></div>
+                </div>
+                
+                <div style="font-size:0.7rem; color:white; font-weight:bold; text-shadow:0 0 2px black;">${cell.hp}</div>
+            </div>
+        `;
         }
 
         // ★ 5. 點擊事件：一定要傳入 realIndex，不能傳 visualIndex
@@ -428,123 +442,114 @@ window.submitDuelChoice = async function (choice) {
     await update(ref(db, `games/${currentGameId}`), updatePayload);
 }
 
-// ★★★ 決鬥結算邏輯 (解決卡住問題) ★★★
+// js/game.js - 請替換掉原本的 resolveDuel
+
 async function resolveDuel(gameData) {
-    const p1 = gameData.duel.p1_choice;
-    const p2 = gameData.duel.p2_choice;
+    console.log("開始結算決鬥...");
 
-    // 判斷勝負 (Host角度)
-    // p1 是 Host, p2 是 Joiner
-    // win: 1贏, lose: 2贏, draw: 平手
-    let result = "draw";
-    if (p1 === p2) result = "draw";
-    else if (
-        (p1 === "rock" && p2 === "scissors") ||
-        (p1 === "paper" && p2 === "rock") ||
-        (p1 === "scissors" && p2 === "paper")
-    ) {
-        result = "p1_win";
-    } else {
-        result = "p2_win";
-    }
+    try {
+        const p1 = gameData.duel.p1_choice;
+        const p2 = gameData.duel.p2_choice;
+        const attIdx = gameData.duel.attackerIndex;
+        const defIdx = gameData.duel.defenderIndex;
 
-    // 處理傷害
-    let newBoard = [...currentBoard]; // 複製棋盤
-    // 注意：Firebase 傳回來的 board 已經被我們轉成 Array 了，但這裡是計算邏輯，要確保用的是最新的
-    // 最安全的做法是直接操作傳進來的 gameData.board (如果是物件要轉陣列)
-    // 這裡為了簡化，直接操作全域 currentBoard
+        // ★ 關鍵修正 1：重新複製一份最新的棋盤，確保資料是對的
+        // (必須深層複製，避免修改到一半出錯影響畫面)
+        let newBoard = JSON.parse(JSON.stringify(currentBoard));
 
-    const attIdx = gameData.duel.attackerIndex;
-    const defIdx = gameData.duel.defenderIndex;
+        const attackerChar = newBoard[attIdx];
+        const defenderChar = newBoard[defIdx];
 
-    // 誰是攻擊者？根據 turn 判斷 (如果是 Host 回合，那 Host 就是攻擊者)
-    // 簡單起見，我們直接看棋盤上的 owner
-    const attackerChar = newBoard[attIdx];
-    const defenderChar = newBoard[defIdx];
+        // ★ 關鍵修正 2：防呆檢查
+        // 如果找不到棋子 (可能已經被殺掉了或資料不同步)，直接強制解除決鬥，避免卡死
+        if (!attackerChar || !defenderChar) {
+            console.error("❌ 錯誤：找不到決鬥棋子，強制重置狀態");
+            await update(ref(db, `games/${currentGameId}`), { duel: null });
+            isResolving = false;
+            return;
+        }
 
-    let winner = null;
-    let loser = null;
-    let loserIdx = -1;
-
-    // 判定誰贏誰輸
-    if (result === "draw") {
-        // 平手：扣雙方血 (或沒事)
-        // 這裡設定：平手兩邊都沒事，直接結束決鬥
-    } else {
-        // 找出誰贏了
-        const hostIsP1 = true; // 這裡假設 p1 是 host
-        if (result === "p1_win") {
-            // P1 贏了
-            // 檢查 P1 是攻擊者還是防守者?
-            if (attackerChar.owner === gameData.player1) {
-                // P1 是攻擊者且贏了 -> P2 扣血
-                winner = attackerChar;
-                loser = defenderChar;
-                loserIdx = defIdx;
-            } else {
-                // P1 是防守者且贏了 -> P2 (攻擊者) 扣血
-                winner = defenderChar;
-                loser = attackerChar;
-                loserIdx = attIdx;
-            }
+        // 1. 判斷勝負 (p1 是 Host, p2 是 Joiner)
+        let result = "draw";
+        if (p1 === p2) result = "draw";
+        else if (
+            (p1 === "rock" && p2 === "scissors") ||
+            (p1 === "paper" && p2 === "rock") ||
+            (p1 === "scissors" && p2 === "paper")
+        ) {
+            result = "p1_win";
         } else {
-            // P2 贏了
-            if (attackerChar.owner === gameData.player2) {
-                winner = attackerChar;
-                loser = defenderChar;
-                loserIdx = defIdx;
+            result = "p2_win";
+        }
+
+        console.log(`決鬥判定: ${result} (P1:${p1} vs P2:${p2})`);
+
+        // 2. 處理傷害
+        if (result === "draw") {
+            // 平手：這裡設定雙方都沒事，或各扣一點血
+            console.log("平手，無人受傷");
+        } else {
+            // 找出贏家與輸家
+            let winner = null;
+            let loser = null;
+            let loserIdx = -1;
+            let winnerIdx = -1;
+
+            // 邏輯：先看是 P1 贏還是 P2 贏，再看誰是攻擊者/防守者
+            const isP1Winner = (result === "p1_win");
+            const winnerId = isP1Winner ? gameData.player1 : gameData.player2;
+
+            if (attackerChar.owner === winnerId) {
+                winner = attackerChar; winnerIdx = attIdx;
+                loser = defenderChar; loserIdx = defIdx;
             } else {
-                winner = defenderChar;
-                loser = attackerChar;
-                loserIdx = attIdx;
+                winner = defenderChar; winnerIdx = defIdx;
+                loser = attackerChar; loserIdx = attIdx;
+            }
+
+            // 執行扣血 (讀取攻擊力，如果沒有就預設 50)
+            // ★ 屬性相剋可以在這裡加 (目前先做基礎傷害)
+            const damage = winner.attack || 50;
+            loser.hp -= damage;
+            console.log(`造成傷害: ${damage}, 剩餘血量: ${loser.hp}`);
+
+            // 死亡判定
+            if (loser.hp <= 0) {
+                newBoard[loserIdx] = null; // 移除屍體
+
+                // 進階規則：如果攻擊方贏了，且是用近戰攻擊 (距離1)，可以佔領格子
+                // 這裡先簡單做：不佔領，只移除
             }
         }
 
-        // 確保 attack 有值，沒有就用 50
-        const damage = (winner === attackerChar) ? (attackerChar.attack || 50) : (defenderChar.attack || 50);
-        loser.hp -= damage;
-
-        console.log(`決鬥結果: 贏家造成 ${damage} 傷害`);
-
-        // 死亡判定
-        if (loser.hp <= 0) {
-            newBoard[loserIdx] = null; // 移除棋子
-            // 如果贏家是攻擊者，可以佔領格子
-            if (winner === attackerChar) {
-                newBoard[defIdx] = attackerChar;
-                newBoard[attIdx] = null;
-            }
-        }
+        // 3. 準備寫入資料庫
         const nextTurn = gameData.player1 === gameData.turn ? gameData.player2 : gameData.player1;
-
-        // 1. 準備更新資料
         const updates = {
             board: newBoard,
-            duel: null, // 解除決鬥
+            duel: null, // ★ 解除決鬥狀態 (這行最重要，這行執行了畫面才會動)
             turn: nextTurn,
             turn_start_time: Date.now()
         };
 
-        // 2. ★ 檢查決鬥後是否有人死光了 ★
-        const winner = checkGameOver(newBoard, gameData);
-        if (winner) {
-            updates.status = "finished";
-            updates.winner = winner;
+        // 4. 順便檢查遊戲是否結束
+        if (typeof checkGameOver === "function") {
+            const gameWinner = checkGameOver(newBoard, gameData);
+            if (gameWinner) {
+                updates.status = "finished";
+                updates.winner = gameWinner;
+            }
         }
 
-        // 3. 寫入 Firebase
         await update(ref(db, `games/${currentGameId}`), updates);
+        console.log("✅ 決鬥結算完畢");
+
+    } catch (e) {
+        console.error("❌ 決鬥結算發生嚴重錯誤:", e);
+        // ★ 救命機制：發生錯誤時，強制把 duel 設為 null，不然會永遠卡住
+        await update(ref(db, `games/${currentGameId}`), { duel: null });
+    } finally {
+        isResolving = false; // 解除鎖定
     }
-
-    // 寫入資料庫，並解除決鬥狀態 (null)
-    const nextTurn = gameData.player1 === gameData.turn ? gameData.player2 : gameData.player1;
-
-    await update(ref(db, `games/${currentGameId}`), {
-        board: newBoard,
-        duel: null, // ★ 解除決鬥視窗
-        turn: nextTurn, // 換人
-        turn_start_time: Date.now()
-    });
 }
 // 檢查是否有一方死光了
 function checkGameOver(board, gameData) {

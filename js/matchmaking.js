@@ -1,13 +1,13 @@
 import { db } from "./firebase-config.js";
 import { ref, set, get, remove, onValue, off, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import * as Game from "./game.js";
-import { getRandomTeam } from "./data.js"; 
+import { getRandomTeam } from "./data.js";
 
 // 狀態旗標：用來標記「現在是否正在排隊」，防止重複執行或誤判
 let isSearching = false;
 
 // 接收 myTeam 參數
-export async function findMatch(user, myTeam) { 
+export async function findMatch(user, myTeam) {
     if (isSearching) return;
     isSearching = true;
 
@@ -54,7 +54,12 @@ export async function findMatch(user, myTeam) {
             player2: user.uid,
             status: "playing",
             board: initialBoard,
-            turn: opponentId
+            turn: opponentId,
+            // ★★★ 補上這一行：開局時就要寫入開始時間！ ★★★
+            turn_start_time: Date.now(),
+
+            board: initialBoard,
+            duel: null
         });
 
         // 通知對方進入
@@ -69,14 +74,14 @@ export async function findMatch(user, myTeam) {
 // 2. 修改 joinQueue 也要接收並儲存隊伍
 async function joinQueue(user, myTeam) {
     // 如果傳進來的隊伍是空的或未定義，給一個空物件或報錯
-    
+
     if (!myTeam || myTeam.length === 0) {
         console.error("嘗試加入排隊但隊伍資料為空");
         return;
     }
 
     const myQueueRef = ref(db, `matchQueue/${user.uid}`);
-    
+
     await set(myQueueRef, {
         username: user.displayName || "Unknown Warrior",
         team: myTeam, // 現在確保這裡一定是有效的陣列
@@ -94,11 +99,11 @@ async function joinQueue(user, myTeam) {
         const data = snapshot.val();
         if (data && data.gameId) {
             console.log("有人加入！遊戲開始！");
-            
+
             // 清理監聽與資料
-            off(myMatchRef); 
-            remove(myMatchRef); 
-            
+            off(myMatchRef);
+            remove(myMatchRef);
+
             enterGame(data.gameId, "host");
         }
     });
@@ -107,27 +112,27 @@ async function joinQueue(user, myTeam) {
 // 3. 取消排隊
 export async function cancelMatch(user) {
     if (!isSearching) return;
-    
+
     console.log("取消排隊...");
     isSearching = false; // 標記為停止搜尋
 
     // 1. 移除排隊資料
     await remove(ref(db, `matchQueue/${user.uid}`));
-    
+
     // 2. 取消斷線自動移除的設定 (因為我們已經手動移除了，不需要伺服器幫忙了)
     onDisconnect(ref(db, `matchQueue/${user.uid}`)).cancel();
-    
+
     // 3. 停止監聽配對結果
     off(ref(db, `matches/${user.uid}`));
-    
+
     console.log("已停止尋找對手");
 }
 
 // 進入遊戲
 function enterGame(gameId, role) {
     // 重置狀態以便下次配對
-    isSearching = false; 
-    
+    isSearching = false;
+
     // 呼叫 game.js 初始化棋盤
     Game.initGameBoard(gameId, role);
 }
