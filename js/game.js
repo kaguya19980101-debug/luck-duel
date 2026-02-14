@@ -178,9 +178,9 @@ function renderBoard(gameData) {
             let hpPercent = (currentHp / maxHp) * 100;
             hpPercent = Math.max(0, Math.min(100, hpPercent));
 
-            // 取得戰鬥專用圖片 (例如: img/characters/0001Battle.webp)
+            // 取得戰鬥專用圖片 (例如: img/characters/0001battle.webp)
             const idStr = String(cell.id);
-            const battleImgPath = `img/characters/${idStr}Battle.webp`;
+            const battleImgPath = `img/characters/${idStr}battle.webp`;
             const fallbackImg = 'img/characters/default.png';
 
             // 敵我顏色區別 (外框與血條顏色)
@@ -731,4 +731,5 @@ async function handleGameEnd(winnerUid) {
     } catch (e) {
         console.error("獎勵發放失敗:", e);
     }
+
 }
