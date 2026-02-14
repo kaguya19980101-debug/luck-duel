@@ -37,61 +37,73 @@
                 </div>
             </div>
             <div class="menu-items">
-                <button class="active" onclick="switchView('lobby-view', this)">
+                <button id="nav-lobby" class="active">
                     <i class="fas fa-gamepad"></i> 對戰大廳
                 </button>
-
-                <button onclick="switchView('char-view', this)">
+                <button id="nav-char">
                     <i class="fas fa-user-astronaut"></i> 我的角色
                 </button>
-
-                <button onclick="switchView('summon-view', this)">
+                <button id="nav-summon">
                     <i class="fas fa-meteor"></i> 角色召喚
                 </button>
 
-                <button onclick="switchView('history-view', this)">
+                <button id="nav-glossary" class="hide-on-mobile">
+                    <i class="fas fa-book"></i> 角色圖鑑
+                </button>
+                <button id="nav-history" class="hide-on-mobile">
                     <i class="fas fa-history"></i> 歷史紀錄
                 </button>
+                <button id="logout-btn" class="hide-on-mobile" style="margin-top: auto;">
+                    <i class="fas fa-sign-out-alt"></i> 登出
+                </button>
 
-                <button style="margin-top: auto;" id="logout-btn">
+                <button id="nav-more" class="show-on-mobile">
+                    <i class="fas fa-bars"></i> 更多
+                </button>
+            </div>
+
+            <div id="more-menu">
+                <button id="more-glossary" class="more-btn">
+                    <i class="fas fa-book"></i> 角色圖鑑
+                </button>
+                <button id="more-history" class="more-btn">
+                    <i class="fas fa-history"></i> 歷史紀錄
+                </button>
+                <hr style="border-color: #444; margin: 5px 0;">
+                <button id="more-logout-btn" class="more-btn" style="color: #ff4444;">
                     <i class="fas fa-sign-out-alt"></i> 登出
                 </button>
             </div>
         </nav>
+
         <main class="game-area">
             <div class="game-frame">
 
-                <div id="lobby-view" style="text-align: center; width: 100%;">
-                    <h2 style="color:#eee; margin-bottom: 20px; font-weight:bold;">準備好迎接運氣決鬥了嗎？</h2>
+                <div id="lobby-view">
+                    <h2 style="color:#eee; margin-bottom: 20px; font-weight:bold; text-align: center;">準備好迎接運氣決鬥了嗎？</h2>
                     <button id="find-match-btn" style="
-                padding: 15px 40px; font-size: 1.5rem;
-                background: linear-gradient(45deg, #ff00cc, #3333ff);
-                color: white; border: none; border-radius: 50px; cursor: pointer;
-                font-family: 'Orbitron'; box-shadow: 0 0 20px rgba(255, 0, 204, 0.4);
-                transition: 0.3s;">
+                        padding: 15px 40px; font-size: 1.5rem;
+                        background: linear-gradient(45deg, #ff00cc, #3333ff);
+                        color: white; border: none; border-radius: 50px; cursor: pointer;
+                        font-family: 'Orbitron'; box-shadow: 0 0 20px rgba(255, 0, 204, 0.4);
+                        transition: 0.3s; width: 100%; max-width: 300px;">
                         START BATTLE
                     </button>
-                    <p id="match-status" style="margin-top: 20px; color: #888; height: 20px;"></p>
+                    <p id="match-status" style="margin-top: 20px; color: #888; height: 20px; text-align: center;"></p>
                 </div>
 
                 <div id="char-view" style="display: none; width: 100%; height: 100%; flex-direction: column;">
                     <div class="team-section">
                         <h2
                             style="color:white; text-align:center; margin-bottom:15px; font-family:'Orbitron'; letter-spacing:2px;">
-                            MY TEAM <span style="font-size:0.8rem; color:#aaa;">(5/5)</span>
+                            MY TEAM <span style="font-size:0.8rem; color:#aaa;"></span>
                         </h2>
-                        <div class="team-row">
-                            <div class="team-slot" onclick="handleTeamSlotClick(0)" id="team-slot-0"></div>
-                            <div class="team-slot" onclick="handleTeamSlotClick(1)" id="team-slot-1"></div>
-                            <div class="team-slot" onclick="handleTeamSlotClick(2)" id="team-slot-2"></div>
-                            <div class="team-slot" onclick="handleTeamSlotClick(3)" id="team-slot-3"></div>
-                            <div class="team-slot" onclick="handleTeamSlotClick(4)" id="team-slot-4"></div>
-                        </div>
+                        <div id="team-row" class="team-row"></div>
                     </div>
                     <div class="inventory-container">
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                            <h3 class="inventory-title" style="margin: 0;">MY CARDS</h3>
+                            <h3 class="inventory-title" style="margin: 0; color: white;">MY CARDS</h3>
                             <button onclick="toggleSort()" class="sort-btn">
                                 <i class="fas fa-sort"></i>
                                 <span id="sort-btn-text">排序: 代號</span>
@@ -110,9 +122,7 @@
                         </div>
                     </div>
                     <div class="gacha-machine">
-                        <div id="gacha-stage" class="gacha-stage">
-                            <div class="placeholder-icon">?</div>
-                        </div>
+                        <div id="gacha-stage" class="gacha-stage"></div>
                     </div>
                     <div class="summon-actions">
                         <button class="summon-btn btn-single" onclick="handleSummon(1)">
@@ -134,33 +144,13 @@
 
                 <div id="history-view" style="display: none; text-align: center;">
                     <h2 style="color:white;">HISTORY</h2>
+                    <p style="color:#aaa;">暫無紀錄</p>
                 </div>
 
             </div>
         </main>
     </div>
-    <script>
-        // 簡單的頁面切換功能
-        function switchView(viewId, btn) {
-            // 1. 隱藏所有頁面
-            document.getElementById('lobby-view').style.display = 'none';
-            document.getElementById('char-view').style.display = 'none';
-            document.getElementById('summon-view').style.display = 'none';
-            document.getElementById('history-view').style.display = 'none';
 
-            // 2. 顯示選到的頁面
-            const target = document.getElementById(viewId);
-            if (target) target.style.display = 'block';
-
-            // 3. 按鈕變色
-            document.querySelectorAll('.menu-items button').forEach(b => b.classList.remove('active'));
-            if (btn) btn.classList.add('active');
-            // ★★★ 新增：進入大廳時檢查隊伍 ★★★
-            if (viewId === 'lobby-view') {
-                checkTeamStatus();
-            }
-        }
-    </script>
     <script type="module" src="js/main.js"></script>
 </body>
 

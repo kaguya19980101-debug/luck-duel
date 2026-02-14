@@ -1,6 +1,6 @@
 // js/game.js (修復版)
 import { db, auth } from "./firebase-config.js";
-import { ref, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { ref, update, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 let currentGameId = null;
 let currentRole = null; // "host" or "joiner"
@@ -9,6 +9,7 @@ let myUid = null;
 let selectedIndex = -1;
 let timerInterval = null;
 let isResolving = false; // 防止重複結算
+let duelCountdownInterval = null; // 決鬥倒數計時器
 // 定義屬性圖示與顏色 (與 main.js 保持一致)
 const BATTLE_ATTR_CONFIG = {
     'fire': { icon: '🔥', color: '#ff5555' },
@@ -80,7 +81,7 @@ export function initGameBoard(gameId, role) {
         <div style="width:100%; display:flex; justify-content:center;">
             <div id="chess-board" style="
                 display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(6, 1fr);
-                gap: 4px; width: 100%; max-width: 450px; aspect-ratio: 5/6;
+                gap: 4px; width: 100%; max-width: 450px; 
                 background: #2b2b2b; padding: 6px; border-radius: 12px;
                 box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             "></div>
@@ -123,13 +124,11 @@ export function initGameBoard(gameId, role) {
 }
 
 // 渲染棋盤
+// 渲染棋盤
 function renderBoard(gameData) {
     const boardEl = document.getElementById('chess-board');
     boardEl.innerHTML = '';
 
-    // 1. 判斷是否需要翻轉視角
-    // 規則：如果我是房主(P1)，因為我的棋子在 Array 的 0-4 (上面)，
-    // 為了讓我在下面，我要把畫面倒過來畫。
     const amIHost = gameData.player1 === myUid;
     const shouldFlip = amIHost;
 
@@ -142,65 +141,79 @@ function renderBoard(gameData) {
             `<span style="color:#ff4444">🔴 對手回合</span>`;
     }
 
-    // 2. 開始畫 30 個格子
-    // visualIndex 是「螢幕上」的順序：0(左上) -> 29(右下)
     for (let visualIndex = 0; visualIndex < 30; visualIndex++) {
-
-        // 3. 算出「真實資料」是第幾格
-        // 如果翻轉：螢幕第 0 格 (左上) = 資料第 29 格
-        // 如果不翻：螢幕第 0 格 (左上) = 資料第 0 格
         const realIndex = shouldFlip ? (29 - visualIndex) : visualIndex;
-
         const cell = currentBoard[realIndex];
         const div = document.createElement('div');
 
-        // 保持格子正方形與美觀
+        // 基礎格子設定
         div.style.cssText = `
             width: 100%;
-            aspect-ratio: 1 / 1;
             border-radius: 8px; 
             position: relative;
             display: flex; justify-content: center; align-items: center; 
             cursor: pointer;
             box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
-            background: #262626; /* 空格子的顏色 */
+            background: #262626;
             border: 1px solid #333;
+            overflow: hidden;
         `;
 
         // 顯示選取框 (黃色)
         if (realIndex === selectedIndex) {
             div.style.border = '2px solid #ffff00';
             div.style.boxShadow = '0 0 15px rgba(255, 255, 0, 0.6)';
+            div.style.zIndex = '5'; // 選取時浮上來一點
         }
 
-        // 4. 如果這格有棋子，畫出來
+        // ★★★ 4. 如果這格有棋子，畫出戰鬥卡片 ★★★
         if (cell) {
             const isMine = cell.owner === myUid;
-
-            // ★ 1. 使用新的 helper 取得正確圖示與顏色
             const attrData = getBattleAttr(cell.attribute);
 
-            div.style.background = isMine ?
-                "linear-gradient(135deg, #1cb5e0, #000046)" :
-                "linear-gradient(135deg, #ee0979, #ff6a00)";
+            // 計算血量與攻擊力
+            const atk = cell.attack || 50;
+            const currentHp = cell.hp !== undefined ? cell.hp : 100;
+            const maxHp = cell.max_hp || currentHp || 100;
+            let hpPercent = (currentHp / maxHp) * 100;
+            hpPercent = Math.max(0, Math.min(100, hpPercent));
 
+            // 取得戰鬥專用圖片 (例如: img/characters/0001Battle.webp)
+            const idStr = String(cell.id);
+            const battleImgPath = `img/characters/${idStr}Battle.webp`;
+            const fallbackImg = 'img/characters/default.png';
+
+            // 敵我顏色區別 (外框與血條顏色)
+            const borderColor = isMine ? '#4facfe' : '#ff4444'; // 我方藍，敵方紅
+            const hpColor = isMine ? '#00ff00' : '#ff0000';     // 我方綠血，敵方紅血
+
+            // 設定這格子的外框，用來區分敵我
+            if (realIndex !== selectedIndex) { // 如果沒有被選取，就顯示敵我外框
+                div.style.border = `2px solid ${borderColor}`;
+            }
+
+            // 塞入 HTML 結構 (套用 CSS 寫好的 .battle-card 樣式)
             div.innerHTML = `
-            <div style="text-align:center; width:100%; pointer-events:none;">
-                <div style="font-size:1.5rem; text-shadow: 0 2px 5px rgba(0,0,0,0.8); color: ${attrData.color};">
-                    ${attrData.icon}
+                <div class="battle-card" style="width: 100%; height: 100%; border: none; border-radius: 0;">
+                    
+                    <div class="battle-img-area">
+                        <img src="${battleImgPath}" onerror="this.src='${fallbackImg}'">
+                        <div class="battle-attr" style="color:${attrData.color};">${attrData.icon}</div>
+                        <div class="battle-atk">${atk}</div>
+                    </div>
+                    
+                    <div class="battle-hp-container">
+                        <div class="battle-hp-text">${currentHp}</div>
+                        <div class="battle-hp-bar-bg">
+                            <div class="battle-hp-bar-fill" style="width: ${hpPercent}%; background: ${hpColor};"></div>
+                        </div>
+                    </div>
+
                 </div>
-                
-                <div style="background:rgba(0,0,0,0.6); height:6px; width:80%; margin: 2px auto; border-radius:3px; overflow:hidden; border:1px solid rgba(255,255,255,0.2);">
-                    <div style="background:${isMine ? '#00ff00' : '#ff0000'}; height:100%; width:${(cell.hp / cell.max_hp) * 100}%"></div>
-                </div>
-                
-                <div style="font-size:0.7rem; color:white; font-weight:bold; text-shadow:0 0 2px black;">${cell.hp}</div>
-            </div>
-        `;
+            `;
         }
 
-        // ★ 5. 點擊事件：一定要傳入 realIndex，不能傳 visualIndex
-        // 這樣點擊下方棋子時，程式才知道你點的是陣列裡的哪一個
+        // 5. 點擊事件
         div.onclick = () => handleSquareClick(realIndex, cell, gameData);
 
         boardEl.appendChild(div);
@@ -325,30 +338,91 @@ async function triggerDuel(attackerIdx, defenderIdx) {
         }
     });
 }
-// 1. 新增揭曉函式 (負責動畫)
+// ==========================================
+// 3. 揭曉結果 (加入陳述文字)
+// ==========================================
 function revealDuelChoices(gameData) {
     const modal = document.getElementById('duel-modal');
-    // 取得雙方出的拳
     const p1Choice = gameData.duel.p1_choice;
     const p2Choice = gameData.duel.p2_choice;
-
-    // 定義圖示
     const icons = { 'rock': '✊', 'paper': '✋', 'scissors': '✌️' };
 
-    // 判斷我是 P1 還是 P2，來決定顯示位置 (左邊是我，右邊是對手)
     const amIP1 = (currentRole === 'host');
     const myMove = amIP1 ? p1Choice : p2Choice;
     const oppMove = amIP1 ? p2Choice : p1Choice;
 
-    // 修改 Modal 內容為揭曉畫面
+    // --- 計算勝負與文字 ---
+    const attIdx = gameData.duel.attackerIndex;
+    const defIdx = gameData.duel.defenderIndex;
+    const attackerChar = currentBoard[attIdx] || {};
+    const defenderChar = currentBoard[defIdx] || {};
+    
+    // 1. 判斷誰贏了猜拳
+    let result = "draw";
+    if (p1Choice === p2Choice) result = "draw";
+    else if (
+        (p1Choice === "rock" && p2Choice === "scissors") ||
+        (p1Choice === "paper" && p2Choice === "rock") ||
+        (p1Choice === "scissors" && p2Choice === "paper")
+    ) {
+        result = "p1_win";
+    } else {
+        result = "p2_win";
+    }
+
+    let narrativeHTML = "";
+    
+    // 2. 準備動態 CSS (為了讓文字晚一秒鐘出現，營造打擊感)
+    const fadeAnimation = `animation: fadeIn 0.5s ease 1s forwards; opacity: 0;`;
+
+    if (result === "draw") {
+        narrativeHTML = `<div style="color:#ffd700; font-size:1.3rem; font-weight:bold; ${fadeAnimation}">平手！雙方無傷退開。</div>`;
+    } else {
+        const isP1Winner = (result === "p1_win");
+        const amIWinner = amIP1 ? isP1Winner : !isP1Winner; // 我是不是贏家
+        
+        // 找出我的角色 (看 owner 是不是 myUid)
+        const myChar = (attackerChar.owner === myUid) ? attackerChar : defenderChar;
+        const myCharName = myChar.name || "未知角色";
+        
+        // 找出造成傷害的贏家角色 (用來抓攻擊力)
+        const winnerChar = isP1Winner ? 
+            (attackerChar.owner === gameData.player1 ? attackerChar : defenderChar) : 
+            (attackerChar.owner === gameData.player2 ? attackerChar : defenderChar);
+        
+        const damage = winnerChar.attack || 50;
+
+        // 根據勝負產生文字
+        if (amIWinner) {
+            narrativeHTML = `
+                <div style="color:#00ff00; font-size:1.3rem; font-weight:bold; text-shadow: 0 0 5px black; ${fadeAnimation}">
+                    🎉 我方勝利！<br>
+                    <span style="color:white; font-size:1.1rem; display:inline-block; margin-top:10px;">
+                        【${myCharName}】造成了 <span style="color:#ff4444; font-size:1.6rem; margin:0 5px;">${damage}</span> 點傷害！
+                    </span>
+                </div>`;
+        } else {
+            narrativeHTML = `
+                <div style="color:#ff4444; font-size:1.3rem; font-weight:bold; text-shadow: 0 0 5px black; ${fadeAnimation}">
+                    💀 對方勝利...<br>
+                    <span style="color:white; font-size:1.1rem; display:inline-block; margin-top:10px;">
+                        【${myCharName}】受到了 <span style="color:#ff4444; font-size:1.6rem; margin:0 5px;">${damage}</span> 點傷害！
+                    </span>
+                </div>`;
+        }
+    }
+
+    // --- 繪製畫面 ---
     modal.innerHTML = `
-        <div style="display:flex; flex-direction:column; align-items:center; width:100%;">
+        <style>@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }</style>
+        
+        <div style="display:flex; flex-direction:column; align-items:center; width:100%; text-align:center;">
             <h1 style="color:#ff00cc; font-family:'Orbitron'; margin-bottom:20px; text-shadow:0 0 10px #ff00cc;">⚔️ 決鬥揭曉 ⚔️</h1>
             
             <div style="display:flex; justify-content:space-around; width:100%; align-items:center;">
                 <div style="text-align:center;">
                     <div style="font-size:1.2rem; color:#4facfe; margin-bottom:10px;">YOU</div>
-                    <div class="move-icon bounce-in" style="font-size:5rem; filter:drop-shadow(0 0 15px #4facfe);">
+                    <div style="font-size:5rem; filter:drop-shadow(0 0 15px #4facfe);">
                         ${icons[myMove]}
                     </div>
                 </div>
@@ -357,87 +431,138 @@ function revealDuelChoices(gameData) {
 
                 <div style="text-align:center;">
                     <div style="font-size:1.2rem; color:#ff4444; margin-bottom:10px;">ENEMY</div>
-                    <div class="move-icon bounce-in" style="font-size:5rem; filter:drop-shadow(0 0 15px #ff4444); animation-delay:0.3s;">
+                    <div style="font-size:5rem; filter:drop-shadow(0 0 15px #ff4444);">
                         ${icons[oppMove]}
                     </div>
                 </div>
             </div>
             
-            <div style="margin-top:30px; color:#ffd700; font-size:1.2rem; letter-spacing:2px;">
-                計算傷害中...
+            <div style="margin-top:40px; min-height: 80px; background: rgba(0,0,0,0.5); padding: 15px 30px; border-radius: 10px; border: 1px solid #555;">
+                ${narrativeHTML}
             </div>
         </div>
     `;
 }
+// ==========================================
+// 2. 決鬥狀態控制 (修改按鈕標籤與結算延遲)
+// ==========================================
 function checkDuelState(gameData) {
     const modal = document.getElementById('duel-modal');
+    
     if (!gameData.duel) {
         modal.style.display = "none";
-        // ★ 重置內容，下次打開才會有按鈕
+        if (duelCountdownInterval) {
+            clearInterval(duelCountdownInterval);
+            duelCountdownInterval = null;
+        }
+
+        // ★ 注意這裡的按鈕加入了 data-choice 屬性
         modal.innerHTML = `
-            <h1 style="color:#ff00cc; font-family:'Orbitron'; margin-bottom:10px;">⚔️ DUEL ⚔️</h1>
-            <div id="duel-status" style="color:#aaa; margin-bottom:30px;">選擇你的命運</div>
-            <div id="rps-buttons" style="display:flex; gap:20px;">
-                <button class="rps-btn" onclick="submitDuelChoice('rock')" style="font-size:3rem; padding:20px; background:#333; border:2px solid #555; border-radius:50%; cursor:pointer;">✊</button>
-                <button class="rps-btn" onclick="submitDuelChoice('paper')" style="font-size:3rem; padding:20px; background:#333; border:2px solid #555; border-radius:50%; cursor:pointer;">✋</button>
-                <button class="rps-btn" onclick="submitDuelChoice('scissors')" style="font-size:3rem; padding:20px; background:#333; border:2px solid #555; border-radius:50%; cursor:pointer;">✌️</button>
+            <h1 style="color:#ff00cc; font-family:'Orbitron'; margin-bottom:5px;">⚔️ DUEL ⚔️</h1>
+            <div id="duel-timer" style="font-size: 2.5rem; color: #ffeb3b; font-weight: bold; margin-bottom: 5px; text-shadow: 0 0 10px #ffeb3b;">5</div>
+            <div id="duel-status" style="color:#aaa; margin-bottom:20px;">選擇你的命運</div>
+            
+            <div id="rps-buttons" style="display:flex; justify-content:center; gap:15px; width:100%; flex-wrap:wrap;">
+                <button class="rps-btn" data-choice="rock" onclick="submitDuelChoice('rock')" style="width:75px; height:75px; font-size:2.5rem; display:flex; justify-content:center; align-items:center; background:#333; border:3px solid #555; border-radius:50%; cursor:pointer; padding:0; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition:all 0.2s;">✊</button>
+                <button class="rps-btn" data-choice="paper" onclick="submitDuelChoice('paper')" style="width:75px; height:75px; font-size:2.5rem; display:flex; justify-content:center; align-items:center; background:#333; border:3px solid #555; border-radius:50%; cursor:pointer; padding:0; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition:all 0.2s;">✋</button>
+                <button class="rps-btn" data-choice="scissors" onclick="submitDuelChoice('scissors')" style="width:75px; height:75px; font-size:2.5rem; display:flex; justify-content:center; align-items:center; background:#333; border:3px solid #555; border-radius:50%; cursor:pointer; padding:0; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition:all 0.2s;">✌️</button>
             </div>
         `;
         isResolving = false;
         return;
     }
 
-    // 顯示視窗
     modal.style.display = "flex";
     const statusText = document.getElementById('duel-status');
+    const buttons = document.getElementById('rps-buttons');
+    const timerEl = document.getElementById('duel-timer');
 
-    // 如果雙方都出拳了
     if (gameData.duel.p1_choice && gameData.duel.p2_choice) {
-        // ★ 呼叫揭曉動畫
+        if (duelCountdownInterval) { clearInterval(duelCountdownInterval); duelCountdownInterval = null; }
+        if (timerEl) timerEl.style.display = 'none';
+
         revealDuelChoices(gameData);
 
-        // ★ Host 負責結算 (延遲 2 秒讓動畫跑完)
         if (currentRole === "host" && !isResolving) {
             isResolving = true;
+            // ★ 將延遲時間從 2000 改為 4000 (讓玩家有 3 秒鐘可以看傷害文字)
             setTimeout(() => {
-                resolveDuel(gameData); // 這裡接您原本提供的 resolveDuel 函式
-            }, 2000);
+                resolveDuel(gameData);
+            }, 4000); 
         }
     } else {
-        // 1. 先抓取文字標籤
-        const statusText = document.getElementById('duel-status');
-        const buttons = document.getElementById('rps-buttons');
-
-        // 2. ★ 第一層檢查：確保網頁上有這個標籤 (我的防呆)
         if (statusText && buttons) {
-
-            // 3. ★ 第二層檢查：您的邏輯 (檢查出拳了沒)
             const myChoiceKey = (currentRole === "host") ? "p1_choice" : "p2_choice";
             const myChoice = gameData.duel[myChoiceKey];
 
             if (myChoice) {
-                // A. 已經出拳了 -> 顯示等待中，並鎖定按鈕
                 statusText.innerText = "等待對手出拳...";
                 buttons.style.pointerEvents = "none";
                 buttons.style.opacity = "0.5";
+                if (duelCountdownInterval) { clearInterval(duelCountdownInterval); duelCountdownInterval = null; }
+                if (timerEl) timerEl.innerText = "確認";
             } else {
-                // B. 還沒出拳 -> 提示請出拳，並解鎖按鈕
                 statusText.innerText = "請出拳！";
                 buttons.style.pointerEvents = "auto";
                 buttons.style.opacity = "1";
+
+                if (!duelCountdownInterval) {
+                    let timeLeft = 5;
+                    if (timerEl) { timerEl.style.display = 'block'; timerEl.innerText = timeLeft; }
+
+                    duelCountdownInterval = setInterval(() => {
+                        timeLeft--;
+                        const tEl = document.getElementById('duel-timer');
+                        if (tEl) tEl.innerText = timeLeft;
+
+                        if (timeLeft <= 0) {
+                            clearInterval(duelCountdownInterval);
+                            duelCountdownInterval = null;
+                            const choices = ['rock', 'paper', 'scissors'];
+                            window.submitDuelChoice(choices[Math.floor(Math.random() * 3)]);
+                        }
+                    }, 1000);
+                }
             }
         }
     }
 }
 
-// 3. 確保 submitDuelChoice 是全域可呼叫 (因為用了 onclick字串)
+// ==========================================
+// 1. 提交出拳 (新增視覺回饋)
+// ==========================================
 window.submitDuelChoice = async function (choice) {
+    if (duelCountdownInterval) {
+        clearInterval(duelCountdownInterval);
+        duelCountdownInterval = null;
+    }
+
+    // ★ 視覺回饋：讓玩家知道自己選了什麼
+    const btns = document.querySelectorAll('.rps-btn');
+    btns.forEach(b => {
+        if (b.dataset.choice === choice) {
+            // 選中的按鈕：變大、亮綠框、發光
+            b.style.border = '4px solid #00ff00';
+            b.style.boxShadow = '0 0 20px #00ff00';
+            b.style.transform = 'scale(1.1)';
+            b.style.background = '#222';
+        } else {
+            // 沒選中的：變暗、變灰
+            b.style.opacity = '0.3';
+            b.style.filter = 'grayscale(100%)';
+        }
+    });
+
     const choiceKey = (currentRole === "host") ? "p1_choice" : "p2_choice";
     const updatePayload = {};
     updatePayload[`duel/${choiceKey}`] = choice;
+    
     // 鎖定按鈕避免連點
-    const btns = document.getElementById('rps-buttons');
-    if (btns) btns.style.pointerEvents = 'none';
+    const rpsContainer = document.getElementById('rps-buttons');
+    if (rpsContainer) rpsContainer.style.pointerEvents = 'none';
+    
+    const timerEl = document.getElementById('duel-timer');
+    if (timerEl) timerEl.innerText = "已確認";
 
     await update(ref(db, `games/${currentGameId}`), updatePayload);
 }
