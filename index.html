@@ -1,157 +1,126 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
-
-<head>
+<html lang="zh-TW">
+<head>  
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LUCK DUEL - Good Luck</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;700&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>妮妮訂單查詢</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-    <div id="login-screen">
-        <div class="login-card">
-            <div class="branding">
-                <h1>LUCK DUEL</h1>
-                <p>Good Luck</p>
-            </div>
-            <button id="google-login-btn" class="google-btn">
-                <i class="fab fa-google"></i> 使用 Google 帳號登入
+    <header class="top-nav">
+        <button id="menu-toggle" class="icon-btn"><i class="fas fa-bars"></i></button>
+        <div class="logo">nini order search</div>
+    </header>
+
+    <!-- 側邊選單優化版 -->
+    <nav id="side-menu" class="side-menu">
+        <div class="menu-header">
+            <h2>MENU</h2>
+            <!-- 💡 漂亮圓形關閉鈕 -->
+            <button id="menu-close" class="close-btn">
+                <i class="fas fa-times"></i>
             </button>
-            <div id="login-msg" style="margin-top:20px; font-size:0.9rem; color:#aaa; min-height:20px;"></div>
+        </div>
+        <ul class="menu-list">
+            <li><a href="index.html"><i class="fas fa-home"></i> 首頁</a></li>
+           <li><a href="shop.html"><i class="fas fa-shopping-bag"></i> 現貨賣場</a></li>
+            <li><a href="about.html" class="active"><i class="fas fa-info-circle"></i> 關於我們</a></li>
+        </ul>
+        
+        <!-- 💡 底部聯絡資訊：讓選單不那麼空 -->
+        <div class="menu-footer">
+            <p>有問題嗎？找妮妮</p>
+            <div class="social-links">
+                <a href="#"><i class="fab fa-line"></i></a>
+                <a href="#"><i class="fab fa-facebook-messenger"></i></a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <section class="hero-carousel">
+            <div class="swiper">
+                <div class="swiper-wrapper">
+                    <!-- 類型 1：能點擊跳轉的圖片 -->
+                    <div class="swiper-slide">
+                        <a href="https://line.me/R/ti/p/@yourid" target="_blank">
+                            <img src="images/banner/banner_01.jpg" alt="加入LINE群組">
+                        </a>
+                    </div>
+                    <!-- 類型 2：純畫面圖片 -->
+                    <div class="swiper-slide">
+                        <img src="images/banner/banner_02.jpg" alt="新品預告">
+                    </div>
+                    <!-- 類型 2：純畫面圖片 -->
+                    <div class="swiper-slide">
+                        <img src="images/banner/banner_03.jpg" alt="新品預告">
+                    </div>
+                    <!-- 類型 2：純畫面圖片 -->
+                    <div class="swiper-slide">
+                        <img src="images/banner/banner_04.jpg" alt="新品預告">
+                    </div>
+                </div>
+                <!-- 如果需要分頁圓點 -->
+                <div class="swiper-pagination"></div>
+            </div>
+        </section>
+
+        <section class="search-section">
+            <div class="search-container">
+                <h2 class="search-title">訂單查詢</h2>
+                <div class="search-form-card">
+                    <div class="input-group">
+                        <label for="community-name"><i class="fas fa-users"></i> 社群名稱</label>
+                        <input type="text" id="community-name" placeholder="請輸入社群名稱">
+                    </div>
+                    <div class="input-group">
+                        <label for="phone-number"><i class="fas fa-mobile-alt"></i> 手機號碼</label>
+                        <input type="tel" id="phone-number" placeholder="請輸入手機號碼">
+                    </div>
+                    <button type="button" id="submit-query" class="btn-primary">
+                        <i class="fas fa-magic"></i> 開始查詢
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="result-section" class="result-section" style="display: none;">
+            <div class="section-title">✦ 我的訂單紀錄</div>
+            <div id="cards-container" class="cards-container"></div>
+        </section>
+
+            <div class="notice-list">
+                <section class="notice-board">
+                    <div class="section-title"><span>✦</span> 重要佈告欄</div>
+                    <div id="notice-list" class="notice-list">
+                        <!-- 這裡由 JS 動態生成 -->
+                    </div>
+                    <!-- 分頁按鈕 -->
+                    <div id="pagination" class="pagination-container"></div>
+                </section>
+            </div>
+    </main>
+    <!-- 公告彈窗容器 -->
+    <div id="notice-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">公告標題</h3>
+            </div>
+            <div class="modal-body">
+                <p id="modal-date" class="modal-date"></p>
+                <div id="modal-text" class="modal-text">公告內容</div>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-confirm" class="btn-primary">我知道了</button>
+            </div>
         </div>
     </div>
 
-    <div id="app-interface" class="hide">
-        <nav class="sidebar">
-            <div class="user-profile">
-                <img src="" alt="Avatar" id="user-avatar" class="avatar">
-                <div class="user-info">
-                    <h3 id="user-name">Player</h3>
-                    <span>ONLINE</span>
-                </div>
-            </div>
-            <div class="menu-items">
-                <button id="nav-lobby" class="active">
-                    <i class="fas fa-gamepad"></i> 對戰大廳
-                </button>
-                <button id="nav-char">
-                    <i class="fas fa-user-astronaut"></i> 我的角色
-                </button>
-                <button id="nav-summon">
-                    <i class="fas fa-meteor"></i> 角色召喚
-                </button>
-
-                <button id="nav-glossary" class="hide-on-mobile">
-                    <i class="fas fa-book"></i> 角色圖鑑
-                </button>
-                <button id="nav-history" class="hide-on-mobile">
-                    <i class="fas fa-history"></i> 歷史紀錄
-                </button>
-                <button id="logout-btn" class="hide-on-mobile" style="margin-top: auto;">
-                    <i class="fas fa-sign-out-alt"></i> 登出
-                </button>
-
-                <button id="nav-more" class="show-on-mobile">
-                    <i class="fas fa-bars"></i> 更多
-                </button>
-            </div>
-
-            <div id="more-menu">
-                <button id="more-glossary" class="more-btn">
-                    <i class="fas fa-book"></i> 角色圖鑑
-                </button>
-                <button id="more-history" class="more-btn">
-                    <i class="fas fa-history"></i> 歷史紀錄
-                </button>
-                <hr style="border-color: #444; margin: 5px 0;">
-                <button id="more-logout-btn" class="more-btn" style="color: #ff4444;">
-                    <i class="fas fa-sign-out-alt"></i> 登出
-                </button>
-            </div>
-        </nav>
-
-        <main class="game-area">
-            <div class="game-frame">
-
-                <div id="lobby-view">
-                    <h2 style="color:#eee; margin-bottom: 20px; font-weight:bold; text-align: center;">準備好迎接運氣決鬥了嗎？</h2>
-                    <button id="find-match-btn" style="
-                        padding: 15px 40px; font-size: 1.5rem;
-                        background: linear-gradient(45deg, #ff00cc, #3333ff);
-                        color: white; border: none; border-radius: 50px; cursor: pointer;
-                        font-family: 'Orbitron'; box-shadow: 0 0 20px rgba(255, 0, 204, 0.4);
-                        transition: 0.3s; width: 100%; max-width: 300px;">
-                        START BATTLE
-                    </button>
-                    <p id="match-status" style="margin-top: 20px; color: #888; height: 20px; text-align: center;"></p>
-                </div>
-
-                <div id="char-view" style="display: none; width: 100%; height: 100%; flex-direction: column;">
-                    <div class="team-section">
-                        <h2
-                            style="color:white; text-align:center; margin-bottom:15px; font-family:'Orbitron'; letter-spacing:2px;">
-                            MY TEAM <span style="font-size:0.8rem; color:#aaa;"></span>
-                        </h2>
-                        <div id="team-row" class="team-row"></div>
-                    </div>
-                    <div class="inventory-container">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                            <h3 class="inventory-title" style="margin: 0; color: white;">MY CARDS</h3>
-                            <button onclick="toggleSort()" class="sort-btn">
-                                <i class="fas fa-sort"></i>
-                                <span id="sort-btn-text">排序: 代號</span>
-                            </button>
-                        </div>
-                        <div id="inventory-grid" class="char-grid"></div>
-                    </div>
-                </div>
-
-                <div id="summon-view" style="display: none; width: 100%;">
-                    <div class="summon-header">
-                        <h2 class="glow-text">✨ 命運召喚 ✨</h2>
-                        <div class="coin-display">
-                            <i class="fas fa-coins coin-icon"></i>
-                            <span id="user-coins">---</span>
-                        </div>
-                    </div>
-                    <div class="gacha-machine">
-                        <div id="gacha-stage" class="gacha-stage"></div>
-                    </div>
-                    <div class="summon-actions">
-                        <button class="summon-btn btn-single" onclick="handleSummon(1)">
-                            <span class="btn-title">單次召喚</span>
-                            <span class="btn-cost"><i class="fas fa-coins"></i> 100</span>
-                        </button>
-                        <button class="summon-btn btn-multi" onclick="handleSummon(10)">
-                            <span class="btn-title">十連召喚</span>
-                            <span class="btn-cost"><i class="fas fa-coins"></i> 1000</span>
-                            <div class="tag-bonus">必中 SR!</div>
-                        </button>
-                    </div>
-                    <div id="gacha-result-overlay" class="result-overlay" style="display: none;">
-                        <h3 style="color:white; margin-bottom:20px;">召喚結果</h3>
-                        <div id="result-grid" class="result-grid"></div>
-                        <button class="close-btn" onclick="closeGachaResult()">確認</button>
-                    </div>
-                </div>
-
-                <div id="history-view" style="display: none; text-align: center;">
-                    <h2 style="color:white;">HISTORY</h2>
-                    <p style="color:#aaa;">暫無紀錄</p>
-                </div>
-
-            </div>
-        </main>
-    </div>
-
-    <script type="module" src="js/main.js"></script>
+    <div id="overlay" class="overlay"></div>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="script.js"></script>
 </body>
-
 </html>
