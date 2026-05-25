@@ -10,16 +10,12 @@
 
 body {
     font-family: 'Roboto', sans-serif;
-    /* 背景漸層：由左上到右下的紫色系漸層 */
     background: linear-gradient(135deg, #e0c3fc, #8ec5fc, #e0eafc);
-    height: 100vh;
-    /* 佔滿整個視窗高度 */
+    min-height: 100vh;
+    height: 100%;
     color: #333;
-    /* 預設文字顏色：深灰 */
-    overflow: hidden;
-    /* 防止視窗出現捲軸，固定版面 */
+    overflow: hidden; /* 桌面版固定版面 */
     display: flex;
-    /* 使用 Flex 排版 */
 }
 
 /* 背景網格紋理特效 */
@@ -141,12 +137,10 @@ body::before {
    ========================================= */
 #app-interface {
     width: 100%;
-    height: 100%;
+    height: 100vh; /* 桌面版佔滿視窗 */
     display: flex;
     opacity: 0;
-    /* 預設隱藏，等待登入後淡入 */
     animation: fadeIn 0.8s forwards;
-    /* 執行淡入動畫 */
 }
 
 /* 淡入動畫關鍵影格 */
@@ -1006,313 +1000,276 @@ body::before {
 
 /* =========================================
    9. 手機版 RWD (Mobile Responsive)
-   ★ 這裡非常重要，控制手機上的顯示
    ========================================= */
 @media (max-width: 768px) {
 
-    /* --- A. 導航變到底部 (Bottom Bar) --- */
+    /* ① 解除 body / app-interface 高度鎖定 */
+    body {
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        height: auto !important;
+    }
+
+    #app-interface {
+        flex-direction: column !important;
+        height: auto !important;
+        min-height: 100vh;
+        overflow: visible !important;
+    }
+
+    /* ② 內容區可滑動，底部 padding 留給 tab bar (104px) + 緩衝 */
+    .game-area {
+        margin-left: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        padding: 10px 10px 150px 10px !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        flex: none !important;
+        box-sizing: border-box !important;
+    }
+
+    .game-frame {
+        display: block !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        padding: 12px 8px !important;
+    }
+
+    /* ③ Tab Bar：固定在底部，高度明確 104px (2排×52px) */
     .sidebar {
         position: fixed !important;
         bottom: 0 !important;
         left: 0 !important;
         top: auto !important;
         width: 100% !important;
-        height: 70px !important;
-        flex-direction: row !important;
-        /* 改為橫向 */
-        justify-content: space-evenly !important;
-        background: rgba(18, 18, 28, 0.95) !important;
-        backdrop-filter: blur(10px) !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+        height: 104px !important;          /* ← 明確高度，讓 grid 知道每排多高 */
+        flex-direction: column !important;
+        background: rgba(10, 10, 18, 0.97) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
         z-index: 999999 !important;
         padding: 0 !important;
         margin: 0 !important;
+        box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5) !important;
+        justify-content: flex-start !important;
+        align-items: stretch !important;
+        overflow: hidden !important;
     }
 
-    /* 隱藏手機版不需要的元素 */
+    /* 隱藏不需要的 sidebar 子元素 */
     .sidebar .logo,
     .sidebar .user-profile,
     .sidebar .branding {
         display: none !important;
     }
 
-    /* 選單項目橫排 */
-    .sidebar>div,
-    .sidebar>ul,
+    /* ④ menu-items：grid 2排×3欄，撐滿 sidebar */
     .menu-items {
-        display: flex !important;
-        flex-direction: row !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        grid-template-rows: repeat(2, 52px) !important;
         width: 100% !important;
-        height: 100% !important;
-        justify-content: space-evenly !important;
-        align-items: center !important;
+        height: 104px !important;          /* ← 配合 sidebar 高度 */
         padding: 0 !important;
         margin: 0 !important;
+        gap: 0 !important;
+        align-items: stretch !important;
     }
 
-    /* 按鈕樣式調整 */
-    .sidebar button {
-        flex: 1 !important;
-        height: 100% !important;
+    /* ⑤ 每個 tab 按鈕 */
+    .menu-items button {
+        display: flex !important;
         flex-direction: column !important;
-        /* 圖標在文字上方 */
         justify-content: center !important;
-        padding: 0 !important;
-        color: #888 !important;
-    }
-
-    .sidebar button.active {
-        color: #d8b4fe !important;
-        background: radial-gradient(circle, rgba(216, 180, 254, 0.15) 0%, transparent 70%) !important;
-    }
-
-    /* --- B. 內容區調整 --- */
-    .main-content,
-    .game-area {
-        margin-left: 0 !important;
+        align-items: center !important;
         width: 100% !important;
-        padding: 10px !important;
-        padding-bottom: 100px !important;
-        /* 留給底部導航空間 */
+        height: 52px !important;
+        padding: 4px 2px !important;
+        margin: 0 !important;
+        gap: 3px !important;
+        color: #555 !important;
+        background: transparent !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        position: relative !important;
+        cursor: pointer !important;
+        transition: color 0.2s, background 0.2s !important;
+        border-right: 1px solid rgba(255,255,255,0.05) !important;
+        border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+        box-sizing: border-box !important;
+        text-align: center !important;
+        font-size: 0 !important;            /* 清除繼承字大小 */
     }
 
-    /* --- C. 背包與卡片調整 --- */
+    .menu-items button i {
+        font-size: 1.1rem !important;
+        line-height: 1 !important;
+        display: block !important;
+    }
+
+    .menu-items button .nav-label {
+        font-size: 0.55rem !important;
+        display: block !important;
+        line-height: 1 !important;
+        white-space: nowrap !important;
+        color: inherit !important;
+        letter-spacing: 0 !important;
+    }
+
+    /* Active：亮紫 + 頂部細線 */
+    .menu-items button.active {
+        color: #c084fc !important;
+        background: rgba(192, 132, 252, 0.08) !important;
+        box-shadow: none !important;
+    }
+
+    .menu-items button.active::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 15% !important;
+        width: 70% !important;
+        height: 2px !important;
+        background: #c084fc !important;
+        border-radius: 0 0 2px 2px !important;
+    }
+
+    /* 電腦版登出隱藏 */
+    .hide-on-mobile {
+        display: none !important;
+    }
+
+    /* 手機登出顯示 */
+    .show-on-mobile {
+        display: flex !important;
+    }
+
+    .menu-items button.logout-tab {
+        color: #553333 !important;
+    }
+
+    .menu-items button.logout-tab:active,
+    .menu-items button.logout-tab:hover {
+        color: #ff5555 !important;
+        background: rgba(255, 85, 85, 0.08) !important;
+    }
+
+    /* ⑥ 背包與卡片 */
     .char-grid {
-        /* 手機版強制 3 欄 */
         grid-template-columns: repeat(3, 1fr) !important;
         gap: 8px !important;
     }
 
     .char-card {
-        /* 手機版卡片比例調整 */
         aspect-ratio: 2 / 3 !important;
     }
 
-    /* 字體縮小，避免爆版 */
     .card-name {
         font-size: 0.75rem !important;
     }
 
-    .card-attr {
-        font-size: 1rem !important;
-    }
-
-    .card-main-icon {
-        font-size: 2rem !important;
-    }
-
-    .stat-box {
-        font-size: 0.6rem !important;
-        gap: 2px !important;
-    }
-
-    /* --- D. 隊伍欄位調整 --- */
+    /* ⑦ 隊伍欄 */
     .team-slot {
         border-width: 1px !important;
         border-radius: 6px !important;
     }
 
-    /* 1. 遊戲主框架：改成垂直排列，從上面開始 */
-    .game-frame {
-        display: flex !important;
-        flex-direction: column !important;
-        /* ★ 關鍵：垂直排列 */
-        justify-content: flex-start !important;
-        /* 靠上對齊 */
-        align-items: center !important;
-        /* 水平置中 */
-        padding-top: 20px !important;
-        /* 留點頂部空間 */
-    }
-
-    /* 2. HUD (時間/分數顯示區)：強制撐滿寬度並置中 */
+    /* ⑧ 遊戲 HUD */
     #game-hud,
     .hud-container {
         width: 100% !important;
         display: flex !important;
         justify-content: center !important;
-        /* ★ 關鍵：內容置中 */
         align-items: center !important;
         margin-bottom: 15px !important;
-        /* 跟棋盤拉開距離 */
         position: relative !important;
         order: -1 !important;
-        /* ★ 關鍵：保證排在最上面 */
     }
 
-    /* 3. 如果計時器是單獨的 ID */
-    #timer,
-    #time-display {
-        margin: 0 auto !important;
-        /* 自身置中 */
-        text-align: center !important;
-    }
-
-    /* 4. 棋盤往下一點，避免撞到時間 */
     #chess-board {
         margin-top: 10px !important;
     }
 
-    #lobby-view {
-        /* 確保寬度撐滿 */
-        width: 100%;
-    }
-
-    #find-match-btn {
-        width: 80%;
-        max-width: 300px;
-    }
-
-    /* 修正遮罩層 padding */
-    .result-overlay {
-        padding: 60px 15px 100px 15px !important;
-        /* 底部留多一點給手指滑動 */
-        justify-content: flex-start !important;
-        /* 手機版從上面開始排 */
-    }
-
-    /* 十連抽：強制兩欄 */
-    .result-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 12px !important;
+    /* ⑨ 召喚 - 按鈕不被擋住 */
+    #summon-view {
         width: 100% !important;
-        max-width: 360px !important;
-        /* 限制寬度以免太開 */
-        margin-top: 20px !important;
-        /* 離標題一點距離 */
+        padding-bottom: 30px !important;
+        overflow: visible !important;
+    }
+
+    .summon-actions {
+        position: relative !important;
+        z-index: 10 !important;
         margin-bottom: 20px !important;
     }
 
-    /* 修正手機版卡片比例 */
-    .result-grid .char-card {
-        aspect-ratio: 2 / 3 !important;
-    }
-
-    .result-grid .char-card span {
-        font-size: 0.75rem !important;
-    }
-
-    /* 手機版單抽：確保置中 */
-    .result-grid.single-pull {
-        min-height: 60vh !important;
-        /* 讓單抽佔據畫面大半，視覺置中 */
-    }
-
-    .result-grid.single-pull .char-card {
-        width: 240px !important;
-        transform: scale(1) !important;
-        /* 手機不放大 */
-    }
-
     .gacha-stage {
-        width: 100%;
-        /* 設定高度 (您可以根據圖片比例自己調整，例如 300px 或 400px) */
-        background-repeat: no-repeat;
-        background-position: top center;
-        /* ★ 手機版圖片路徑 (請確認檔名正確) */
-        background-image: url('../img/summon_mobile.webp');
-
-        /* 手機版高度可能需要調整 (例如直式圖可能要高一點) */
-        height: 550px;
+        width: 100% !important;
+        background-image: url('../img/summon_mobile.webp') !important;
+        height: 320px !important;
+        background-size: cover !important;
+        background-position: top center !important;
     }
 
     .glow-text {
         font-size: 1.8rem !important;
-        /* 手機版字稍微小一點 */
     }
 
     .summon-header {
         flex-direction: column !important;
-        /* 改回上下排列 */
         gap: 5px !important;
         padding-top: 5px !important;
     }
 
     .coin-display {
-        /* 手機版取消絕對定位，改回標題下方 */
         position: relative !important;
         right: auto !important;
         top: auto !important;
         transform: none !important;
-        /* 稍微縮小一點 */
         padding: 5px 15px !important;
         font-size: 1rem !important;
     }
 
-    /* 1. 隱藏電腦版專用的按鈕 */
-    .hide-on-mobile {
-        display: none !important;
+    /* ⑩ 抽卡結果遮罩 */
+    .result-overlay {
+        padding: 60px 15px 160px 15px !important;
+        justify-content: flex-start !important;
     }
 
-    /* 2. 顯示「更多」按鈕 */
-    .show-on-mobile {
-        display: flex !important;
-        /* 或是 block，依照您原本按鈕的設定 */
+    .result-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+        width: 100% !important;
+        max-width: 360px !important;
+        margin-top: 20px !important;
+        margin-bottom: 20px !important;
     }
 
-    /* 1. 小選單預設狀態：必須隱藏！ */
-    #more-menu {
-        display: none !important;
-        /* ★ 兇手就是它！你原本可能漏掉這行，或寫成 flex 了 */
-        position: absolute;
-        bottom: 80px;
-        right: 15px;
-        background: rgba(30, 30, 30, 0.98);
-        border: 1px solid #555;
-        border-radius: 10px;
-        padding: 10px;
-        flex-direction: column;
-        gap: 8px;
-        z-index: 9999;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.8);
-        min-width: 140px;
+    .result-grid .char-card {
+        aspect-ratio: 2 / 3 !important;
     }
 
-    /* 2. 當 JS 加上 .show 的時候，才強制顯示 */
-    #more-menu.show {
-        display: flex !important;
-        /* ★ 靠這行把它叫出來 */
+    .result-grid.single-pull {
+        min-height: 50vh !important;
     }
 
-    /* 小選單按鈕樣式 (維持不變) */
-    .more-btn {
-        background: transparent;
-        color: #fff;
-        border: none;
-        padding: 10px 15px;
-        font-size: 1rem;
-        text-align: left;
-        cursor: pointer;
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
+    .result-grid.single-pull .char-card {
+        width: 200px !important;
+        transform: scale(1) !important;
     }
 
-    .more-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
+    #lobby-view {
+        width: 100%;
+        padding-bottom: 20px;
     }
 
-    /*=========================================🛠️ 修復「更多」按鈕的預設白色背景=========================================*/
-
-    /* 1. 預設狀態 (未點擊時)：透明背景、灰色文字 */
-    #nav-more {
-        background-color: transparent !important;
-        /* 強制去除白底 */
-        color: #aaa !important;
-        /* 預設文字顏色 (灰白色) */
-        border: none !important;
-        /* 去除預設邊框 */
-        box-shadow: none !important;
-        /* 去除預設按鈕立體陰影 */
-    }
-
-    /* 2. 點擊狀態 (Active 時)：白色文字、淡淡發光背景 */
-    #nav-more.active {
-        color: #fff !important;
-        /* 亮起時文字變純白 */
-        background-color: rgba(255, 255, 255, 0.1) !important;
-        /* 亮起時給一點微光背景 */
+    #find-match-btn {
+        width: 80%;
+        max-width: 300px;
     }
 }
 
@@ -1347,7 +1304,6 @@ body::before {
 
     /* 1. 網格變寬 (讓卡片變大) */
     .char-grid {
-        /* 最小 160px，這會讓卡片明顯變大 */
         grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
         gap: 20px !important;
         padding: 20px !important;
@@ -1356,25 +1312,21 @@ body::before {
     /* 2. 字體全面放大 */
     .card-name {
         font-size: 1rem !important;
-        /* 名字變大 */
         margin-bottom: 3px !important;
     }
 
     .card-stats {
         font-size: 1rem !important;
-        /* 數值變大 */
         gap: 15px !important;
     }
 
     .card-rarity-badge {
         font-size: 0.8rem !important;
-        /* 稀有度標籤變大 */
         padding: 4px 8px !important;
     }
 
     .card-attr-badge {
         font-size: 1.5rem !important;
-        /* 屬性圖示變大 */
     }
 
     /* 3. 資訊區高度增加 */
@@ -1390,14 +1342,9 @@ body::before {
         align-items: center !important;
     }
 
-    /* 預設 (電腦版)：隱藏「更多」按鈕與小選單 */
+    /* 電腦版：隱藏手機專用元素 */
     .show-on-mobile {
         display: none !important;
-    }
-
-    #more-menu {
-        display: none !important;
-        /* 電腦版強制不顯示小選單 */
     }
 }
 

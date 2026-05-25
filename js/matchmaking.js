@@ -55,10 +55,7 @@ export async function findMatch(user, myTeam) {
             status: "playing",
             board: initialBoard,
             turn: opponentId,
-            // ★★★ 補上這一行：開局時就要寫入開始時間！ ★★★
             turn_start_time: Date.now(),
-
-            board: initialBoard,
             duel: null
         });
 
