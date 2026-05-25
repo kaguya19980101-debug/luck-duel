@@ -625,7 +625,7 @@ window.test_clearCards = async function () {
         await remove(ref(db, `users/${user.uid}/team`));
         console.log("資料已重置");
     }
-}
+};
 
 
 // ==========================================
