@@ -914,7 +914,7 @@ window.tabNav = function(viewId, btnId) {
 
 window.doLogout = function() {
     window.closeTabPanel();
-    import('./auth.js').then(m => m.logoutUser());
+    AuthUser.logoutUser();
 };
 
 // ==========================================
