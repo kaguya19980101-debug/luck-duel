@@ -301,7 +301,7 @@ window.renderInventoryGrid = function () {
             cardEl.classList.add('in-team');
         }
 
-        cardEl.onclick = () => window.handleCardClick(key);
+        cardEl.onclick = () => window.openCardModal(key);
 
         const imgPath = window.getCharImage(key);
 
@@ -570,6 +570,286 @@ window.test_clearCards = async function () {
         console.log("資料已重置");
     }
 }
+
+
+// ==========================================
+// CARD DETAIL MODAL (遊戲王格式)
+// ==========================================
+(function injectCardModalStyle() {
+    const style = document.createElement('style');
+    style.textContent = `
+    #card-detail-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        z-index: 9999999;
+        justify-content: center;
+        align-items: flex-end;
+        padding: 0;
+    }
+    #card-detail-modal.open {
+        display: flex;
+    }
+    .cdm-sheet {
+        background: #0d0d0f;
+        border-top: 2px solid #444;
+        border-radius: 18px 18px 0 0;
+        width: 100%;
+        max-width: 480px;
+        padding: 20px 20px 40px 20px;
+        box-sizing: border-box;
+        animation: slideUp 0.25s ease;
+        position: relative;
+        max-height: 88vh;
+        overflow-y: auto;
+    }
+    @keyframes slideUp {
+        from { transform: translateY(100%); opacity: 0; }
+        to   { transform: translateY(0);    opacity: 1; }
+    }
+    .cdm-close {
+        position: absolute;
+        top: 14px; right: 18px;
+        background: none; border: none;
+        color: #888; font-size: 1.5rem;
+        cursor: pointer; line-height: 1;
+    }
+    .cdm-top {
+        display: flex;
+        gap: 14px;
+        margin-bottom: 14px;
+    }
+    .cdm-img {
+        width: 90px;
+        height: 120px;
+        object-fit: cover;
+        object-position: top center;
+        border-radius: 8px;
+        border: 2px solid #333;
+        flex-shrink: 0;
+    }
+    .cdm-meta {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    .cdm-name {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1.1rem;
+        color: #fff;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+    .cdm-rarity-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .cdm-rarity-badge {
+        font-size: 0.7rem;
+        font-weight: bold;
+        padding: 2px 8px;
+        border-radius: 4px;
+        border: 1px solid;
+    }
+    .cdm-rarity-R   { color: #60a5fa; border-color: #60a5fa; }
+    .cdm-rarity-SR  { color: #a855f7; border-color: #a855f7; }
+    .cdm-rarity-SSR { color: #ffd700; border-color: #ffd700;
+                      background: rgba(255,215,0,0.08); }
+    .cdm-attr {
+        font-size: 1rem;
+    }
+    .cdm-stats {
+        display: flex;
+        gap: 10px;
+        margin-top: 4px;
+    }
+    .cdm-stat-box {
+        background: #1a1a22;
+        border: 1px solid #333;
+        border-radius: 6px;
+        padding: 4px 10px;
+        text-align: center;
+        flex: 1;
+    }
+    .cdm-stat-label {
+        font-size: 0.55rem;
+        color: #777;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+    .cdm-stat-value {
+        font-size: 1rem;
+        font-weight: bold;
+        color: #eee;
+    }
+    .cdm-divider {
+        border: none;
+        border-top: 1px solid #2a2a35;
+        margin: 12px 0;
+    }
+    .cdm-section-title {
+        font-size: 0.65rem;
+        letter-spacing: 2px;
+        color: #555;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
+    .cdm-skill-box {
+        background: #111118;
+        border: 1px solid #2a2a3a;
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-bottom: 10px;
+    }
+    .cdm-skill-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+    }
+    .cdm-skill-type {
+        font-size: 0.6rem;
+        padding: 2px 7px;
+        border-radius: 3px;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+    .cdm-skill-type.active  { background: #7c3aed; color: #e9d5ff; }
+    .cdm-skill-type.passive { background: #1e4d2b; color: #6ee7b7; }
+    .cdm-skill-name {
+        font-size: 0.95rem;
+        color: #e2d9f3;
+        font-weight: 600;
+    }
+    .cdm-skill-trigger {
+        font-size: 0.7rem;
+        color: #665c7a;
+        margin-bottom: 6px;
+    }
+    .cdm-skill-desc {
+        font-size: 0.8rem;
+        color: #aaa;
+        line-height: 1.6;
+        border-top: 1px solid #222;
+        padding-top: 8px;
+        margin-top: 2px;
+    }
+    .cdm-no-skill {
+        color: #444;
+        font-size: 0.8rem;
+        text-align: center;
+        padding: 16px 0;
+    }
+    .cdm-team-btn {
+        width: 100%;
+        margin-top: 16px;
+        padding: 14px;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        font-family: 'Orbitron', sans-serif;
+        letter-spacing: 1px;
+        transition: 0.2s;
+    }
+    .cdm-team-btn.add    { background: linear-gradient(135deg,#7c3aed,#4f46e5); color:#fff; }
+    .cdm-team-btn.remove { background: linear-gradient(135deg,#b91c1c,#991b1b); color:#fff; }
+    `;
+    document.head.appendChild(style);
+
+    // Inject modal HTML
+    const modal = document.createElement('div');
+    modal.id = 'card-detail-modal';
+    modal.innerHTML = `<div class="cdm-sheet"><button class="cdm-close" onclick="window.closeCardModal()">✕</button><div id="cdm-content"></div></div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e){ if(e.target===modal) window.closeCardModal(); });
+})();
+
+const TRIGGER_LABELS = {
+    'on_win_duel':    '猜拳獲勝時發動',
+    'on_lose_duel':   '猜拳落敗時發動',
+    'on_move':        '移動時自動觸發',
+    'on_defend':      '被攻擊時自動觸發',
+    'on_death':       '死亡時自動觸發',
+    'on_turn_start':  '每回合開始時觸發',
+    'on_attack':      '攻擊時發動',
+};
+
+window.openCardModal = function(id) {
+    const char = window.myInventoryData[id];
+    if (!char) return;
+
+    const config = window.ATTR_CONFIG || {};
+    const attrData = config[(char.attribute||'').toLowerCase()] || { icon:'❓', color:'#999', label:'?' };
+    const imgPath = window.getCharImage(id);
+    const isInTeam = window.currentTeam && window.currentTeam.some(m => String(m) === String(id));
+    const count = char.count || 1;
+
+    // Build skills HTML
+    function buildSkill(skill, type) {
+        if (!skill) return '';
+        const trigLabel = TRIGGER_LABELS[skill.trigger] || skill.trigger || '';
+        return `
+        <div class="cdm-skill-box">
+            <div class="cdm-skill-header">
+                <span class="cdm-skill-type ${type}">${type === 'active' ? '主動' : '被動'}</span>
+                <span class="cdm-skill-name">${skill.name || '未命名技能'}</span>
+            </div>
+            <div class="cdm-skill-trigger">◆ ${trigLabel}</div>
+            <div class="cdm-skill-desc">${skill.desc || skill.description || '（技能說明尚未填寫）'}</div>
+        </div>`;
+    }
+
+    const activeHTML  = buildSkill(char.active,  'active');
+    const passiveHTML = buildSkill(char.passive, 'passive');
+    const noSkill = (!char.active && !char.passive)
+        ? `<div class="cdm-no-skill">此卡尚無技能資料</div>`
+        : '';
+
+    document.getElementById('cdm-content').innerHTML = `
+        <div class="cdm-top">
+            <img class="cdm-img" src="${imgPath}" onerror="this.src='img/characters/default.png'">
+            <div class="cdm-meta">
+                <div class="cdm-name">${char.name}</div>
+                <div class="cdm-rarity-line">
+                    <span class="cdm-rarity-badge cdm-rarity-${char.rarity}">${char.rarity}</span>
+                    <span class="cdm-attr" style="color:${attrData.color}">${attrData.icon} ${attrData.label}</span>
+                </div>
+                <div class="cdm-stats">
+                    <div class="cdm-stat-box">
+                        <div class="cdm-stat-label">ATK</div>
+                        <div class="cdm-stat-value" style="color:#ff6b6b">${char.attack||0}</div>
+                    </div>
+                    <div class="cdm-stat-box">
+                        <div class="cdm-stat-label">HP</div>
+                        <div class="cdm-stat-value" style="color:#6bff9e">${char.hp||0}</div>
+                    </div>
+                    <div class="cdm-stat-box">
+                        <div class="cdm-stat-label">持有</div>
+                        <div class="cdm-stat-value" style="color:#ffd700">×${count}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr class="cdm-divider">
+        <div class="cdm-section-title">技能</div>
+        ${activeHTML}${passiveHTML}${noSkill}
+        <button class="cdm-team-btn ${isInTeam ? 'remove' : 'add'}"
+            onclick="window.handleCardClick('${id}'); window.closeCardModal();">
+            ${isInTeam ? '⊖ 從隊伍移除' : '⊕ 加入隊伍'}
+        </button>
+    `;
+
+    document.getElementById('card-detail-modal').classList.add('open');
+};
+
+window.closeCardModal = function() {
+    document.getElementById('card-detail-modal').classList.remove('open');
+};
 
 // ==========================================
 // 8. 導航按鈕綁定 (Navigation Binding)

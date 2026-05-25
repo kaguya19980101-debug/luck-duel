@@ -1003,12 +1003,11 @@ body::before {
    ========================================= */
 @media (max-width: 768px) {
 
-    /* ★ 根本修復：解除所有高度鎖定，允許滑動 */
+    /* ① 解除 body / app-interface 高度鎖定 */
     body {
         overflow-x: hidden !important;
         overflow-y: auto !important;
         height: auto !important;
-        min-height: 100vh;
     }
 
     #app-interface {
@@ -1018,36 +1017,35 @@ body::before {
         overflow: visible !important;
     }
 
-    /* --- A. 內容區：可滑動，底部留給 tab bar --- */
+    /* ② 內容區可滑動，底部 padding 留給 tab bar (104px) + 緩衝 */
     .game-area {
         margin-left: 0 !important;
         width: 100% !important;
-        padding: 10px 10px 130px 10px !important;
-        flex: 1;
-        overflow: visible !important;
+        height: auto !important;
+        padding: 10px 10px 150px 10px !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        flex: none !important;
+        box-sizing: border-box !important;
     }
 
     .game-frame {
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: flex-start !important;
-        align-items: center !important;
-        padding-top: 15px !important;
-        min-height: auto !important;
+        display: block !important;
         height: auto !important;
+        min-height: 0 !important;
         overflow: visible !important;
-        flex: none !important;
+        padding: 12px 8px !important;
     }
 
-    /* --- B. 底部 Tab Bar：固定在底部，grid 2排3欄 --- */
+    /* ③ Tab Bar：固定在底部，高度明確 104px (2排×52px) */
     .sidebar {
         position: fixed !important;
         bottom: 0 !important;
         left: 0 !important;
         top: auto !important;
         width: 100% !important;
-        height: auto !important;
-        flex-direction: row !important;
+        height: 104px !important;          /* ← 明確高度，讓 grid 知道每排多高 */
+        flex-direction: column !important;
         background: rgba(10, 10, 18, 0.97) !important;
         backdrop-filter: blur(20px) !important;
         -webkit-backdrop-filter: blur(20px) !important;
@@ -1056,60 +1054,73 @@ body::before {
         padding: 0 !important;
         margin: 0 !important;
         box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5) !important;
+        justify-content: flex-start !important;
         align-items: stretch !important;
+        overflow: hidden !important;
     }
 
+    /* 隱藏不需要的 sidebar 子元素 */
     .sidebar .logo,
     .sidebar .user-profile,
     .sidebar .branding {
         display: none !important;
     }
 
-    /* 2排3欄 grid */
+    /* ④ menu-items：grid 2排×3欄，撐滿 sidebar */
     .menu-items {
         display: grid !important;
         grid-template-columns: repeat(3, 1fr) !important;
         grid-template-rows: repeat(2, 52px) !important;
         width: 100% !important;
+        height: 104px !important;          /* ← 配合 sidebar 高度 */
         padding: 0 !important;
         margin: 0 !important;
         gap: 0 !important;
+        align-items: stretch !important;
     }
 
+    /* ⑤ 每個 tab 按鈕 */
     .menu-items button {
-        width: 100% !important;
-        height: 100% !important;
+        display: flex !important;
         flex-direction: column !important;
         justify-content: center !important;
         align-items: center !important;
-        padding: 6px 4px !important;
+        width: 100% !important;
+        height: 52px !important;
+        padding: 4px 2px !important;
         margin: 0 !important;
+        gap: 3px !important;
         color: #555 !important;
         background: transparent !important;
         border: none !important;
         border-radius: 0 !important;
         box-shadow: none !important;
-        gap: 2px !important;
-        display: flex !important;
-        position: relative;
+        position: relative !important;
+        cursor: pointer !important;
         transition: color 0.2s, background 0.2s !important;
         border-right: 1px solid rgba(255,255,255,0.05) !important;
         border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+        box-sizing: border-box !important;
+        text-align: center !important;
+        font-size: 0 !important;            /* 清除繼承字大小 */
     }
 
     .menu-items button i {
         font-size: 1.1rem !important;
-        line-height: 1;
+        line-height: 1 !important;
+        display: block !important;
     }
 
     .menu-items button .nav-label {
-        font-size: 0.58rem !important;
+        font-size: 0.55rem !important;
         display: block !important;
-        line-height: 1;
-        white-space: nowrap;
-        color: inherit;
+        line-height: 1 !important;
+        white-space: nowrap !important;
+        color: inherit !important;
+        letter-spacing: 0 !important;
     }
 
+    /* Active：亮紫 + 頂部細線 */
     .menu-items button.active {
         color: #c084fc !important;
         background: rgba(192, 132, 252, 0.08) !important;
@@ -1117,20 +1128,22 @@ body::before {
     }
 
     .menu-items button.active::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 15%;
-        width: 70%;
-        height: 2px;
-        background: #c084fc;
-        border-radius: 0 0 2px 2px;
+        content: '' !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 15% !important;
+        width: 70% !important;
+        height: 2px !important;
+        background: #c084fc !important;
+        border-radius: 0 0 2px 2px !important;
     }
 
+    /* 電腦版登出隱藏 */
     .hide-on-mobile {
         display: none !important;
     }
 
+    /* 手機登出顯示 */
     .show-on-mobile {
         display: flex !important;
     }
@@ -1139,12 +1152,13 @@ body::before {
         color: #553333 !important;
     }
 
-    .menu-items button.logout-tab:active {
+    .menu-items button.logout-tab:active,
+    .menu-items button.logout-tab:hover {
         color: #ff5555 !important;
         background: rgba(255, 85, 85, 0.08) !important;
     }
 
-    /* --- C. 背包與卡片 --- */
+    /* ⑥ 背包與卡片 */
     .char-grid {
         grid-template-columns: repeat(3, 1fr) !important;
         gap: 8px !important;
@@ -1158,13 +1172,13 @@ body::before {
         font-size: 0.75rem !important;
     }
 
-    /* --- D. 隊伍欄 --- */
+    /* ⑦ 隊伍欄 */
     .team-slot {
         border-width: 1px !important;
         border-radius: 6px !important;
     }
 
-    /* --- E. 遊戲 HUD --- */
+    /* ⑧ 遊戲 HUD */
     #game-hud,
     .hud-container {
         width: 100% !important;
@@ -1180,19 +1194,49 @@ body::before {
         margin-top: 10px !important;
     }
 
-    #lobby-view {
-        width: 100%;
-        padding-bottom: 20px;
+    /* ⑨ 召喚 - 按鈕不被擋住 */
+    #summon-view {
+        width: 100% !important;
+        padding-bottom: 30px !important;
+        overflow: visible !important;
     }
 
-    #find-match-btn {
-        width: 80%;
-        max-width: 300px;
+    .summon-actions {
+        position: relative !important;
+        z-index: 10 !important;
+        margin-bottom: 20px !important;
     }
 
-    /* --- F. 召喚系統 --- */
+    .gacha-stage {
+        width: 100% !important;
+        background-image: url('../img/summon_mobile.webp') !important;
+        height: 320px !important;
+        background-size: cover !important;
+        background-position: top center !important;
+    }
+
+    .glow-text {
+        font-size: 1.8rem !important;
+    }
+
+    .summon-header {
+        flex-direction: column !important;
+        gap: 5px !important;
+        padding-top: 5px !important;
+    }
+
+    .coin-display {
+        position: relative !important;
+        right: auto !important;
+        top: auto !important;
+        transform: none !important;
+        padding: 5px 15px !important;
+        font-size: 1rem !important;
+    }
+
+    /* ⑩ 抽卡結果遮罩 */
     .result-overlay {
-        padding: 60px 15px 140px 15px !important;
+        padding: 60px 15px 160px 15px !important;
         justify-content: flex-start !important;
     }
 
@@ -1218,31 +1262,14 @@ body::before {
         transform: scale(1) !important;
     }
 
-    .gacha-stage {
+    #lobby-view {
         width: 100%;
-        background-image: url('../img/summon_mobile.webp');
-        height: 350px;
-        background-size: cover;
-        background-position: top center;
+        padding-bottom: 20px;
     }
 
-    .glow-text {
-        font-size: 1.8rem !important;
-    }
-
-    .summon-header {
-        flex-direction: column !important;
-        gap: 5px !important;
-        padding-top: 5px !important;
-    }
-
-    .coin-display {
-        position: relative !important;
-        right: auto !important;
-        top: auto !important;
-        transform: none !important;
-        padding: 5px 15px !important;
-        font-size: 1rem !important;
+    #find-match-btn {
+        width: 80%;
+        max-width: 300px;
     }
 }
 
