@@ -38,40 +38,26 @@
             </div>
             <div class="menu-items">
                 <button id="nav-lobby" class="active">
-                    <i class="fas fa-gamepad"></i> 對戰大廳
+                    <i class="fas fa-gamepad"></i> <span class="nav-label">對戰大廳</span>
                 </button>
                 <button id="nav-char">
-                    <i class="fas fa-user-astronaut"></i> 我的角色
+                    <i class="fas fa-user-astronaut"></i> <span class="nav-label">我的角色</span>
                 </button>
                 <button id="nav-summon">
-                    <i class="fas fa-meteor"></i> 角色召喚
+                    <i class="fas fa-meteor"></i> <span class="nav-label">角色召喚</span>
                 </button>
-
-                <button id="nav-glossary" class="hide-on-mobile">
-                    <i class="fas fa-book"></i> 角色圖鑑
+                <button id="nav-glossary">
+                    <i class="fas fa-book"></i> <span class="nav-label">角色圖鑑</span>
                 </button>
-                <button id="nav-history" class="hide-on-mobile">
-                    <i class="fas fa-history"></i> 歷史紀錄
+                <button id="nav-history">
+                    <i class="fas fa-history"></i> <span class="nav-label">歷史紀錄</span>
                 </button>
                 <button id="logout-btn" class="hide-on-mobile" style="margin-top: auto;">
-                    <i class="fas fa-sign-out-alt"></i> 登出
+                    <i class="fas fa-sign-out-alt"></i> <span class="nav-label">登出</span>
                 </button>
-
-                <button id="nav-more" class="show-on-mobile">
-                    <i class="fas fa-bars"></i> 更多
-                </button>
-            </div>
-
-            <div id="more-menu">
-                <button id="more-glossary" class="more-btn">
-                    <i class="fas fa-book"></i> 角色圖鑑
-                </button>
-                <button id="more-history" class="more-btn">
-                    <i class="fas fa-history"></i> 歷史紀錄
-                </button>
-                <hr style="border-color: #444; margin: 5px 0;">
-                <button id="more-logout-btn" class="more-btn" style="color: #ff4444;">
-                    <i class="fas fa-sign-out-alt"></i> 登出
+                <!-- 手機版登出：獨立在 tab bar 最右側 -->
+                <button id="nav-logout" class="show-on-mobile logout-tab">
+                    <i class="fas fa-sign-out-alt"></i> <span class="nav-label">登出</span>
                 </button>
             </div>
         </nav>

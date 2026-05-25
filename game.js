@@ -657,12 +657,10 @@ async function resolveDuel(gameData) {
         };
 
         // 4. 順便檢查遊戲是否結束
-        if (typeof checkGameOver === "function") {
-            const gameWinner = checkGameOver(newBoard, gameData);
-            if (gameWinner) {
-                updates.status = "finished";
-                updates.winner = gameWinner;
-            }
+        const gameWinner = checkGameOver(newBoard, gameData);
+        if (gameWinner) {
+            updates.status = "finished";
+            updates.winner = gameWinner;
         }
 
         await update(ref(db, `games/${currentGameId}`), updates);
@@ -731,4 +729,5 @@ async function handleGameEnd(winnerUid) {
     } catch (e) {
         console.error("獎勵發放失敗:", e);
     }
+
 }

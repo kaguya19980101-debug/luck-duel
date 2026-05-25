@@ -1,0 +1,1433 @@
+/* =========================================
+   0. 全域設定 (Global & Reset)
+   ========================================= */
+* {
+    margin: 0;
+    padding: 0;
+    /* 讓 padding 和 border 不會額外增加元素的寬度，排版更容易控制 */
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #e0c3fc, #8ec5fc, #e0eafc);
+    min-height: 100vh;
+    height: 100%;
+    color: #333;
+    overflow: hidden; /* 桌面版固定版面 */
+    display: flex;
+}
+
+/* 背景網格紋理特效 */
+body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* 雙重漸層疊加，製作出像方格紙一樣的淡淡紋理 */
+    background: linear-gradient(rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.03) 50%),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.02));
+    background-size: 100% 3px, 3px 100%;
+    /* 控制格線的密度 */
+    pointer-events: none;
+    /* 讓這個遮罩層不會擋住滑鼠點擊 */
+    z-index: -1;
+    /* 放在最底層 */
+}
+
+/* 通用隱藏類別，JS 切換用 */
+.hide {
+    display: none !important;
+}
+
+/* =========================================
+   1. 登入畫面 (Login Screen)
+   ========================================= */
+#login-screen {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    /* 水平置中 */
+    align-items: center;
+    /* 垂直置中 */
+    position: absolute;
+    /* 覆蓋在所有內容之上 */
+    top: 0;
+    left: 0;
+    z-index: 100;
+    /* 確保層級最高 */
+    transition: opacity 0.5s ease;
+    /* 淡出動畫效果 */
+}
+
+.login-card {
+    background: rgba(255, 255, 255, 0.85);
+    /* 半透明白底 */
+    padding: 50px;
+    border-radius: 20px;
+    /* 圓角 */
+    /* 藍色暈光陰影，營造科技感 */
+    box-shadow: 0 10px 40px rgba(142, 197, 252, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    width: 380px;
+    text-align: center;
+    backdrop-filter: blur(20px);
+    /* ★ 毛玻璃特效：模糊背景 */
+}
+
+.branding h1 {
+    font-family: 'Orbitron', sans-serif;
+    /* 科幻風格字體 */
+    font-size: 2.5rem;
+    font-weight: 900;
+    margin-bottom: 5px;
+    /* 文字漸層特效 */
+    background: linear-gradient(to right, #4facfe, #a18cd1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    /* 讓文字變成透明，透出背景的漸層 */
+    text-transform: uppercase;
+    /* 強制大寫 */
+    letter-spacing: 2px;
+    /* 字距加寬 */
+}
+
+.branding p {
+    font-family: 'Orbitron', sans-serif;
+    color: #888;
+    font-size: 1rem;
+    margin-bottom: 40px;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+}
+
+/* Google 登入按鈕樣式 */
+.google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 15px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 30px;
+    /* 膠囊狀圓角 */
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: bold;
+    color: #555;
+    font-size: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* 滑鼠懸停效果：上浮 + 陰影加深 + 變色 */
+.google-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    border-color: #4facfe;
+    color: #4facfe;
+}
+
+/* =========================================
+   2. 主介面與側邊欄 (App Interface)
+   ========================================= */
+#app-interface {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    opacity: 0;
+    /* 預設隱藏，等待登入後淡入 */
+    animation: fadeIn 0.8s forwards;
+    /* 執行淡入動畫 */
+}
+
+/* 淡入動畫關鍵影格 */
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+    }
+}
+
+.sidebar {
+    width: 250px;
+    background: rgba(255, 255, 255, 0.6);
+    /* 半透明背景 */
+    backdrop-filter: blur(15px);
+    /* 毛玻璃 */
+    border-right: 1px solid rgba(255, 255, 255, 0.5);
+    display: flex;
+    flex-direction: column;
+    /* 垂直排列內容 */
+    padding: 20px;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    /* 分隔線 */
+    margin-bottom: 20px;
+}
+
+.avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    /* 圓形頭像 */
+    background: #ccc;
+    object-fit: cover;
+    /* 確保圖片不變形填滿 */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.user-info h3 {
+    font-size: 1rem;
+    color: #333;
+}
+
+.user-info span {
+    font-size: 0.8rem;
+    color: #4facfe;
+    /* 強調色 */
+    font-family: 'Orbitron';
+}
+
+/* 側邊選單按鈕 */
+.menu-items button {
+    width: 100%;
+    padding: 15px;
+    margin-bottom: 10px;
+    border: none;
+    background: transparent;
+    text-align: left;
+    font-size: 1rem;
+    color: #555;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 按鈕懸停或被選中時的樣式 */
+.menu-items button:hover,
+.menu-items button.active {
+    background: white;
+    color: #4facfe;
+    box-shadow: 0 4px 10px rgba(142, 197, 252, 0.2);
+}
+
+/* 右側主遊戲區域 */
+.game-area {
+    flex: 1;
+    /* 佔滿剩餘空間 */
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+}
+
+.game-frame {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    border-radius: 20px;
+    /* 內陰影，營造凹陷感 */
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+/* =========================================
+   3. 遊戲內部樣式 (Game Board & Duel)
+   ========================================= */
+/* 棋盤格子互動 */
+#chess-board div {
+    transition: all 0.2s;
+}
+
+#chess-board div:hover {
+    filter: brightness(1.2);
+    /* 滑鼠指到時變亮 */
+}
+
+/* 決鬥視窗 (遮罩層) */
+#duel-modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    /* 深黑背景 */
+    z-index: 999;
+    display: none;
+    /* 預設隱藏 */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    border-radius: 20px;
+}
+
+/* 剪刀石頭布按鈕 */
+.rps-btn {
+    font-size: 3rem;
+    padding: 20px;
+    margin: 0 10px;
+    background: #333;
+    border: 2px solid #555;
+    border-radius: 50%;
+    /* 圓形按鈕 */
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.rps-btn:hover {
+    background: #555;
+    transform: scale(1.1);
+    /* 放大 */
+    border-color: #ffd700;
+    /* 金色邊框 */
+}
+
+.rps-btn:active {
+    transform: scale(0.9);
+    /* 點擊時縮小 */
+}
+
+/* =========================================
+   4. 召喚系統 (Summon)
+   ========================================= */
+.summon-header {
+    /* 1. 定位基準點 */
+    position: relative !important;
+
+    /* 2. 排版設定 */
+    display: flex !important;
+    justify-content: center !important;
+    /* 標題置中 */
+    align-items: center !important;
+
+    width: 100% !important;
+    padding: 20px 10px !important;
+    /* 稍微留點空間給左右 */
+
+    /* 去掉背景框線 */
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* 標題樣式 */
+.glow-text {
+    font-size: 2.5rem !important;
+    margin: 0 !important;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.6) !important;
+    line-height: 1 !important;
+}
+
+/* 金幣樣式：電腦版掛在右上角 */
+.coin-display {
+    /* ★ 核心：絕對定位到右上角 */
+    position: absolute !important;
+    right: 0 !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    /* 垂直置中修正 */
+    margin-right: 15px;
+    background: rgba(255, 255, 255, 0.6) !important;
+    padding: 8px 20px !important;
+    border-radius: 50px !important;
+    border: 1px solid rgba(255, 215, 0, 0.5) !important;
+    font-size: 1.5rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    z-index: 5;
+}
+
+.coin-icon {
+    color: #ffd700;
+    animation: spinCoin 3s infinite linear;
+    /* 金幣自轉動畫 */
+}
+
+/* 金幣旋轉動畫定義 */
+@keyframes spinCoin {
+    0% {
+        transform: rotateY(0);
+    }
+
+    100% {
+        transform: rotateY(360deg);
+    }
+}
+
+/* 抽卡展示台 */
+.gacha-stage {
+    width: 60%;
+    /* 設定高度 (您可以根據圖片比例自己調整，例如 300px 或 400px) */
+    height: 700px;
+    margin: 0 auto;
+    /* ★ 電腦版圖片路徑 (請確認檔名正確) */
+    background-image: url('../img/summon_pc.webp');
+    /* 圖片設定：不重複、置中、填滿 */
+    background-repeat: no-repeat;
+    background-position: top center;
+    background-size: cover;
+
+    border: 2px solid #444;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    /* 加一點陰影更有質感 */
+}
+
+.placeholder-icon {
+    font-size: 5rem;
+    color: #555;
+    animation: float 2s infinite ease-in-out;
+    /* 懸浮動畫 */
+}
+
+/* 上下懸浮動畫定義 */
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* 抽卡按鈕區 */
+.summon-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    padding: 0 20px;
+    position: relative;
+    z-index: 100;
+}
+
+.summon-btn {
+    flex: 1;
+    /* 平均分配寬度 */
+    border: none;
+    border-radius: 12px;
+    padding: 15px;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.3s;
+    position: relative;
+    overflow: hidden;
+    color: white;
+}
+
+.summon-btn:active {
+    transform: scale(0.95);
+}
+
+/* 單抽按鈕 (藍色系) */
+.btn-single {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    box-shadow: 0 4px 0 #143360;
+    /* 立體感陰影 */
+}
+
+/* 十連抽按鈕 (紫色系) */
+.btn-multi {
+    background: linear-gradient(135deg, #8e2de2, #4a00e0);
+    box-shadow: 0 4px 0 #3a00b0;
+    border: 1px solid rgba(255, 215, 0, 0.5);
+    /* 金邊 */
+}
+
+.btn-title {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.btn-cost {
+    display: block;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* UP 加倍標籤 */
+.tag-bonus {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: #ffd700;
+    color: black;
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-bottom-left-radius: 8px;
+    font-weight: bold;
+}
+
+/* 1. 遮罩層：確保可以捲動，且層級最高 */
+.result-overlay {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.95) !important;
+    z-index: 2147483647 !important;
+    /* 最高層級 */
+
+    /* ★ 關鍵：使用 Flex 排版 */
+    display: none;
+    /* JS 控制顯示 */
+    flex-direction: column;
+    align-items: center;
+
+    /* ★ 關鍵修正：讓內容過長時可以捲動 */
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    /* iOS 滑動順暢 */
+
+    /* 上下留白，避免貼邊 */
+    padding: 40px 20px;
+    box-sizing: border-box;
+}
+
+/* 讓內容垂直置中 (透過 margin: auto) */
+/* 當內容少(單抽)時會置中，內容多(十抽)時會從上面開始排並可捲動 */
+.result-overlay::before,
+.result-overlay::after {
+    content: '';
+    margin: auto;
+}
+
+/* 2. 十連抽網格 (預設電腦版) */
+.result-grid {
+    display: grid;
+    /* 電腦版 5 欄 */
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+    width: 100%;
+    max-width: 1000px;
+    /* ★ 關鍵：上下 auto 讓它在 Flex 容器內垂直置中 */
+    margin: auto 0;
+    flex-shrink: 0;
+    /* 防止被擠壓 */
+}
+
+/* 3. 單抽 (Single Pull) 強制置中樣式 */
+.result-grid.single-pull {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 50vh;
+    /* 確保有高度來置中 */
+}
+
+.result-grid.single-pull .char-card {
+    width: 320px !important;
+    max-width: 80vw !important;
+    /* 手機版不超過螢幕寬度 */
+    aspect-ratio: 3/4.5 !important;
+    transform: scale(1.1);
+    box-shadow: 0 0 50px rgba(255, 215, 0, 0.4) !important;
+    /* 單抽發光特效 */
+}
+
+/* 4. 確認按鈕 */
+.close-btn {
+    padding: 15px 60px !important;
+    font-size: 1.2rem !important;
+    border-radius: 50px !important;
+    margin-top: 30px !important;
+    margin-bottom: 20px !important;
+    /* 底部留白 */
+    cursor: pointer;
+    flex-shrink: 0;
+    /* 防止按鈕被壓扁 */
+}
+
+.result-card {
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    animation: popIn 0.3s forwards;
+    /* 彈出動畫 */
+    opacity: 0;
+    /* 預設隱藏，靠動畫顯示 */
+}
+
+/* 不同稀有度的光暈 */
+.border-R {
+    border-color: #3b82f6;
+    box-shadow: 0 0 5px #3b82f6;
+}
+
+.border-SR {
+    border-color: #a855f7;
+    box-shadow: 0 0 10px #a855f7;
+}
+
+.border-SSR {
+    border-color: #ffd700;
+    box-shadow: 0 0 15px #ffd700;
+    background: linear-gradient(135deg, #333, #554400);
+}
+
+/* 卡片彈出動畫 */
+@keyframes popIn {
+    from {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.close-btn {
+    padding: 10px 40px;
+    background: white;
+    color: black;
+    border: none;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* =========================================
+   5. 背包系統 (Inventory Grid)
+   ========================================= */
+
+/* 隱藏捲軸專用 (但仍可滑動) */
+.inventory-container {
+    padding: 10px 10px 80px 10px;
+    /* 底部多留白以免被手機導航擋住 */
+    width: 100%;
+    box-sizing: border-box;
+    /* Firefox */
+    scrollbar-width: none;
+    /* IE, Edge */
+    -ms-overflow-style: none;
+}
+
+/* Chrome, Safari, Opera 隱藏捲軸 */
+.inventory-container::-webkit-scrollbar {
+    display: none;
+}
+
+/* 網格系統基礎設定 */
+.char-grid {
+    display: grid !important;
+    /* 預設: 根據螢幕寬度自動填滿，每張卡最小 110px */
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    /* 自動調整高度，根據內容大小 */
+    grid-auto-rows: min-content;
+    gap: 15px;
+    /* 卡片之間的間距 */
+    padding: 10px;
+    /* 內邊距 */
+    width: 100%;
+    box-sizing: border-box;
+    align-items: start;
+    /* 靠上對齊 */
+}
+
+/* 排序按鈕美化 */
+.sort-btn {
+    background: #ffd700;
+    /* 金色 */
+    color: #000;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+.sort-btn:hover {
+    background: #ffe033;
+    /* 變亮 */
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+    /* 發光 */
+    transform: translateY(-2px);
+}
+
+.sort-btn:active {
+    transform: scale(0.95);
+}
+
+/* =========================================
+   🎴 新版卡片樣式 (JS Refactor 對應版)
+   ========================================= */
+
+/* 1. 卡片基礎設定 */
+.char-card {
+    position: relative;
+    background: #222;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid #444;
+    /* 預設邊框 (R卡) */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    transition: transform 0.1s;
+    display: flex;
+    flex-direction: column;
+    aspect-ratio: 3 / 4.5;
+    /* 保持比例 */
+}
+
+.char-card:active {
+    transform: scale(0.98);
+}
+
+/* 稀有度顏色控制 */
+.char-card.sr-card {
+    border-color: #a855f7;
+}
+
+.char-card.ssr-card {
+    border-color: #ffd700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+
+.char-card.in-team {
+    border-color: #00ff00 !important;
+    box-shadow: 0 0 10px #00ff00;
+}
+
+/* 2. 圖片區塊 */
+.card-img-wrapper {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    /* 佔滿上半部 */
+    overflow: hidden;
+}
+
+.card-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 左上角屬性圖示 */
+.card-attr-badge {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    filter: drop-shadow(0 0 2px black);
+    font-size: 1rem;
+    z-index: 2;
+}
+
+/* 右上角稀有度標籤 */
+.card-rarity-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid #777;
+    z-index: 2;
+}
+
+.sr-card .card-rarity-badge {
+    color: #a855f7;
+    border-color: #a855f7;
+}
+
+.ssr-card .card-rarity-badge {
+    color: #ffd700;
+    border-color: #ffd700;
+}
+
+/* 3. 底部資訊區 (黑底) */
+.card-info {
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.8));
+    padding: 0px 0px;
+    text-align: center;
+    position: absolute;
+    /* 蓋在圖片下方 */
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 5;
+}
+
+/* 名字設定 */
+.card-name {
+    color: white;
+    font-weight: bold;
+    font-size: 0.8rem;
+    /* 手機版預設大小 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0px;
+    text-shadow: 0 0 3px black;
+}
+
+/* 數值設定 (HP/ATK) */
+.card-stats {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.7rem;
+    color: #ddd;
+}
+
+/* 滑鼠懸停浮起效果 */
+.char-card:hover {
+    transform: translateY(-5px);
+    z-index: 10;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+}
+
+/* 隊伍選中狀態：外框變色 + 顯示 "IN TEAM" 遮罩 */
+.char-card.in-team {
+    border-color: #d50946 !important;
+    /* 綠色邊框 */
+    box-shadow: 0 0 10px #d50946;
+}
+
+/* 隊伍遮罩文字 */
+.char-card.in-team::after {
+    content: 'IN TEAM';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    /* 半透明黑底 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #d50946;
+    font-weight: bold;
+    font-family: 'Orbitron';
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    border: 2px solid rgba(255, 0, 0, 0.5);
+    border-radius: 8px;
+    z-index: 15;
+    pointer-events: none;
+    /* 讓點擊可以穿透 */
+}
+
+/* 數量標籤 (圓形徽章) */
+.card-count-tag {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 24px;
+    height: 24px;
+    background: #ffd700;
+    color: #000;
+    border: 2px solid #222;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 900;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 20;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+/* =========================================
+   7. 隊伍編制區 (Team Builder) - 無叉叉版
+   ========================================= */
+.team-section {
+    width: 100%;
+    background: linear-gradient(180deg, rgba(40, 40, 40, 0.95), rgba(20, 20, 20, 0.95));
+    padding: 20px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+}
+
+.team-row {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    /* 格子間距 */
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    /* 水平置中 */
+}
+
+.team-slot {
+    flex: 1;
+    max-width: 100px;
+    /* 限制最大寬度 */
+    aspect-ratio: 3 / 4;
+    /* 保持長方形 */
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px dashed #666;
+    /* 虛線邊框 */
+    border-radius: 10px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #555;
+    overflow: hidden;
+    /* 確保圖片不溢出 */
+}
+
+.team-slot:hover {
+    border-color: #ffd700;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+/* 有放角色時的樣式 */
+.team-slot.filled {
+    border: 2px solid #ffd700;
+    /* 金色實線 */
+    background: #222;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+/* =========================================
+   8. 結算畫面 (Game Over Modal)
+   ========================================= */
+#game-over-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 10000;
+    display: none;
+    /* 預設隱藏 */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.result-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 4rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    text-shadow: 0 0 20px currentColor;
+}
+
+.victory {
+    color: #ffd700;
+}
+
+/* 金色勝利 */
+.defeat {
+    color: #ff4444;
+}
+
+/* 紅色失敗 */
+
+.reward-box {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px 40px;
+    border-radius: 15px;
+    text-align: center;
+    margin-bottom: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.reward-coins {
+    font-size: 2rem;
+    color: #ffd700;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.home-btn {
+    padding: 15px 50px;
+    font-size: 1.2rem;
+    border: 2px solid white;
+    background: transparent;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: 'Orbitron', sans-serif;
+    border-radius: 30px;
+}
+
+.home-btn:hover {
+    background: white;
+    color: black;
+    box-shadow: 0 0 15px white;
+}
+
+/* =========================================
+   9. 手機版 RWD (Mobile Responsive)
+   ========================================= */
+@media (max-width: 768px) {
+
+    /* ★ 手機版允許頁面滑動 */
+    body {
+        overflow: auto;
+        height: auto;
+        min-height: 100vh;
+    }
+
+    #app-interface {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+    }
+
+    /* --- A. 底部 Tab Bar --- */
+    .sidebar {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        top: auto !important;
+        width: 100% !important;
+        height: 64px !important;
+        flex-direction: row !important;
+        justify-content: stretch !important;
+        background: rgba(12, 12, 20, 0.97) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+        z-index: 999999 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    /* 隱藏手機版不需要的元素 */
+    .sidebar .logo,
+    .sidebar .user-profile,
+    .sidebar .branding {
+        display: none !important;
+    }
+
+    /* 選單橫排 */
+    .menu-items {
+        display: flex !important;
+        flex-direction: row !important;
+        width: 100% !important;
+        height: 100% !important;
+        justify-content: stretch !important;
+        align-items: stretch !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        gap: 0 !important;
+    }
+
+    /* 每個 tab 按鈕 */
+    .menu-items button {
+        flex: 1 !important;
+        height: 100% !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 6px 0 !important;
+        margin: 0 !important;
+        color: #666 !important;
+        background: transparent !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        gap: 3px !important;
+        font-size: 0 !important;       /* 隱藏文字（用 nav-label 控制） */
+        position: relative;
+        transition: color 0.2s, background 0.2s !important;
+    }
+
+    .menu-items button i {
+        font-size: 1.3rem !important;
+        line-height: 1;
+    }
+
+    /* nav-label：每個 tab 的小文字 */
+    .menu-items button .nav-label {
+        font-size: 0.6rem !important;
+        display: block !important;
+        line-height: 1;
+        letter-spacing: 0;
+        white-space: nowrap;
+    }
+
+    /* Active 狀態：亮紫色 + 上方指示線 */
+    .menu-items button.active {
+        color: #c084fc !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .menu-items button.active::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 20%;
+        width: 60%;
+        height: 2px;
+        background: #c084fc;
+        border-radius: 0 0 2px 2px;
+    }
+
+    /* 登出 tab：紅色 */
+    .menu-items button.logout-tab {
+        color: #666 !important;
+    }
+    .menu-items button.logout-tab:active {
+        color: #ff4444 !important;
+    }
+
+    /* 電腦版登出按鈕隱藏 */
+    .hide-on-mobile {
+        display: none !important;
+    }
+
+    /* 手機登出顯示 */
+    .show-on-mobile {
+        display: flex !important;
+    }
+
+    /* --- B. 內容區調整 --- */
+    .game-area {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 10px 10px 80px 10px !important; /* 底部留給 tab bar */
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        min-height: calc(100vh - 64px) !important;
+    }
+
+    .game-frame {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-start !important;
+        align-items: center !important;
+        padding-top: 15px !important;
+        min-height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* --- C. 背包與卡片調整 --- */
+    .char-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 8px !important;
+    }
+
+    .char-card {
+        aspect-ratio: 2 / 3 !important;
+    }
+
+    .card-name {
+        font-size: 0.75rem !important;
+    }
+
+    .card-attr {
+        font-size: 1rem !important;
+    }
+
+    /* --- D. 隊伍欄位調整 --- */
+    .team-slot {
+        border-width: 1px !important;
+        border-radius: 6px !important;
+    }
+
+    /* --- E. 遊戲 HUD 調整 --- */
+    #game-hud,
+    .hud-container {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        margin-bottom: 15px !important;
+        position: relative !important;
+        order: -1 !important;
+    }
+
+    #timer,
+    #time-display {
+        margin: 0 auto !important;
+        text-align: center !important;
+    }
+
+    #chess-board {
+        margin-top: 10px !important;
+    }
+
+    #lobby-view {
+        width: 100%;
+        padding-bottom: 20px;
+    }
+
+    #find-match-btn {
+        width: 80%;
+        max-width: 300px;
+    }
+
+    /* --- F. 召喚系統 --- */
+    .result-overlay {
+        padding: 60px 15px 100px 15px !important;
+        justify-content: flex-start !important;
+    }
+
+    .result-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+        width: 100% !important;
+        max-width: 360px !important;
+        margin-top: 20px !important;
+        margin-bottom: 20px !important;
+    }
+
+    .result-grid .char-card {
+        aspect-ratio: 2 / 3 !important;
+    }
+
+    .result-grid .char-card span {
+        font-size: 0.75rem !important;
+    }
+
+    .result-grid.single-pull {
+        min-height: 60vh !important;
+    }
+
+    .result-grid.single-pull .char-card {
+        width: 240px !important;
+        transform: scale(1) !important;
+    }
+
+    .gacha-stage {
+        width: 100%;
+        background-image: url('../img/summon_mobile.webp');
+        height: 400px;
+        background-size: cover;
+        background-position: top center;
+    }
+
+    .glow-text {
+        font-size: 1.8rem !important;
+    }
+
+    .summon-header {
+        flex-direction: column !important;
+        gap: 5px !important;
+        padding-top: 5px !important;
+    }
+
+    .coin-display {
+        position: relative !important;
+        right: auto !important;
+        top: auto !important;
+        transform: none !important;
+        padding: 5px 15px !important;
+        font-size: 1rem !important;
+    }
+}
+
+/* =========================================
+   🏢 大廳介面標準化 (Lobby Standard)
+   ========================================= */
+
+/* 設定大廳預設就是 Flex 彈性佈局，且垂直置中 */
+#lobby-view {
+    /* 正規寫法：這裡定義佈局，不需要 !important */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    /* 垂直置中 */
+    align-items: center;
+    /* 水平置中 */
+
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    padding-bottom: 100px;
+    /* 避開手機底部導航 */
+    box-sizing: border-box;
+
+}
+
+/* =========================================
+   10. 電腦版修正 (Desktop Fix)
+   ★ 確保電腦版能智慧排列
+   ========================================= */
+@media (min-width: 769px) {
+
+    /* 1. 網格變寬 (讓卡片變大) */
+    .char-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+        gap: 20px !important;
+        padding: 20px !important;
+    }
+
+    /* 2. 字體全面放大 */
+    .card-name {
+        font-size: 1rem !important;
+        margin-bottom: 3px !important;
+    }
+
+    .card-stats {
+        font-size: 1rem !important;
+        gap: 15px !important;
+    }
+
+    .card-rarity-badge {
+        font-size: 0.8rem !important;
+        padding: 4px 8px !important;
+    }
+
+    .card-attr-badge {
+        font-size: 1.5rem !important;
+    }
+
+    /* 3. 資訊區高度增加 */
+    .card-info {
+        padding: 2px 0px !important;
+    }
+
+    /* 讓遊戲畫面垂直置中 */
+    .game-frame {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+
+    /* 電腦版：隱藏手機專用元素 */
+    .show-on-mobile {
+        display: none !important;
+    }
+}
+
+/* =========================================
+   ⚔️ 戰鬥專用卡片 (圖片 1:1 + 底部血條)
+   ========================================= */
+
+.battle-card {
+    width: 100%;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #111;
+    display: flex;
+    flex-direction: column;
+    /* ★ 讓圖片在上、血條在下 */
+}
+
+/* 1. 上半部：強制正方形的圖片區 */
+.battle-img-area {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1 !important;
+    /* 只有這裡是正方形 */
+    overflow: hidden;
+}
+
+.battle-img-area img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    display: block;
+    /* 消除圖片底部多餘空白 */
+}
+
+/* 2. 左上：屬性圖示 */
+.battle-attr {
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    z-index: 2;
+    font-size: 0.6rem;
+    filter: drop-shadow(0 0 2px black);
+}
+
+/* 3. 右上：攻擊力 (移除劍圖案) */
+.battle-atk {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    z-index: 2;
+    color: #ff4444;
+    /* 微調為亮紅色，在黑底更清楚 */
+    font-size: 0.65rem;
+    font-weight: bold;
+    text-shadow: 0 0 2px black;
+    /* 加上陰影避免被白背景吃掉 */
+}
+
+/* 4. 下半部：血條與數值容器 (不再重疊於圖片上) */
+.battle-hp-container {
+    width: 100%;
+    background: #1a1a1a;
+    padding: 3px 0 4px 0;
+    /* 讓血條區有點高度 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+/* 血量數字 */
+.battle-hp-text {
+    color: #aaffaa;
+    font-size: 0.7rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+/* 血條外框 */
+.battle-hp-bar-bg {
+    width: 90%;
+    height: 4px;
+    background: #444;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+/* 血條內層 */
+.battle-hp-bar-fill {
+    width: 100%;
+    height: 100%;
+    background: #00ff00;
+    transition: width 0.3s ease-in-out;
+}
