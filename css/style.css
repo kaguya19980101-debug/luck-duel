@@ -1001,9 +1001,13 @@ body::before {
 /* =========================================
    9. 手機版 RWD (Mobile Responsive)
    ========================================= */
-@media (max-width: 768px) {
 
-    /* ① 解除 body / app-interface 高度鎖定 */
+/* 手機版：隱藏桌面側欄 */
+@media (max-width: 768px) {
+    .sidebar { display: none !important; }
+    .show-on-mobile { display: flex !important; }
+    .hide-on-mobile { display: none !important; }
+
     body {
         overflow-x: hidden !important;
         overflow-y: auto !important;
@@ -1014,15 +1018,13 @@ body::before {
         flex-direction: column !important;
         height: auto !important;
         min-height: 100vh;
-        overflow: visible !important;
     }
 
-    /* ② 內容區可滑動，底部 padding 留給 tab bar (104px) + 緩衝 */
     .game-area {
         margin-left: 0 !important;
         width: 100% !important;
         height: auto !important;
-        padding: 10px 10px 150px 10px !important;
+        padding: 10px 10px 90px 10px !important;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
         flex: none !important;
@@ -1037,241 +1039,236 @@ body::before {
         padding: 12px 8px !important;
     }
 
-    /* ③ Tab Bar：固定在底部，高度明確 104px (2排×52px) */
-    .sidebar {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        top: auto !important;
-        width: 100% !important;
-        height: 104px !important;          /* ← 明確高度，讓 grid 知道每排多高 */
-        flex-direction: column !important;
-        background: rgba(10, 10, 18, 0.97) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
-        z-index: 999999 !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5) !important;
-        justify-content: flex-start !important;
-        align-items: stretch !important;
-        overflow: hidden !important;
+    /* 背包卡片 */
+    .char-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
+    .char-card { aspect-ratio: 2/3 !important; }
+    .card-name { font-size: 0.75rem !important; }
+    .team-slot { border-width: 1px !important; border-radius: 6px !important; }
+
+    /* HUD */
+    #game-hud, .hud-container {
+        width: 100% !important; display: flex !important;
+        justify-content: center !important; align-items: center !important;
+        margin-bottom: 15px !important; order: -1 !important;
     }
 
-    /* 隱藏不需要的 sidebar 子元素 */
-    .sidebar .logo,
-    .sidebar .user-profile,
-    .sidebar .branding {
-        display: none !important;
-    }
-
-    /* ④ menu-items：grid 2排×3欄，撐滿 sidebar */
-    .menu-items {
-        display: grid !important;
-        grid-template-columns: repeat(3, 1fr) !important;
-        grid-template-rows: repeat(2, 52px) !important;
-        width: 100% !important;
-        height: 104px !important;          /* ← 配合 sidebar 高度 */
-        padding: 0 !important;
-        margin: 0 !important;
-        gap: 0 !important;
-        align-items: stretch !important;
-    }
-
-    /* ⑤ 每個 tab 按鈕 */
-    .menu-items button {
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: center !important;
-        align-items: center !important;
-        width: 100% !important;
-        height: 52px !important;
-        padding: 4px 2px !important;
-        margin: 0 !important;
-        gap: 3px !important;
-        color: #555 !important;
-        background: transparent !important;
-        border: none !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-        position: relative !important;
-        cursor: pointer !important;
-        transition: color 0.2s, background 0.2s !important;
-        border-right: 1px solid rgba(255,255,255,0.05) !important;
-        border-bottom: 1px solid rgba(255,255,255,0.05) !important;
-        box-sizing: border-box !important;
-        text-align: center !important;
-        font-size: 0 !important;            /* 清除繼承字大小 */
-    }
-
-    .menu-items button i {
-        font-size: 1.1rem !important;
-        line-height: 1 !important;
-        display: block !important;
-    }
-
-    .menu-items button .nav-label {
-        font-size: 0.55rem !important;
-        display: block !important;
-        line-height: 1 !important;
-        white-space: nowrap !important;
-        color: inherit !important;
-        letter-spacing: 0 !important;
-    }
-
-    /* Active：亮紫 + 頂部細線 */
-    .menu-items button.active {
-        color: #c084fc !important;
-        background: rgba(192, 132, 252, 0.08) !important;
-        box-shadow: none !important;
-    }
-
-    .menu-items button.active::before {
-        content: '' !important;
-        position: absolute !important;
-        top: 0 !important;
-        left: 15% !important;
-        width: 70% !important;
-        height: 2px !important;
-        background: #c084fc !important;
-        border-radius: 0 0 2px 2px !important;
-    }
-
-    /* 電腦版登出隱藏 */
-    .hide-on-mobile {
-        display: none !important;
-    }
-
-    /* 手機登出顯示 */
-    .show-on-mobile {
-        display: flex !important;
-    }
-
-    .menu-items button.logout-tab {
-        color: #553333 !important;
-    }
-
-    .menu-items button.logout-tab:active,
-    .menu-items button.logout-tab:hover {
-        color: #ff5555 !important;
-        background: rgba(255, 85, 85, 0.08) !important;
-    }
-
-    /* ⑥ 背包與卡片 */
-    .char-grid {
-        grid-template-columns: repeat(3, 1fr) !important;
-        gap: 8px !important;
-    }
-
-    .char-card {
-        aspect-ratio: 2 / 3 !important;
-    }
-
-    .card-name {
-        font-size: 0.75rem !important;
-    }
-
-    /* ⑦ 隊伍欄 */
-    .team-slot {
-        border-width: 1px !important;
-        border-radius: 6px !important;
-    }
-
-    /* ⑧ 遊戲 HUD */
-    #game-hud,
-    .hud-container {
-        width: 100% !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        margin-bottom: 15px !important;
-        position: relative !important;
-        order: -1 !important;
-    }
-
-    #chess-board {
-        margin-top: 10px !important;
-    }
-
-    /* ⑨ 召喚 - 按鈕不被擋住 */
-    #summon-view {
-        width: 100% !important;
-        padding-bottom: 30px !important;
-        overflow: visible !important;
-    }
-
-    .summon-actions {
-        position: relative !important;
-        z-index: 10 !important;
-        margin-bottom: 20px !important;
-    }
-
+    /* 召喚 */
+    #summon-view { width: 100% !important; padding-bottom: 20px !important; }
+    .summon-actions { position: relative !important; z-index: 10 !important; margin-bottom: 10px !important; }
     .gacha-stage {
-        width: 100% !important;
+        width: 100% !important; height: 280px !important;
         background-image: url('../img/summon_mobile.webp') !important;
-        height: 320px !important;
-        background-size: cover !important;
-        background-position: top center !important;
+        background-size: cover !important; background-position: top center !important;
     }
-
-    .glow-text {
-        font-size: 1.8rem !important;
-    }
-
-    .summon-header {
-        flex-direction: column !important;
-        gap: 5px !important;
-        padding-top: 5px !important;
-    }
-
+    .glow-text { font-size: 1.8rem !important; }
+    .summon-header { flex-direction: column !important; gap: 5px !important; padding-top: 5px !important; }
     .coin-display {
-        position: relative !important;
-        right: auto !important;
-        top: auto !important;
-        transform: none !important;
-        padding: 5px 15px !important;
-        font-size: 1rem !important;
+        position: relative !important; right: auto !important; top: auto !important;
+        transform: none !important; padding: 5px 15px !important; font-size: 1rem !important;
     }
-
-    /* ⑩ 抽卡結果遮罩 */
-    .result-overlay {
-        padding: 60px 15px 160px 15px !important;
-        justify-content: flex-start !important;
-    }
-
+    .result-overlay { padding: 60px 15px 80px 15px !important; justify-content: flex-start !important; }
     .result-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 12px !important;
-        width: 100% !important;
-        max-width: 360px !important;
-        margin-top: 20px !important;
-        margin-bottom: 20px !important;
+        grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important;
+        width: 100% !important; max-width: 360px !important;
+        margin-top: 20px !important; margin-bottom: 20px !important;
     }
-
-    .result-grid .char-card {
-        aspect-ratio: 2 / 3 !important;
-    }
-
-    .result-grid.single-pull {
-        min-height: 50vh !important;
-    }
-
-    .result-grid.single-pull .char-card {
-        width: 200px !important;
-        transform: scale(1) !important;
-    }
-
-    #lobby-view {
-        width: 100%;
-        padding-bottom: 20px;
-    }
-
-    #find-match-btn {
-        width: 80%;
-        max-width: 300px;
-    }
+    .result-grid .char-card { aspect-ratio: 2/3 !important; }
+    .result-grid.single-pull { min-height: 50vh !important; }
+    .result-grid.single-pull .char-card { width: 200px !important; transform: scale(1) !important; }
+    #lobby-view { width: 100%; padding-bottom: 10px; }
+    #find-match-btn { width: 80%; max-width: 300px; }
 }
+
+/* 桌面版：隱藏手機 tabbar */
+@media (min-width: 769px) {
+    #mobile-tabbar { display: none !important; }
+    .show-on-mobile { display: none !important; }
+    .char-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important; gap: 20px !important; padding: 20px !important; }
+    .card-name { font-size: 1rem !important; }
+    .card-stats { font-size: 1rem !important; gap: 15px !important; }
+    .card-rarity-badge { font-size: 0.8rem !important; padding: 4px 8px !important; }
+    .card-attr-badge { font-size: 1.5rem !important; }
+    .game-frame { display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; }
+}
+
+/* =========================================
+   📱 手機 3-Tab Bar + 展開面板
+   ========================================= */
+#mobile-tabbar {
+    position: fixed;
+    bottom: 0; left: 0;
+    width: 100%;
+    z-index: 999999;
+    flex-direction: column;
+    align-items: stretch;
+    pointer-events: none; /* 面板關閉時只有 tabbar-row 能點 */
+}
+
+/* 遮罩：點了關閉面板 */
+#tab-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0);
+    transition: background 0.25s;
+    pointer-events: none;
+    z-index: 1;
+}
+#mobile-tabbar.panel-open #tab-overlay {
+    background: rgba(0,0,0,0.55);
+    pointer-events: auto;
+}
+
+/* 展開面板容器 */
+.tab-panel {
+    position: relative;
+    z-index: 2;
+    pointer-events: auto;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+    background: rgba(12,12,22,0.98);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px 20px 0 0;
+    padding: 16px 16px 8px;
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.6);
+}
+#mobile-tabbar.panel-open .tab-panel {
+    transform: translateY(0);
+}
+
+.panel-section { display: none; }
+.panel-section.active { display: block; }
+
+.panel-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    color: #555;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    text-align: center;
+}
+
+/* 面板格子：2欄 */
+.panel-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding-bottom: 8px;
+}
+
+.panel-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 16px 8px;
+    color: #bbb;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+.panel-btn i {
+    font-size: 1.4rem;
+    color: #c084fc;
+    pointer-events: none;
+}
+.panel-btn span { pointer-events: none; }
+.panel-btn:active,
+.panel-btn.active-nav {
+    background: rgba(192,132,252,0.12);
+    border-color: rgba(192,132,252,0.3);
+    color: #e9d5ff;
+}
+.panel-btn.danger i { color: #f87171; }
+.panel-btn.danger:active { background: rgba(248,113,113,0.1); border-color: rgba(248,113,113,0.3); color: #fca5a5; }
+
+/* ── 底部 3 個主按鈕列 ── */
+.tabbar-row {
+    display: flex;
+    align-items: stretch;
+    height: 62px;
+    background: rgba(10,10,18,0.97);
+    border-top: 1px solid rgba(255,255,255,0.07);
+    pointer-events: auto;
+    position: relative;
+    z-index: 3;
+}
+
+.tab-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: transparent;
+    border: none;
+    color: #555;
+    font-size: 0.5rem;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    padding: 0;
+    position: relative;
+}
+
+.tab-icon-wrap {
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    transition: background 0.15s;
+}
+
+.tab-btn i {
+    font-size: 1.15rem;
+    pointer-events: none;
+}
+
+.tab-btn span { pointer-events: none; font-size: 0.5rem; }
+
+/* 中央決鬥按鈕：突出設計 */
+.tab-btn-center {
+    position: relative;
+    flex: 1.2;
+}
+.tab-btn-center .tab-icon-wrap.center-glow {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    border-radius: 14px;
+    box-shadow: 0 0 16px rgba(124,58,237,0.5), 0 4px 12px rgba(0,0,0,0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.tab-btn-center i { color: #fff !important; font-size: 1.3rem; }
+.tab-btn-center:active .center-glow {
+    transform: scale(0.92);
+    box-shadow: 0 0 8px rgba(124,58,237,0.3);
+}
+
+/* hover / active 通用 */
+.tab-btn:not(.tab-btn-center):active .tab-icon-wrap,
+.tab-btn.tab-active:not(.tab-btn-center) .tab-icon-wrap {
+    background: rgba(192,132,252,0.1);
+}
+.tab-btn.tab-active { color: #c084fc !important; }
+.tab-btn.tab-active::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 20%; width: 60%; height: 2px;
+    background: #c084fc;
+    border-radius: 0 0 2px 2px;
+    pointer-events: none;
+}
+.tab-btn-center.tab-active::after { display: none; }
 
 /* =========================================
    🏢 大廳介面標準化 (Lobby Standard)
@@ -1294,58 +1291,6 @@ body::before {
     /* 避開手機底部導航 */
     box-sizing: border-box;
 
-}
-
-/* =========================================
-   10. 電腦版修正 (Desktop Fix)
-   ★ 確保電腦版能智慧排列
-   ========================================= */
-@media (min-width: 769px) {
-
-    /* 1. 網格變寬 (讓卡片變大) */
-    .char-grid {
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
-        gap: 20px !important;
-        padding: 20px !important;
-    }
-
-    /* 2. 字體全面放大 */
-    .card-name {
-        font-size: 1rem !important;
-        margin-bottom: 3px !important;
-    }
-
-    .card-stats {
-        font-size: 1rem !important;
-        gap: 15px !important;
-    }
-
-    .card-rarity-badge {
-        font-size: 0.8rem !important;
-        padding: 4px 8px !important;
-    }
-
-    .card-attr-badge {
-        font-size: 1.5rem !important;
-    }
-
-    /* 3. 資訊區高度增加 */
-    .card-info {
-        padding: 2px 0px !important;
-    }
-
-    /* 讓遊戲畫面垂直置中 */
-    .game-frame {
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: center !important;
-        align-items: center !important;
-    }
-
-    /* 電腦版：隱藏手機專用元素 */
-    .show-on-mobile {
-        display: none !important;
-    }
 }
 
 /* =========================================
