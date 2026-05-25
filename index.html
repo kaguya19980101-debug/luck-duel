@@ -62,27 +62,27 @@
         <!-- 手機版底部 3 鈕 Tab Bar -->
         <div id="mobile-tabbar" class="show-on-mobile">
             <!-- 展開面板遮罩 -->
-            <div id="tab-overlay" onclick="window.closeTabPanel()"></div>
+            <div id="tab-overlay"></div>
 
             <!-- 展開面板內容 -->
             <div id="tab-panel" class="tab-panel">
                 <!-- 功能 面板 -->
-                <div id="panel-feature" class="panel-section hidden">
+                <div id="panel-feature" class="panel-section">
                     <div class="panel-title">功能</div>
                     <div class="panel-grid">
-                        <button class="panel-btn" onclick="window.tabNav('char-view','nav-char')">
+                        <button class="panel-btn" data-nav="char-view" data-ref="nav-char">
                             <i class="fas fa-user-astronaut"></i>
                             <span>我的角色</span>
                         </button>
-                        <button class="panel-btn" onclick="window.tabNav('summon-view','nav-summon')">
+                        <button class="panel-btn" data-nav="summon-view" data-ref="nav-summon">
                             <i class="fas fa-meteor"></i>
                             <span>角色召喚</span>
                         </button>
-                        <button class="panel-btn" onclick="window.tabNav('glossary-view','nav-glossary')">
+                        <button class="panel-btn" data-nav="glossary-view" data-ref="nav-glossary">
                             <i class="fas fa-book"></i>
                             <span>角色圖鑑</span>
                         </button>
-                        <button class="panel-btn" onclick="window.tabNav('history-view','nav-history')">
+                        <button class="panel-btn" data-nav="history-view" data-ref="nav-history">
                             <i class="fas fa-history"></i>
                             <span>歷史紀錄</span>
                         </button>
@@ -90,10 +90,10 @@
                 </div>
 
                 <!-- 設定 面板 -->
-                <div id="panel-settings" class="panel-section hidden">
+                <div id="panel-settings" class="panel-section">
                     <div class="panel-title">設定</div>
                     <div class="panel-grid">
-                        <button class="panel-btn danger" onclick="window.doLogout()">
+                        <button class="panel-btn danger" data-action="logout">
                             <i class="fas fa-sign-out-alt"></i>
                             <span>登出</span>
                         </button>
@@ -103,19 +103,19 @@
 
             <!-- 3 個主按鈕 -->
             <div class="tabbar-row">
-                <button class="tab-btn" id="tab-feature" onclick="window.togglePanel('feature')">
+                <button class="tab-btn" id="tab-feature">
                     <div class="tab-icon-wrap">
                         <i class="fas fa-th"></i>
                     </div>
                     <span>功能</span>
                 </button>
-                <button class="tab-btn tab-btn-center" id="tab-duel" onclick="window.tabNav('lobby-view','tab-duel')">
+                <button class="tab-btn tab-btn-center" id="tab-duel">
                     <div class="tab-icon-wrap center-glow">
                         <i class="fas fa-khanda"></i>
                     </div>
                     <span>決鬥</span>
                 </button>
-                <button class="tab-btn" id="tab-settings" onclick="window.togglePanel('settings')">
+                <button class="tab-btn" id="tab-settings">
                     <div class="tab-icon-wrap">
                         <i class="fas fa-sliders-h"></i>
                     </div>
@@ -152,7 +152,7 @@
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                             <h3 class="inventory-title" style="margin: 0; color: white;">MY CARDS</h3>
-                            <button onclick="toggleSort()" class="sort-btn">
+                            <button data-action="sort" class="sort-btn">
                                 <i class="fas fa-sort"></i>
                                 <span id="sort-btn-text">排序: 代號</span>
                             </button>
@@ -173,11 +173,11 @@
                         <div id="gacha-stage" class="gacha-stage"></div>
                     </div>
                     <div class="summon-actions">
-                        <button class="summon-btn btn-single" onclick="handleSummon(1)">
+                        <button class="summon-btn btn-single" data-action="summon" data-count="1">
                             <span class="btn-title">單次召喚</span>
                             <span class="btn-cost"><i class="fas fa-coins"></i> 100</span>
                         </button>
-                        <button class="summon-btn btn-multi" onclick="handleSummon(10)">
+                        <button class="summon-btn btn-multi" data-action="summon" data-count="10">
                             <span class="btn-title">十連召喚</span>
                             <span class="btn-cost"><i class="fas fa-coins"></i> 1000</span>
                             <div class="tag-bonus">必中 SR!</div>
@@ -186,7 +186,7 @@
                     <div id="gacha-result-overlay" class="result-overlay" style="display: none;">
                         <h3 style="color:white; margin-bottom:20px;">召喚結果</h3>
                         <div id="result-grid" class="result-grid"></div>
-                        <button class="close-btn" onclick="closeGachaResult()">確認</button>
+                        <button class="close-btn" data-action="close-gacha">確認</button>
                     </div>
                 </div>
 
