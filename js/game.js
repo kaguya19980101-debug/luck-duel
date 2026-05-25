@@ -221,39 +221,50 @@ function renderBoard(gameData) {
 }
 
 // 點擊事件
+let pendingActionIndex = -1; // 等待玩家選擇動作的格子
+
 async function handleSquareClick(index, cell, gameData) {
-    if (gameData.duel) return; // 決鬥中鎖定
-    if (gameData.turn !== myUid) return; // 非回合鎖定
+    if (gameData.duel) return;
+    if (gameData.turn !== myUid) return;
 
-    // 1. 選取邏輯
-    if (selectedIndex === -1) {
-        if (cell && cell.owner === myUid) {
-            selectedIndex = index;
-            renderBoard(gameData);
-        }
-        return;
-    }
-
-    // 2. 移動邏輯
-    const fromIndex = selectedIndex;
-    const toIndex = index;
-
-    // 取消選取
-    if (fromIndex === toIndex) {
+    // ── 如果正在等待動作選擇，點其他地方取消 ──
+    if (pendingActionIndex !== -1 && index !== pendingActionIndex) {
+        closeActionMenu();
         selectedIndex = -1;
         renderBoard(gameData);
         return;
     }
 
-    // 距離檢查 (這裡簡化，只要不是太遠都行，您可以自己加嚴格判斷)
+    // ── 第一次點自己的棋子：跳出動作選單 ──
+    if (selectedIndex === -1) {
+        if (cell && cell.owner === myUid) {
+            selectedIndex = index;
+            pendingActionIndex = index;
+            showActionMenu(index, cell, gameData);
+        }
+        return;
+    }
+
+    // ── 已選定動作為「移動」，點目標格 ──
+    const fromIndex = selectedIndex;
+    const toIndex = index;
+
+    if (fromIndex === toIndex) {
+        closeActionMenu();
+        selectedIndex = -1;
+        pendingActionIndex = -1;
+        renderBoard(gameData);
+        return;
+    }
+
     const diff = Math.abs(fromIndex - toIndex);
-    // 檢查是否是上下左右 (差1且同列，或差5)
-    // 簡單防呆：不能跨行瞬移 (例如從第4格跳到第5格)
     const isSameRow = Math.floor(fromIndex / 5) === Math.floor(toIndex / 5);
     const validMove = (diff === 1 && isSameRow) || diff === 5;
 
     if (!validMove) {
-        selectedIndex = -1; // 點錯位置就取消選取
+        selectedIndex = -1;
+        pendingActionIndex = -1;
+        closeActionMenu();
         renderBoard(gameData);
         return;
     }
@@ -262,17 +273,81 @@ async function handleSquareClick(index, cell, gameData) {
     const attacker = newBoard[fromIndex];
     const defender = newBoard[toIndex];
 
+    closeActionMenu();
     if (!defender) {
-        // A. 移動到空格
         newBoard[toIndex] = attacker;
         newBoard[fromIndex] = null;
         await commitMove(newBoard, gameData);
         selectedIndex = -1;
+        pendingActionIndex = -1;
     } else if (defender.owner !== myUid) {
-        // B. 碰到敵人 -> 觸發決鬥 (只有點擊敵人才會觸發，相鄰不會自動觸發)
         await triggerDuel(fromIndex, toIndex);
         selectedIndex = -1;
+        pendingActionIndex = -1;
     }
+}
+
+// 顯示動作選單
+function showActionMenu(index, cell, gameData) {
+    closeActionMenu();
+
+    const boardEl = document.getElementById('chess-board');
+    if (!boardEl) return;
+
+    const cellEls = boardEl.querySelectorAll('div');
+    const targetEl = cellEls[index];
+    if (!targetEl) return;
+
+    const hasActive = !!(cell.active);
+    const menu = document.createElement('div');
+    menu.id = 'action-menu';
+    menu.className = 'action-menu';
+
+    // 移動按鈕
+    const moveBtn = document.createElement('button');
+    moveBtn.className = 'action-btn action-move';
+    moveBtn.innerHTML = '<i class="fas fa-arrows-alt"></i><span>移動</span>';
+    moveBtn.onclick = (e) => {
+        e.stopPropagation();
+        closeActionMenu();
+        // 保持 selectedIndex，等玩家點目標格
+        renderBoard(gameData);
+    };
+
+    // 技能按鈕
+    const skillBtn = document.createElement('button');
+    skillBtn.className = 'action-btn action-skill' + (hasActive ? '' : ' no-skill');
+    skillBtn.innerHTML = '<i class="fas fa-bolt"></i><span>技能</span>';
+    skillBtn.title = hasActive ? (cell.active?.name || '主動技') : '此卡無主動技';
+    if (!hasActive) {
+        skillBtn.disabled = true;
+    } else {
+        skillBtn.onclick = (e) => {
+            e.stopPropagation();
+            closeActionMenu();
+            // TODO: 主動技發動邏輯（下一版實作）
+            alert(`發動技能：${cell.active.name}\n${cell.active.desc}`);
+            selectedIndex = -1;
+            pendingActionIndex = -1;
+        };
+    }
+
+    menu.appendChild(moveBtn);
+    menu.appendChild(skillBtn);
+
+    // 相對於格子定位
+    const rect = targetEl.getBoundingClientRect();
+    const boardRect = boardEl.getBoundingClientRect();
+    menu.style.left = (rect.left - boardRect.left + rect.width / 2) + 'px';
+    menu.style.top  = (rect.top  - boardRect.top  - 8) + 'px';
+
+    boardEl.style.position = 'relative';
+    boardEl.appendChild(menu);
+}
+
+function closeActionMenu() {
+    const menu = document.getElementById('action-menu');
+    if (menu) menu.remove();
 }
 
 // 寫入移動

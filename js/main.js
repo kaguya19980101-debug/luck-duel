@@ -228,62 +228,95 @@ window.handleCardClick = function (id) {
     if (window.checkTeamStatus) window.checkTeamStatus();
 }
 
-// 渲染上方隊伍格子 (含稀有度邊框顏色)
+// 渲染上方隊伍格子（含隊長槽、隊長技欄）
 window.renderTeamDisplay = function () {
     const container = document.getElementById('team-row');
+    const leaderSkillBar = document.getElementById('leader-skill-bar');
     if (!container) return;
     container.innerHTML = '';
 
-    // 確保一定跑 5 次迴圈
     for (let i = 0; i < 5; i++) {
         const charId = window.currentTeam[i];
+        const isLeaderSlot = (i === 0);
         const slot = document.createElement('div');
-        slot.className = 'team-slot';
+        slot.className = 'team-slot' + (isLeaderSlot ? ' captain-slot' : '');
+
+        // 隊長槽：右上角皇冠標記 + tooltip
+        if (isLeaderSlot) {
+            const crown = document.createElement('div');
+            crown.className = 'captain-crown';
+            crown.innerHTML = '👑';
+            crown.title = '第一格為隊長，SSR 卡可發動隊長技';
+            slot.appendChild(crown);
+        }
 
         if (charId !== null) {
             slot.classList.add('filled');
             const idStr = String(charId);
             const imgPath = window.getCharImage(idStr);
-
-            // ★ 1. 取得角色資料以判斷稀有度
             const charData = window.myInventoryData[idStr];
 
-            // ★ 2. 決定顏色 (預設 R 卡顏色)
-            let rarityColor = '#cccccc'; // R 卡灰白
-            let glowColor = 'rgba(255, 255, 255, 0.3)';
-
+            let rarityColor = '#cccccc';
+            let glowColor = 'rgba(255,255,255,0.3)';
             if (charData) {
-                if (charData.rarity === 'SR') {
-                    rarityColor = '#a855f7'; // 紫色
-                    glowColor = 'rgba(168, 85, 247, 0.6)';
-                } else if (charData.rarity === 'SSR') {
-                    rarityColor = '#ffd700'; // 金色
-                    glowColor = 'rgba(255, 215, 0, 0.6)';
-                }
+                if (charData.rarity === 'SR')  { rarityColor = '#a855f7'; glowColor = 'rgba(168,85,247,0.6)'; }
+                if (charData.rarity === 'SSR') { rarityColor = '#ffd700'; glowColor = 'rgba(255,215,0,0.6)'; }
             }
 
-            // ★ 3. 將顏色應用到 CSS 樣式
-            slot.style.border = `2px solid ${rarityColor}`;
-            slot.style.boxShadow = `0 0 15px ${glowColor}`; // 加一點發光效果更有質感
+            // 隊長槽 SSR 額外金色邊框加強
+            if (isLeaderSlot && charData?.rarity === 'SSR') {
+                slot.style.border = '2px solid #ffd700';
+                slot.style.boxShadow = '0 0 20px rgba(255,215,0,0.8), inset 0 0 8px rgba(255,215,0,0.2)';
+            } else {
+                slot.style.border = `2px solid ${rarityColor}`;
+                slot.style.boxShadow = `0 0 15px ${glowColor}`;
+            }
 
-            // 顯示圖片 (無叉叉版)
-            slot.innerHTML = `
-                <img src="${imgPath}" onerror="this.src='img/characters/default.png'" style="width:100%; height:100%; object-fit:cover; border-radius:6px; cursor:pointer;">
-            `;
-
-            // 點擊移除
+            const img = document.createElement('img');
+            img.src = imgPath;
+            img.onerror = () => img.src = 'img/characters/default.png';
+            img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:6px;cursor:pointer;';
+            slot.appendChild(img);
             slot.onclick = () => window.handleCardClick(idStr);
-
         } else {
-            // 空格子
-            slot.style.border = '2px dashed #555'; // 空格子維持虛線
+            slot.style.border = isLeaderSlot ? '2px dashed #ffd70066' : '2px dashed #555';
             slot.style.boxShadow = 'none';
-            slot.innerHTML = `<span style="font-size:2rem; color:#555;">+</span>`;
+            const plus = document.createElement('span');
+            plus.style.cssText = 'font-size:2rem; color:' + (isLeaderSlot ? '#ffd70066' : '#555') + ';';
+            plus.textContent = isLeaderSlot ? '👑' : '+';
+            slot.appendChild(plus);
         }
 
         container.appendChild(slot);
     }
-}
+
+    // ── 隊長技欄 ──
+    if (leaderSkillBar) {
+        const captainId = window.currentTeam[0];
+        const captainData = captainId ? window.myInventoryData[String(captainId)] : null;
+        const leader = captainData?.leader;
+
+        if (leader) {
+            const attrConfig = window.ATTR_CONFIG || {};
+            const attrData = attrConfig[(captainData.attribute||'').toLowerCase()] || { icon:'❓', color:'#aaa' };
+            leaderSkillBar.innerHTML = `
+                <div class="leader-bar-inner">
+                    <span class="leader-bar-icon" style="color:${attrData.color}">${attrData.icon}</span>
+                    <span class="leader-bar-label">隊長技</span>
+                    <span class="leader-bar-name">${leader.name}</span>
+                    <span class="leader-bar-desc">${leader.desc.replace('【隊長技】','')}</span>
+                </div>`;
+            leaderSkillBar.style.display = 'flex';
+        } else {
+            leaderSkillBar.innerHTML = `
+                <div class="leader-bar-inner leader-bar-empty">
+                    <span>👑</span>
+                    <span>將 SSR 卡放在第一格即可發動隊長技</span>
+                </div>`;
+            leaderSkillBar.style.display = 'flex';
+        }
+    }
+};
 // 相容舊命名
 window.renderTeamSlots = window.renderTeamDisplay;
 
@@ -898,26 +931,40 @@ window.openCardModal = function(id) {
     const isInTeam = window.currentTeam && window.currentTeam.some(m => String(m) === String(id));
     const count = char.count || 1;
 
-    // Build skills HTML
+    // Build skill HTML
     function buildSkill(skill, type) {
         if (!skill) return '';
+        const label = type === 'active' ? '主動技' : '被動技';
         const trigLabel = TRIGGER_LABELS[skill.trigger] || skill.trigger || '';
         return `
         <div class="cdm-skill-box">
             <div class="cdm-skill-header">
-                <span class="cdm-skill-type ${type}">${type === 'active' ? '主動' : '被動'}</span>
-                <span class="cdm-skill-name">${skill.name || '未命名技能'}</span>
+                <span class="cdm-skill-type ${type}">${label}</span>
+                <span class="cdm-skill-name">${skill.name || '未命名'}</span>
             </div>
-            <div class="cdm-skill-trigger">◆ ${trigLabel}</div>
-            <div class="cdm-skill-desc">${skill.desc || skill.description || '（技能說明尚未填寫）'}</div>
+            ${trigLabel ? `<div class="cdm-skill-trigger">◆ ${trigLabel}</div>` : ''}
+            <div class="cdm-skill-desc">${skill.desc || '（說明尚未填寫）'}</div>
+        </div>`;
+    }
+
+    function buildLeader(leader) {
+        if (!leader) return '';
+        return `
+        <div class="cdm-skill-box cdm-leader-box">
+            <div class="cdm-skill-header">
+                <span class="cdm-skill-type leader">隊長技</span>
+                <span class="cdm-skill-name">${leader.name}</span>
+            </div>
+            <div class="cdm-skill-desc">${leader.desc.replace('【隊長技】','')}</div>
         </div>`;
     }
 
     const activeHTML  = buildSkill(char.active,  'active');
     const passiveHTML = buildSkill(char.passive, 'passive');
-    const noSkill = (!char.active && !char.passive)
-        ? `<div class="cdm-no-skill">此卡尚無技能資料</div>`
-        : '';
+    const leaderHTML  = char.rarity === 'SSR' ? buildLeader(char.leader) : '';
+
+    const hasSkill = char.active || char.passive || (char.rarity === 'SSR' && char.leader);
+    const noSkill  = !hasSkill ? `<div class="cdm-no-skill">此卡尚無技能資料</div>` : '';
 
     document.getElementById('cdm-content').innerHTML = `
         <div class="cdm-top">
@@ -946,7 +993,7 @@ window.openCardModal = function(id) {
         </div>
         <hr class="cdm-divider">
         <div class="cdm-section-title">技能</div>
-        ${activeHTML}${passiveHTML}${noSkill}
+        ${activeHTML}${passiveHTML}${leaderHTML}${noSkill}
         <button class="cdm-team-btn ${isInTeam ? 'remove' : 'add'}"
             onclick="window.handleCardClick('${id}'); window.closeCardModal();">
             ${isInTeam ? '⊖ 從隊伍移除' : '⊕ 加入隊伍'}
