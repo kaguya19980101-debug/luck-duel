@@ -910,11 +910,7 @@ window.closeCardModal = function() {
 
 
 // ==========================================
-// MOBILE 3-TAB BAR LOGIC (moved to top of file)
-// ==========================================
-
-// ==========================================
-// 8. 導航按鈕綁定 (Navigation Binding)
+// 8. 導航按鈕綁定 (事件委派 - 相容所有瀏覽器)
 // ==========================================
 
 const NAV_MAP = {
@@ -925,30 +921,60 @@ const NAV_MAP = {
     'nav-history':  'history-view',
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+// 事件委派：綁在 document 上，不管按鈕何時生成、module 何時載入都有效
+document.addEventListener('click', function (e) {
+    const el = e.target.closest('button, [data-action]');
+    if (!el) return;
+    const id = el.id;
 
-    // 1. 桌面版側欄按鈕
-    Object.keys(NAV_MAP).forEach(btnId => {
-        const btn = document.getElementById(btnId);
-        if (btn) {
-            btn.addEventListener('click', function () {
-                if (window.switchView) window.switchView(NAV_MAP[btnId]);
-                document.querySelectorAll('.menu-items button').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-            });
-        }
-    });
+    // --- 桌面側欄導航 ---
+    if (NAV_MAP[id]) {
+        if (window.switchView) window.switchView(NAV_MAP[id]);
+        document.querySelectorAll('.menu-items button').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        return;
+    }
 
-    // 2. 預設大廳亮起
+    // --- 手機 tab bar ---
+    if (id === 'tab-feature')  { window.togglePanel('feature');  return; }
+    if (id === 'tab-settings') { window.togglePanel('settings'); return; }
+    if (id === 'tab-duel')     { window.tabNav('lobby-view', 'tab-duel'); return; }
+
+    // --- 手機面板內按鈕 (用 data-attr) ---
+    const navTo = el.getAttribute('data-nav');
+    if (navTo) {
+        const btnRef = el.getAttribute('data-ref') || '';
+        window.tabNav(navTo, btnRef);
+        return;
+    }
+    if (el.getAttribute('data-action') === 'logout') {
+        window.doLogout();
+        return;
+    }
+
+    // --- 排序 / 召喚 / 關閉抽卡結果 ---
+    const action = el.getAttribute('data-action');
+    if (action === 'sort')        { if (window.toggleSort) window.toggleSort(); return; }
+    if (action === 'summon')      { const n = parseInt(el.getAttribute('data-count'), 10) || 1; if (window.handleSummon) window.handleSummon(n); return; }
+    if (action === 'close-gacha') { if (window.closeGachaResult) window.closeGachaResult(); return; }
+
+    // --- 登入 / 登出 ---
+    if (id === 'google-login-btn') { AuthUser.loginWithGoogle(); return; }
+    if (id === 'logout-btn')       { AuthUser.logoutUser();      return; }
+
+    // --- 遮罩關閉面板 ---
+    if (id === 'tab-overlay') { window.closeTabPanel(); return; }
+});
+
+// 初始化預設高亮狀態 (不依賴 DOMContentLoaded)
+function initNavState() {
     const defaultBtn = document.getElementById('nav-lobby');
     if (defaultBtn) defaultBtn.classList.add('active');
     const duelTab = document.getElementById('tab-duel');
     if (duelTab) duelTab.classList.add('tab-active');
-
-    // 3. 登入 / 登出
-    const loginBtn = document.getElementById('google-login-btn');
-    if (loginBtn) loginBtn.addEventListener('click', AuthUser.loginWithGoogle);
-
-    const logoutBtnPC = document.getElementById('logout-btn');
-    if (logoutBtnPC) logoutBtnPC.addEventListener('click', AuthUser.logoutUser);
-});
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initNavState);
+} else {
+    initNavState();
+}
