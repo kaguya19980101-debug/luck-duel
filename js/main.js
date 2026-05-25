@@ -640,75 +640,90 @@ window.test_clearCards = async function () {
         top: 0; left: 0; right: 0; bottom: 0;
         width: 100%; height: 100%;
         background: rgba(0,0,0,0.85);
+        -webkit-backdrop-filter: blur(4px);
+        backdrop-filter: blur(4px);
         z-index: 9999999;
         justify-content: center;
-        align-items: flex-end;
-        padding: 0;
+        align-items: center;
+        padding: 20px;
+        box-sizing: border-box;
     }
     #card-detail-modal.open {
         display: flex;
     }
     .cdm-sheet {
-        background: #0d0d0f;
-        border-top: 2px solid #444;
-        border-radius: 18px 18px 0 0;
+        background: linear-gradient(160deg, #16161e, #0a0a0d);
+        border: 1px solid #333;
+        border-radius: 20px;
         width: 100%;
-        max-width: 480px;
-        padding: 20px 20px 40px 20px;
+        max-width: 560px;
+        padding: 26px 26px 30px;
         box-sizing: border-box;
-        animation: slideUp 0.25s ease;
+        animation: cdmPop 0.28s cubic-bezier(0.34,1.3,0.64,1);
         position: relative;
-        max-height: 88vh;
+        max-height: 92vh;
         overflow-y: auto;
+        box-shadow: 0 24px 70px rgba(0,0,0,0.7);
     }
-    @keyframes slideUp {
-        from { transform: translateY(100%); opacity: 0; }
-        to   { transform: translateY(0);    opacity: 1; }
+    @keyframes cdmPop {
+        from { transform: scale(0.92) translateY(20px); opacity: 0; }
+        to   { transform: scale(1) translateY(0);       opacity: 1; }
     }
     .cdm-close {
         position: absolute;
-        top: 14px; right: 18px;
-        background: none; border: none;
-        color: #888; font-size: 1.5rem;
+        top: 16px; right: 18px;
+        background: rgba(255,255,255,0.06);
+        border: none;
+        width: 32px; height: 32px;
+        border-radius: 50%;
+        color: #aaa; font-size: 1.1rem;
         cursor: pointer; line-height: 1;
+        display: flex; align-items: center; justify-content: center;
+        transition: background 0.2s;
+        z-index: 2;
     }
+    .cdm-close:hover { background: rgba(255,255,255,0.15); color: #fff; }
     .cdm-top {
         display: flex;
-        gap: 14px;
-        margin-bottom: 14px;
+        gap: 20px;
+        margin-bottom: 20px;
     }
     .cdm-img {
-        width: 90px;
-        height: 120px;
+        width: 150px;
+        height: 200px;
         object-fit: cover;
         object-position: top center;
-        border-radius: 8px;
+        border-radius: 12px;
         border: 2px solid #333;
         flex-shrink: 0;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.5);
     }
     .cdm-meta {
         flex: 1;
         display: flex;
         flex-direction: column;
-        gap: 5px;
+        gap: 8px;
+        min-width: 0;
     }
     .cdm-name {
         font-family: 'Orbitron', sans-serif;
-        font-size: 1.1rem;
+        font-size: 1.4rem;
         color: #fff;
         font-weight: 700;
         letter-spacing: 1px;
+        word-break: break-word;
     }
     .cdm-rarity-line {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+        flex-wrap: wrap;
     }
     .cdm-rarity-badge {
-        font-size: 0.7rem;
+        font-size: 0.8rem;
         font-weight: bold;
-        padding: 2px 8px;
-        border-radius: 4px;
+        padding: 3px 12px;
+        border-radius: 5px;
         border: 1px solid;
     }
     .cdm-rarity-R   { color: #60a5fa; border-color: #60a5fa; }
@@ -716,97 +731,99 @@ window.test_clearCards = async function () {
     .cdm-rarity-SSR { color: #ffd700; border-color: #ffd700;
                       background: rgba(255,215,0,0.08); }
     .cdm-attr {
-        font-size: 1rem;
+        font-size: 1.1rem;
     }
     .cdm-stats {
         display: flex;
         gap: 10px;
-        margin-top: 4px;
+        margin-top: auto;
     }
     .cdm-stat-box {
         background: #1a1a22;
         border: 1px solid #333;
-        border-radius: 6px;
-        padding: 4px 10px;
+        border-radius: 8px;
+        padding: 8px 10px;
         text-align: center;
         flex: 1;
     }
     .cdm-stat-label {
-        font-size: 0.55rem;
+        font-size: 0.6rem;
         color: #777;
         letter-spacing: 1px;
         text-transform: uppercase;
+        margin-bottom: 2px;
     }
     .cdm-stat-value {
-        font-size: 1rem;
+        font-size: 1.2rem;
         font-weight: bold;
         color: #eee;
     }
     .cdm-divider {
         border: none;
         border-top: 1px solid #2a2a35;
-        margin: 12px 0;
+        margin: 16px 0;
     }
     .cdm-section-title {
-        font-size: 0.65rem;
+        font-size: 0.7rem;
         letter-spacing: 2px;
         color: #555;
         text-transform: uppercase;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
     }
     .cdm-skill-box {
         background: #111118;
         border: 1px solid #2a2a3a;
-        border-radius: 10px;
-        padding: 12px 14px;
-        margin-bottom: 10px;
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 12px;
     }
     .cdm-skill-header {
         display: flex;
         align-items: center;
-        gap: 8px;
-        margin-bottom: 6px;
+        gap: 10px;
+        margin-bottom: 7px;
     }
     .cdm-skill-type {
-        font-size: 0.6rem;
-        padding: 2px 7px;
-        border-radius: 3px;
+        font-size: 0.65rem;
+        padding: 3px 9px;
+        border-radius: 4px;
         font-weight: bold;
         letter-spacing: 1px;
+        flex-shrink: 0;
     }
     .cdm-skill-type.active  { background: #7c3aed; color: #e9d5ff; }
     .cdm-skill-type.passive { background: #1e4d2b; color: #6ee7b7; }
     .cdm-skill-name {
-        font-size: 0.95rem;
+        font-size: 1.05rem;
         color: #e2d9f3;
         font-weight: 600;
     }
     .cdm-skill-trigger {
-        font-size: 0.7rem;
+        font-size: 0.78rem;
         color: #665c7a;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
     }
     .cdm-skill-desc {
-        font-size: 0.8rem;
+        font-size: 0.88rem;
         color: #aaa;
-        line-height: 1.6;
+        line-height: 1.65;
         border-top: 1px solid #222;
-        padding-top: 8px;
+        padding-top: 10px;
         margin-top: 2px;
     }
     .cdm-no-skill {
         color: #444;
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         text-align: center;
-        padding: 16px 0;
+        padding: 20px 0;
     }
     .cdm-team-btn {
         width: 100%;
-        margin-top: 16px;
-        padding: 14px;
+        margin-top: 18px;
+        padding: 16px;
         border: none;
-        border-radius: 12px;
-        font-size: 1rem;
+        border-radius: 14px;
+        font-size: 1.05rem;
         font-weight: bold;
         cursor: pointer;
         font-family: 'Orbitron', sans-serif;
@@ -815,6 +832,41 @@ window.test_clearCards = async function () {
     }
     .cdm-team-btn.add    { background: linear-gradient(135deg,#7c3aed,#4f46e5); color:#fff; }
     .cdm-team-btn.remove { background: linear-gradient(135deg,#b91c1c,#991b1b); color:#fff; }
+    .cdm-team-btn:active { transform: scale(0.97); }
+
+    /* 手機版：底部彈出 + 卡圖更大 */
+    @media (max-width: 768px) {
+        #card-detail-modal {
+            align-items: flex-end;
+            padding: 0;
+        }
+        .cdm-sheet {
+            max-width: 100%;
+            border-radius: 20px 20px 0 0;
+            border-left: none; border-right: none; border-bottom: none;
+            padding: 22px 18px 34px;
+            animation: cdmSlideUp 0.28s ease;
+            max-height: 90vh;
+        }
+        @keyframes cdmSlideUp {
+            from { transform: translateY(100%); }
+            to   { transform: translateY(0); }
+        }
+        .cdm-top {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 14px;
+        }
+        .cdm-img {
+            width: 180px;
+            height: 240px;
+        }
+        .cdm-meta { align-items: center; width: 100%; }
+        .cdm-name { font-size: 1.5rem; }
+        .cdm-stats { width: 100%; margin-top: 6px; }
+        .cdm-skill-header { flex-wrap: wrap; }
+    }
     `;
     document.head.appendChild(style);
 
@@ -923,7 +975,13 @@ const NAV_MAP = {
 
 // 事件委派：綁在 document 上，不管按鈕何時生成、module 何時載入都有效
 document.addEventListener('click', function (e) {
-    const el = e.target.closest('button, [data-action]');
+    // 遮罩點擊關閉 (div，需單獨判斷)
+    if (e.target && e.target.id === 'tab-overlay') {
+        window.closeTabPanel();
+        return;
+    }
+
+    const el = e.target.closest('button, [data-action], [data-nav]');
     if (!el) return;
     const id = el.id;
 
@@ -978,3 +1036,5 @@ if (document.readyState === 'loading') {
 } else {
     initNavState();
 }
+
+console.log("✅ 事件綁定完成，main.js 執行到底");

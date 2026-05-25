@@ -81,8 +81,8 @@ export function initGameBoard(gameId, role) {
         <div style="width:100%; display:flex; justify-content:center;">
             <div id="chess-board" style="
                 display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(6, 1fr);
-                gap: 4px; width: 100%; max-width: 450px; 
-                background: #2b2b2b; padding: 6px; border-radius: 12px;
+                gap: 5px; width: 100%; max-width: 520px; aspect-ratio: 5 / 6;
+                background: #2b2b2b; padding: 7px; border-radius: 14px;
                 box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             "></div>
         </div>
@@ -416,28 +416,28 @@ function revealDuelChoices(gameData) {
     modal.innerHTML = `
         <style>@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }</style>
         
-        <div style="display:flex; flex-direction:column; align-items:center; width:100%; text-align:center;">
-            <h1 style="color:#ff00cc; font-family:'Orbitron'; margin-bottom:20px; text-shadow:0 0 10px #ff00cc;">⚔️ 決鬥揭曉 ⚔️</h1>
+        <div style="display:flex; flex-direction:column; align-items:center; width:100%; text-align:center; max-width:600px; margin:0 auto;">
+            <h1 style="color:#ff00cc; font-family:'Orbitron'; margin-bottom:30px; text-shadow:0 0 10px #ff00cc; font-size:clamp(1.4rem, 5vw, 2.2rem);">⚔️ 決鬥揭曉 ⚔️</h1>
             
             <div style="display:flex; justify-content:space-around; width:100%; align-items:center;">
                 <div style="text-align:center;">
-                    <div style="font-size:1.2rem; color:#4facfe; margin-bottom:10px;">YOU</div>
-                    <div style="font-size:5rem; filter:drop-shadow(0 0 15px #4facfe);">
+                    <div style="font-size:clamp(1rem,3vw,1.4rem); color:#4facfe; margin-bottom:12px;">YOU</div>
+                    <div style="font-size:clamp(4.5rem,16vw,8rem); filter:drop-shadow(0 0 20px #4facfe); line-height:1;">
                         ${icons[myMove]}
                     </div>
                 </div>
 
-                <div style="font-size:2rem; color:white; font-weight:bold; font-style:italic;">VS</div>
+                <div style="font-size:clamp(1.5rem,5vw,2.5rem); color:white; font-weight:bold; font-style:italic;">VS</div>
 
                 <div style="text-align:center;">
-                    <div style="font-size:1.2rem; color:#ff4444; margin-bottom:10px;">ENEMY</div>
-                    <div style="font-size:5rem; filter:drop-shadow(0 0 15px #ff4444);">
+                    <div style="font-size:clamp(1rem,3vw,1.4rem); color:#ff4444; margin-bottom:12px;">ENEMY</div>
+                    <div style="font-size:clamp(4.5rem,16vw,8rem); filter:drop-shadow(0 0 20px #ff4444); line-height:1;">
                         ${icons[oppMove]}
                     </div>
                 </div>
             </div>
             
-            <div style="margin-top:40px; min-height: 80px; background: rgba(0,0,0,0.5); padding: 15px 30px; border-radius: 10px; border: 1px solid #555;">
+            <div style="margin-top:40px; min-height: 80px; background: rgba(0,0,0,0.5); padding: 18px 30px; border-radius: 12px; border: 1px solid #555; width:90%;">
                 ${narrativeHTML}
             </div>
         </div>
@@ -458,14 +458,14 @@ function checkDuelState(gameData) {
 
         // ★ 注意這裡的按鈕加入了 data-choice 屬性
         modal.innerHTML = `
-            <h1 style="color:#ff00cc; font-family:'Orbitron'; margin-bottom:5px;">⚔️ DUEL ⚔️</h1>
-            <div id="duel-timer" style="font-size: 2.5rem; color: #ffeb3b; font-weight: bold; margin-bottom: 5px; text-shadow: 0 0 10px #ffeb3b;">5</div>
-            <div id="duel-status" style="color:#aaa; margin-bottom:20px;">選擇你的命運</div>
+            <h1 style="color:#ff00cc; font-family:'Orbitron'; margin-bottom:8px; font-size:clamp(1.5rem,5vw,2.2rem);">⚔️ DUEL ⚔️</h1>
+            <div id="duel-timer" style="font-size: 3rem; color: #ffeb3b; font-weight: bold; margin-bottom: 8px; text-shadow: 0 0 10px #ffeb3b;">5</div>
+            <div id="duel-status" style="color:#aaa; margin-bottom:28px; font-size:1.1rem;">選擇你的命運</div>
             
-            <div id="rps-buttons" style="display:flex; justify-content:center; gap:15px; width:100%; flex-wrap:wrap;">
-                <button class="rps-btn" data-choice="rock" onclick="submitDuelChoice('rock')" style="width:75px; height:75px; font-size:2.5rem; display:flex; justify-content:center; align-items:center; background:#333; border:3px solid #555; border-radius:50%; cursor:pointer; padding:0; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition:all 0.2s;">✊</button>
-                <button class="rps-btn" data-choice="paper" onclick="submitDuelChoice('paper')" style="width:75px; height:75px; font-size:2.5rem; display:flex; justify-content:center; align-items:center; background:#333; border:3px solid #555; border-radius:50%; cursor:pointer; padding:0; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition:all 0.2s;">✋</button>
-                <button class="rps-btn" data-choice="scissors" onclick="submitDuelChoice('scissors')" style="width:75px; height:75px; font-size:2.5rem; display:flex; justify-content:center; align-items:center; background:#333; border:3px solid #555; border-radius:50%; cursor:pointer; padding:0; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition:all 0.2s;">✌️</button>
+            <div id="rps-buttons" style="display:flex; justify-content:center; gap:clamp(16px,5vw,30px); width:100%; flex-wrap:wrap;">
+                <button class="rps-btn" data-choice="rock" onclick="submitDuelChoice('rock')" style="width:clamp(90px,22vw,110px); height:clamp(90px,22vw,110px); font-size:clamp(3rem,9vw,4rem); display:flex; justify-content:center; align-items:center; background:#333; border:3px solid #555; border-radius:50%; cursor:pointer; padding:0; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition:all 0.2s;">✊</button>
+                <button class="rps-btn" data-choice="paper" onclick="submitDuelChoice('paper')" style="width:clamp(90px,22vw,110px); height:clamp(90px,22vw,110px); font-size:clamp(3rem,9vw,4rem); display:flex; justify-content:center; align-items:center; background:#333; border:3px solid #555; border-radius:50%; cursor:pointer; padding:0; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition:all 0.2s;">✋</button>
+                <button class="rps-btn" data-choice="scissors" onclick="submitDuelChoice('scissors')" style="width:clamp(90px,22vw,110px); height:clamp(90px,22vw,110px); font-size:clamp(3rem,9vw,4rem); display:flex; justify-content:center; align-items:center; background:#333; border:3px solid #555; border-radius:50%; cursor:pointer; padding:0; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition:all 0.2s;">✌️</button>
             </div>
         `;
         isResolving = false;
