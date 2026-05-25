@@ -14,6 +14,62 @@ import * as Matchmaking from "./matchmaking.js";
 console.log("系統: main.js 載入中...");
 
 // ==========================================
+// MOBILE 3-TAB BAR LOGIC (置於最前，確保一定掛載)
+// ==========================================
+window._currentPanel = null;
+
+window.togglePanel = function (name) {
+    const tabbar = document.getElementById('mobile-tabbar');
+    if (!tabbar) return;
+    const allPanels = document.querySelectorAll('.panel-section');
+    const target = document.getElementById('panel-' + name);
+    const allTabs = document.querySelectorAll('.tab-btn');
+
+    if (window._currentPanel === name) {
+        allPanels.forEach(p => p.classList.remove('active'));
+        tabbar.classList.remove('panel-open');
+        allTabs.forEach(t => t.classList.remove('tab-active'));
+        window._currentPanel = null;
+        return;
+    }
+
+    allPanels.forEach(p => p.classList.remove('active'));
+    if (target) target.classList.add('active');
+    tabbar.classList.add('panel-open');
+    allTabs.forEach(t => t.classList.remove('tab-active'));
+    const tabEl = document.getElementById('tab-' + name);
+    if (tabEl) tabEl.classList.add('tab-active');
+    window._currentPanel = name;
+};
+
+window.closeTabPanel = function () {
+    const tabbar = document.getElementById('mobile-tabbar');
+    if (!tabbar) return;
+    document.querySelectorAll('.panel-section').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('tab-active'));
+    tabbar.classList.remove('panel-open');
+    window._currentPanel = null;
+};
+
+window.tabNav = function (viewId, btnId) {
+    window.closeTabPanel();
+    if (window.switchView) window.switchView(viewId);
+    document.querySelectorAll('.menu-items button').forEach(b => b.classList.remove('active'));
+    const desktopBtn = document.getElementById(btnId);
+    if (desktopBtn) desktopBtn.classList.add('active');
+    const duelTab = document.getElementById('tab-duel');
+    if (duelTab) {
+        if (viewId === 'lobby-view') duelTab.classList.add('tab-active');
+        else duelTab.classList.remove('tab-active');
+    }
+};
+
+window.doLogout = function () {
+    window.closeTabPanel();
+    AuthUser.logoutUser();
+};
+
+// ==========================================
 // 2. 全域變數與設定
 // ==========================================
 window.currentTeam = [null, null, null, null, null];
@@ -853,69 +909,8 @@ window.closeCardModal = function() {
 
 
 // ==========================================
-// MOBILE 3-TAB BAR LOGIC
+// MOBILE 3-TAB BAR LOGIC (moved to top of file)
 // ==========================================
-window._currentPanel = null;
-
-window.togglePanel = function(name) {
-    const tabbar = document.getElementById('mobile-tabbar');
-    const allPanels = document.querySelectorAll('.panel-section');
-    const target = document.getElementById('panel-' + name);
-    const allTabs = document.querySelectorAll('.tab-btn');
-
-    // If same panel is open, close it
-    if (window._currentPanel === name) {
-        allPanels.forEach(p => p.classList.remove('active'));
-        tabbar.classList.remove('panel-open');
-        allTabs.forEach(t => t.classList.remove('tab-active'));
-        window._currentPanel = null;
-        return;
-    }
-
-    // Open panel
-    allPanels.forEach(p => p.classList.remove('active'));
-    if (target) target.classList.add('active');
-    tabbar.classList.add('panel-open');
-    allTabs.forEach(t => t.classList.remove('tab-active'));
-    const tabEl = document.getElementById('tab-' + name);
-    if (tabEl) tabEl.classList.add('tab-active');
-    window._currentPanel = name;
-};
-
-window.closeTabPanel = function() {
-    const tabbar = document.getElementById('mobile-tabbar');
-    document.querySelectorAll('.panel-section').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('tab-active'));
-    tabbar.classList.remove('panel-open');
-    window._currentPanel = null;
-};
-
-// Navigate from panel button — also highlights "決鬥" tab when going to lobby
-window.tabNav = function(viewId, btnId) {
-    window.closeTabPanel();
-
-    if (window.switchView) window.switchView(viewId);
-
-    // highlight correct desktop nav too
-    document.querySelectorAll('.menu-items button').forEach(b => b.classList.remove('active'));
-    const desktopBtn = document.getElementById(btnId);
-    if (desktopBtn) desktopBtn.classList.add('active');
-
-    // highlight duel tab when lobby
-    const duelTab = document.getElementById('tab-duel');
-    if (duelTab) {
-        if (viewId === 'lobby-view') {
-            duelTab.classList.add('tab-active');
-        } else {
-            duelTab.classList.remove('tab-active');
-        }
-    }
-};
-
-window.doLogout = function() {
-    window.closeTabPanel();
-    AuthUser.logoutUser();
-};
 
 // ==========================================
 // 8. 導航按鈕綁定 (Navigation Binding)
