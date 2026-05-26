@@ -1563,3 +1563,9 @@ body::before {
     from { box-shadow: 0 0 10px rgba(255,255,0,0.6), inset 0 0 6px rgba(255,255,0,0.1); }
     to   { box-shadow: 0 0 24px rgba(255,255,0,1.0), inset 0 0 12px rgba(255,255,0,0.3); }
 }
+
+/* 卡片資訊框滑入動畫 */
+@keyframes cardInfoUp {
+    from { transform: translate(-50%, 20px); opacity: 0; }
+    to   { transform: translate(-50%, 0);    opacity: 1; }
+}
