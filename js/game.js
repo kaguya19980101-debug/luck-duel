@@ -299,12 +299,18 @@ async function resolveDuelCpu(gameData) {
     // 恢復正常 submitDuelChoice
     window.submitDuelChoice = window._originalSubmitDuelChoice;
 
+    // 決鬥結束後，回合換給「攻擊方的對手」
+    // 攻擊方是玩家 → 換 CPU；攻擊方是 CPU → 換玩家
+    const attackerOwner = attackerChar.owner;
+    const nextTurn = (attackerOwner === myUid) ? CPU_UID : myUid;
+
     // 檢查遊戲結束
     const cpuUnits = board.filter(c => c && c.owner === CPU_UID);
     const myUnits  = board.filter(c => c && c.owner === myUid);
 
-    const newGame = { ...gameData, board, duel: null, turn: myUid, turn_start_time: Date.now() };
+    const newGame = { ...gameData, board, duel: null, turn: nextTurn, turn_start_time: Date.now() };
     currentBoard = board;
+    actionUsed = false;
 
     if (cpuUnits.length === 0) { handleGameEndLocal(myUid); return; }
     if (myUnits.length  === 0) { handleGameEndLocal(CPU_UID); return; }
@@ -664,13 +670,16 @@ function showActionMenu(index, cell, gameData) {
     const rect = targetEl.getBoundingClientRect();
     const cellCenterY = rect.top + rect.height / 2;
 
-    // 移動按鈕（左側）
+    // 移動按鈕（左側）— 與格子同高
+    const cellH = rect.height;
     const moveBtn = document.createElement('button');
     moveBtn.className = 'action-btn action-move action-float';
     moveBtn.innerHTML = '🚶<span>移動</span>';
     moveBtn.style.position = 'fixed';
-    moveBtn.style.left = (rect.left - 54) + 'px';
-    moveBtn.style.top  = (cellCenterY - 23) + 'px';
+    moveBtn.style.left = (rect.left - cellH - 6) + 'px';
+    moveBtn.style.top  = rect.top + 'px';
+    moveBtn.style.width = cellH + 'px';
+    moveBtn.style.height = cellH + 'px';
     moveBtn.onclick = (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -680,13 +689,15 @@ function showActionMenu(index, cell, gameData) {
         renderBoard(gameData); // 進入移動模式，高亮脈衝
     };
 
-    // 技能按鈕（右側）
+    // 技能按鈕（右側）— 與格子同高
     const skillBtn = document.createElement('button');
     skillBtn.className = 'action-btn action-skill action-float' + (hasActive ? '' : ' no-skill');
     skillBtn.innerHTML = '✨<span>技能</span>';
     skillBtn.style.position = 'fixed';
-    skillBtn.style.left = (rect.right + 8) + 'px';
-    skillBtn.style.top  = (cellCenterY - 23) + 'px';
+    skillBtn.style.left = (rect.right + 6) + 'px';
+    skillBtn.style.top  = rect.top + 'px';
+    skillBtn.style.width = cellH + 'px';
+    skillBtn.style.height = cellH + 'px';
     if (!hasActive) {
         skillBtn.disabled = true;
     } else {
