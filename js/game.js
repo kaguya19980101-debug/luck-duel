@@ -453,6 +453,16 @@ function renderBoard(gameData) {
             `<span style="color:#ff4444">🔴 對手回合</span>`;
     }
 
+    // 換到自己回合時重置行動狀態
+    if (isMyTurn && actionUsed === undefined) actionUsed = false;
+    if (!isMyTurn) {
+        // 對手回合，清除選取視覺
+        selectedIndex = -1;
+        pendingActionIndex = -1;
+        moveMode = false;
+        closeActionMenu();
+    }
+
     for (let visualIndex = 0; visualIndex < 30; visualIndex++) {
         const realIndex = shouldFlip ? (29 - visualIndex) : visualIndex;
         const cell = currentBoard[realIndex];
@@ -469,13 +479,18 @@ function renderBoard(gameData) {
             background: #262626;
             border: 1px solid #333;
             overflow: hidden;
+            transition: border 0.1s, box-shadow 0.1s;
         `;
 
-        // 顯示選取框 (黃色)
+        // 選取高亮
         if (realIndex === selectedIndex) {
             div.style.border = '2px solid #ffff00';
-            div.style.boxShadow = '0 0 15px rgba(255, 255, 0, 0.6)';
-            div.style.zIndex = '5'; // 選取時浮上來一點
+            div.style.boxShadow = '0 0 18px rgba(255,255,0,0.8), inset 0 0 8px rgba(255,255,0,0.2)';
+            div.style.zIndex = '5';
+            // 移動模式下額外脈衝動畫
+            if (moveMode) {
+                div.style.animation = 'selectedPulse 0.8s ease-in-out infinite alternate';
+            }
         }
 
         // ★★★ 4. 如果這格有棋子，畫出戰鬥卡片 ★★★
@@ -496,31 +511,26 @@ function renderBoard(gameData) {
             const fallbackImg = 'img/characters/default.png';
 
             // 敵我顏色區別 (外框與血條顏色)
-            const borderColor = isMine ? '#4facfe' : '#ff4444'; // 我方藍，敵方紅
-            const hpColor = isMine ? '#00ff00' : '#ff0000';     // 我方綠血，敵方紅血
+            const borderColor = isMine ? '#4facfe' : '#ff4444';
+            const hpColor = isMine ? '#00ff00' : '#ff0000';
 
-            // 設定這格子的外框，用來區分敵我
-            if (realIndex !== selectedIndex) { // 如果沒有被選取，就顯示敵我外框
+            if (realIndex !== selectedIndex) {
                 div.style.border = `2px solid ${borderColor}`;
             }
 
-            // 塞入 HTML 結構 (套用 CSS 寫好的 .battle-card 樣式)
             div.innerHTML = `
                 <div class="battle-card" style="width: 100%; height: 100%; border: none; border-radius: 0;">
-                    
                     <div class="battle-img-area">
                         <img src="${battleImgPath}" onerror="this.src='${fallbackImg}'">
                         <div class="battle-attr" style="color:${attrData.color};">${attrData.icon}</div>
                         <div class="battle-atk">${atk}</div>
                     </div>
-                    
                     <div class="battle-hp-container">
                         <div class="battle-hp-text">${currentHp}</div>
                         <div class="battle-hp-bar-bg">
                             <div class="battle-hp-bar-fill" style="width: ${hpPercent}%; background: ${hpColor};"></div>
                         </div>
                     </div>
-
                 </div>
             `;
         }
@@ -533,73 +543,100 @@ function renderBoard(gameData) {
 }
 
 // 點擊事件
-let pendingActionIndex = -1; // 等待玩家選擇動作的格子
+let pendingActionIndex = -1;
+let moveMode = false;
+let actionUsed = false; // 每回合只能行動一次
 
 async function handleSquareClick(index, cell, gameData) {
     if (gameData.duel) return;
     if (gameData.turn !== myUid) return;
+    if (actionUsed) return; // 本回合已行動
 
-    // ── 如果正在等待動作選擇，點其他地方取消 ──
-    if (pendingActionIndex !== -1 && index !== pendingActionIndex) {
-        closeActionMenu();
-        selectedIndex = -1;
-        renderBoard(gameData);
-        return;
-    }
-
-    // ── 第一次點自己的棋子：跳出動作選單 ──
-    if (selectedIndex === -1) {
-        if (cell && cell.owner === myUid) {
+    // ── 移動模式 ──
+    if (moveMode) {
+        // 點到自己另一隻棋子 → 改選，重新顯示選單
+        if (cell && cell.owner === myUid && index !== selectedIndex) {
+            moveMode = false;
             selectedIndex = index;
             pendingActionIndex = index;
+            closeActionMenu();
+            renderBoard(gameData);
             showActionMenu(index, cell, gameData);
+            return;
+        }
+
+        const fromIndex = selectedIndex;
+        const toIndex = index;
+
+        // 點同一格取消
+        if (fromIndex === toIndex) {
+            moveMode = false;
+            selectedIndex = -1;
+            pendingActionIndex = -1;
+            closeActionMenu();
+            renderBoard(gameData);
+            return;
+        }
+
+        const diff = Math.abs(fromIndex - toIndex);
+        const isSameRow = Math.floor(fromIndex / 5) === Math.floor(toIndex / 5);
+        const validMove = (diff === 1 && isSameRow) || diff === 5;
+
+        if (!validMove) {
+            // 點了無效格 → 取消選取
+            moveMode = false;
+            selectedIndex = -1;
+            pendingActionIndex = -1;
+            renderBoard(gameData);
+            return;
+        }
+
+        const newBoard = [...currentBoard];
+        const attacker = newBoard[fromIndex];
+        const defender = newBoard[toIndex];
+
+        moveMode = false;
+        selectedIndex = -1;
+        pendingActionIndex = -1;
+        actionUsed = true;
+
+        if (!defender) {
+            newBoard[toIndex] = attacker;
+            newBoard[fromIndex] = null;
+            await commitMove(newBoard, gameData);
+        } else if (defender.owner !== myUid) {
+            await triggerDuel(fromIndex, toIndex);
         }
         return;
     }
 
-    // ── 已選定動作為「移動」，點目標格 ──
-    const fromIndex = selectedIndex;
-    const toIndex = index;
-
-    if (fromIndex === toIndex) {
+    // ── 有選單開著：點其他地方取消 ──
+    if (pendingActionIndex !== -1 && index !== pendingActionIndex) {
         closeActionMenu();
-        selectedIndex = -1;
-        pendingActionIndex = -1;
-        renderBoard(gameData);
+        // 如果點的是另一隻自己的棋子，直接換選
+        if (cell && cell.owner === myUid) {
+            selectedIndex = index;
+            pendingActionIndex = index;
+            renderBoard(gameData);
+            showActionMenu(index, cell, gameData);
+        } else {
+            selectedIndex = -1;
+            pendingActionIndex = -1;
+            renderBoard(gameData);
+        }
         return;
     }
 
-    const diff = Math.abs(fromIndex - toIndex);
-    const isSameRow = Math.floor(fromIndex / 5) === Math.floor(toIndex / 5);
-    const validMove = (diff === 1 && isSameRow) || diff === 5;
-
-    if (!validMove) {
-        selectedIndex = -1;
-        pendingActionIndex = -1;
-        closeActionMenu();
+    // ── 第一次點自己的棋子 ──
+    if (selectedIndex === -1 && cell && cell.owner === myUid) {
+        selectedIndex = index;
+        pendingActionIndex = index;
         renderBoard(gameData);
-        return;
-    }
-
-    const newBoard = [...currentBoard];
-    const attacker = newBoard[fromIndex];
-    const defender = newBoard[toIndex];
-
-    closeActionMenu();
-    if (!defender) {
-        newBoard[toIndex] = attacker;
-        newBoard[fromIndex] = null;
-        await commitMove(newBoard, gameData);
-        selectedIndex = -1;
-        pendingActionIndex = -1;
-    } else if (defender.owner !== myUid) {
-        await triggerDuel(fromIndex, toIndex);
-        selectedIndex = -1;
-        pendingActionIndex = -1;
+        showActionMenu(index, cell, gameData);
     }
 }
 
-// 顯示動作選單
+// 顯示動作選單（移動在左，技能在右）
 function showActionMenu(index, cell, gameData) {
     closeActionMenu();
 
@@ -611,50 +648,58 @@ function showActionMenu(index, cell, gameData) {
     if (!targetEl) return;
 
     const hasActive = !!(cell.active);
-    const menu = document.createElement('div');
-    menu.id = 'action-menu';
-    menu.className = 'action-menu';
 
-    // 移動按鈕
+    const rect = targetEl.getBoundingClientRect();
+    const boardRect = boardEl.getBoundingClientRect();
+    const cellCenterX = rect.left - boardRect.left + rect.width / 2;
+    const cellCenterY = rect.top  - boardRect.top  + rect.height / 2;
+    const cellW = rect.width;
+
+    // 移動按鈕（左側）
     const moveBtn = document.createElement('button');
     moveBtn.className = 'action-btn action-move';
-    moveBtn.innerHTML = '<i class="fas fa-arrows-alt"></i><span>移動</span>';
+    moveBtn.innerHTML = '🚶<span>移動</span>';
+    moveBtn.style.cssText = `
+        position:absolute;
+        left:${cellCenterX - cellW * 0.6 - 52}px;
+        top:${cellCenterY - 24}px;
+        width:50px; height:50px;
+    `;
     moveBtn.onclick = (e) => {
         e.stopPropagation();
         closeActionMenu();
-        // 保持 selectedIndex，等玩家點目標格
+        moveMode = true;
+        pendingActionIndex = -1;
+        // 高亮選中格
         renderBoard(gameData);
     };
 
-    // 技能按鈕
+    // 技能按鈕（右側）
     const skillBtn = document.createElement('button');
     skillBtn.className = 'action-btn action-skill' + (hasActive ? '' : ' no-skill');
-    skillBtn.innerHTML = '<i class="fas fa-bolt"></i><span>技能</span>';
-    skillBtn.title = hasActive ? (cell.active?.name || '主動技') : '此卡無主動技';
+    skillBtn.innerHTML = '✨<span>技能</span>';
+    skillBtn.style.cssText = `
+        position:absolute;
+        left:${cellCenterX + cellW * 0.6 + 2}px;
+        top:${cellCenterY - 24}px;
+        width:50px; height:50px;
+    `;
     if (!hasActive) {
         skillBtn.disabled = true;
     } else {
         skillBtn.onclick = (e) => {
             e.stopPropagation();
             closeActionMenu();
-            // TODO: 主動技發動邏輯（下一版實作）
-            alert(`發動技能：${cell.active.name}\n${cell.active.desc}`);
+            alert(`【${cell.active.name}】\n${cell.active.desc}`);
             selectedIndex = -1;
             pendingActionIndex = -1;
+            moveMode = false;
         };
     }
 
-    menu.appendChild(moveBtn);
-    menu.appendChild(skillBtn);
-
-    // 相對於格子定位
-    const rect = targetEl.getBoundingClientRect();
-    const boardRect = boardEl.getBoundingClientRect();
-    menu.style.left = (rect.left - boardRect.left + rect.width / 2) + 'px';
-    menu.style.top  = (rect.top  - boardRect.top  - 8) + 'px';
-
     boardEl.style.position = 'relative';
-    boardEl.appendChild(menu);
+    boardEl.appendChild(moveBtn);
+    boardEl.appendChild(skillBtn);
 }
 
 function closeActionMenu() {
@@ -665,6 +710,7 @@ function closeActionMenu() {
 // 寫入移動
 async function commitMove(newBoard, gameData) {
     const nextTurn = gameData.player1 === myUid ? gameData.player2 : gameData.player1;
+    actionUsed = false; // 換回合重置
 
     // 1. 準備更新資料
     const updates = {
