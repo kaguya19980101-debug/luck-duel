@@ -603,9 +603,20 @@ async function handleSquareClick(index, cell, gameData) {
         if (!defender) {
             newBoard[toIndex] = attacker;
             newBoard[fromIndex] = null;
-            await commitMove(newBoard, gameData);
+            if (isCpuMode) {
+                // CPU 模式：本地處理，換 CPU 回合
+                const newGame = { ...gameData, board: newBoard, turn: CPU_UID, turn_start_time: Date.now() };
+                actionUsed = false;
+                renderCpuGame(newGame);
+            } else {
+                await commitMove(newBoard, gameData);
+            }
         } else if (defender.owner !== myUid) {
-            await triggerDuel(fromIndex, toIndex);
+            if (isCpuMode) {
+                cpuDuel(fromIndex, toIndex, gameData);
+            } else {
+                await triggerDuel(fromIndex, toIndex);
+            }
         }
         return;
     }
@@ -643,68 +654,61 @@ function showActionMenu(index, cell, gameData) {
     const boardEl = document.getElementById('chess-board');
     if (!boardEl) return;
 
-    const cellEls = boardEl.querySelectorAll('div');
+    const cellEls = boardEl.querySelectorAll(':scope > div');
     const targetEl = cellEls[index];
     if (!targetEl) return;
 
     const hasActive = !!(cell.active);
 
+    // 用 viewport 座標 + fixed 定位，避免被 board 的 overflow:hidden 裁切
     const rect = targetEl.getBoundingClientRect();
-    const boardRect = boardEl.getBoundingClientRect();
-    const cellCenterX = rect.left - boardRect.left + rect.width / 2;
-    const cellCenterY = rect.top  - boardRect.top  + rect.height / 2;
-    const cellW = rect.width;
+    const cellCenterY = rect.top + rect.height / 2;
 
     // 移動按鈕（左側）
     const moveBtn = document.createElement('button');
-    moveBtn.className = 'action-btn action-move';
+    moveBtn.className = 'action-btn action-move action-float';
     moveBtn.innerHTML = '🚶<span>移動</span>';
-    moveBtn.style.cssText = `
-        position:absolute;
-        left:${cellCenterX - cellW * 0.6 - 52}px;
-        top:${cellCenterY - 24}px;
-        width:50px; height:50px;
-    `;
+    moveBtn.style.position = 'fixed';
+    moveBtn.style.left = (rect.left - 54) + 'px';
+    moveBtn.style.top  = (cellCenterY - 23) + 'px';
     moveBtn.onclick = (e) => {
         e.stopPropagation();
+        e.preventDefault();
         closeActionMenu();
         moveMode = true;
         pendingActionIndex = -1;
-        // 高亮選中格
-        renderBoard(gameData);
+        renderBoard(gameData); // 進入移動模式，高亮脈衝
     };
 
     // 技能按鈕（右側）
     const skillBtn = document.createElement('button');
-    skillBtn.className = 'action-btn action-skill' + (hasActive ? '' : ' no-skill');
+    skillBtn.className = 'action-btn action-skill action-float' + (hasActive ? '' : ' no-skill');
     skillBtn.innerHTML = '✨<span>技能</span>';
-    skillBtn.style.cssText = `
-        position:absolute;
-        left:${cellCenterX + cellW * 0.6 + 2}px;
-        top:${cellCenterY - 24}px;
-        width:50px; height:50px;
-    `;
+    skillBtn.style.position = 'fixed';
+    skillBtn.style.left = (rect.right + 8) + 'px';
+    skillBtn.style.top  = (cellCenterY - 23) + 'px';
     if (!hasActive) {
         skillBtn.disabled = true;
     } else {
         skillBtn.onclick = (e) => {
             e.stopPropagation();
+            e.preventDefault();
             closeActionMenu();
             alert(`【${cell.active.name}】\n${cell.active.desc}`);
             selectedIndex = -1;
             pendingActionIndex = -1;
             moveMode = false;
+            renderBoard(gameData);
         };
     }
 
-    boardEl.style.position = 'relative';
-    boardEl.appendChild(moveBtn);
-    boardEl.appendChild(skillBtn);
+    // append 到 body（fixed 定位，不受 board overflow 影響）
+    document.body.appendChild(moveBtn);
+    document.body.appendChild(skillBtn);
 }
 
 function closeActionMenu() {
-    const menu = document.getElementById('action-menu');
-    if (menu) menu.remove();
+    document.querySelectorAll('.action-float').forEach(el => el.remove());
 }
 
 // 寫入移動
