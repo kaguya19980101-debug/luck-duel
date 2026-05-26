@@ -24,6 +24,318 @@ function getBattleAttr(attr) {
     const key = (attr || '').toLowerCase();
     return BATTLE_ATTR_CONFIG[key] || { icon: '❓', color: '#999' };
 }
+
+// ==========================================
+// 電腦模式 (CPU AI)
+// ==========================================
+let isCpuMode = false;
+const CPU_UID = 'cpu_opponent';
+
+export function initCpuGame(myTeam) {
+    isCpuMode = true;
+    currentGameId = 'cpu_local_' + Date.now();
+    currentRole = 'host';
+    myUid = auth.currentUser.uid;
+    isResolving = false;
+
+    // 建立電腦隊伍（5張 100HP 50ATK 的預設卡）
+    const cpuTeam = Array.from({ length: 5 }, (_, i) => ({
+        id: `cpu_${i}`, name: `電腦 ${i + 1}`,
+        attribute: 'dark', rarity: 'R',
+        hp: 100, max_hp: 100, attack: 50, range: 1,
+        img: 'img/characters/0001.webp',
+        owner: CPU_UID, team: 'red'
+    }));
+
+    // 建立初始棋盤
+    const board = new Array(30).fill(null);
+    cpuTeam.forEach((c, i) => { board[i] = c; });
+    myTeam.forEach((c, i) => {
+        if (c) board[25 + i] = { ...c, owner: myUid, team: 'blue' };
+    });
+
+    const gameData = {
+        player1: CPU_UID,
+        player2: myUid,
+        status: 'playing',
+        board,
+        turn: CPU_UID, // CPU 先手
+        turn_start_time: Date.now(),
+        duel: null
+    };
+
+    // 直接在本地 render
+    renderCpuGame(gameData);
+}
+
+function renderCpuGame(gameData) {
+    currentBoard = gameData.board;
+
+    const gameArea = document.querySelector('.game-frame');
+    if (!gameArea) return;
+
+    // 第一次進來才建 UI
+    if (!document.getElementById('chess-board')) {
+        buildGameUI(gameArea);
+    }
+
+    renderBoard(gameData);
+    updateTimer(gameData);
+
+    const turnText = document.getElementById('turn-text');
+    if (turnText) {
+        turnText.innerText = gameData.turn === myUid ? '⚔️ 你的回合' : '🤖 電腦回合';
+    }
+
+    if (gameData.turn === CPU_UID) {
+        setTimeout(() => cpuTakeTurn(gameData), 1200);
+    }
+}
+
+function buildGameUI(gameArea) {
+    gameArea.innerHTML = `
+        <div id="game-hud" style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;margin-bottom:20px;position:relative;">
+            <div id="timer-box" style="background:rgba(0,0,0,0.8);border:2px solid #555;border-radius:12px;padding:2px 0;width:80px;text-align:center;margin-bottom:8px;box-shadow:0 4px 10px rgba(0,0,0,0.5);z-index:10;">
+                <span id="timer-text" style="color:#ff4444;font-weight:bold;font-size:1.2rem;font-family:monospace;letter-spacing:1px;">30s</span>
+            </div>
+            <div id="turn-text" style="font-family:sans-serif;font-size:1.1rem;font-weight:bold;color:white;text-shadow:0 2px 4px rgba(0,0,0,0.8);background:rgba(255,255,255,0.1);padding:4px 15px;border-radius:20px;">等待開始...</div>
+        </div>
+        <div style="width:100%;display:flex;justify-content:center;">
+            <div id="chess-board" style="display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(6,1fr);gap:5px;width:100%;max-width:520px;aspect-ratio:5/6;background:#2b2b2b;padding:7px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.5);"></div>
+        </div>
+        <div id="duel-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.92);z-index:9999;flex-direction:column;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
+            <h1 style="color:#ff00cc;font-family:'Orbitron';margin-bottom:8px;font-size:clamp(1.5rem,5vw,2.2rem);">⚔️ DUEL ⚔️</h1>
+            <div id="duel-timer" style="font-size:3rem;color:#ffeb3b;font-weight:bold;margin-bottom:8px;text-shadow:0 0 10px #ffeb3b;">5</div>
+            <div id="duel-status" style="color:#aaa;margin-bottom:28px;font-size:1.1rem;">選擇你的命運</div>
+            <div id="rps-buttons" style="display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,3vw,18px);width:100%;max-width:380px;margin:0 auto;">
+                <button class="rps-btn duel-btn-attack" data-choice="attack" onclick="submitDuelChoice('attack')">⚔️<span>攻擊</span><small>剋魔法</small></button>
+                <button class="rps-btn duel-btn-magic"  data-choice="magic"  onclick="submitDuelChoice('magic')">✨<span>魔法</span><small>剋陷阱</small></button>
+                <button class="rps-btn duel-btn-trap"   data-choice="trap"   onclick="submitDuelChoice('trap')">🪤<span>陷阱</span><small>剋攻擊</small></button>
+                <button class="rps-btn duel-btn-defend" data-choice="defend" onclick="submitDuelChoice('defend')">🛡️<span>防禦</span><small>減傷50%</small></button>
+            </div>
+        </div>
+    `;
+}
+
+// CPU 行動
+function cpuTakeTurn(gameData) {
+    const board = [...gameData.board];
+    const cpuUnits = board.map((c, i) => ({ c, i })).filter(x => x.c && x.c.owner === CPU_UID);
+    if (cpuUnits.length === 0) return;
+
+    // 隨機選一隻棋子
+    const unit = cpuUnits[Math.floor(Math.random() * cpuUnits.length)];
+    const from = unit.i;
+    const row = Math.floor(from / 5), col = from % 5;
+
+    // 可移動的格子（上下左右）
+    const moves = [];
+    if (row > 0) moves.push(from - 5);
+    if (row < 5) moves.push(from + 5);
+    if (col > 0) moves.push(from - 1);
+    if (col < 4) moves.push(from + 1);
+
+    // 過濾：只能移動到空格或敵方格
+    const valid = moves.filter(to => {
+        const cell = board[to];
+        return !cell || cell.owner === myUid;
+    });
+
+    if (valid.length === 0) {
+        // 無路可走，直接換回合
+        passTurn(gameData);
+        return;
+    }
+
+    const to = valid[Math.floor(Math.random() * valid.length)];
+    const target = board[to];
+
+    if (!target) {
+        // 移動到空格
+        board[to] = board[from];
+        board[from] = null;
+        const newGame = { ...gameData, board, turn: myUid, turn_start_time: Date.now() };
+        renderCpuGame(newGame);
+    } else {
+        // 碰到玩家棋子 → 觸發決鬥
+        cpuDuel(from, to, gameData);
+    }
+}
+
+function passTurn(gameData) {
+    const newGame = { ...gameData, turn: myUid, turn_start_time: Date.now() };
+    renderCpuGame(newGame);
+}
+
+// CPU 決鬥
+function cpuDuel(attIdx, defIdx, gameData) {
+    const choices = ['attack', 'magic', 'trap', 'defend'];
+    const cpuChoice = choices[Math.floor(Math.random() * choices.length)];
+
+    currentBoard = gameData.board;
+    const modal = document.getElementById('duel-modal');
+    if (modal) modal.style.display = 'flex';
+
+    // 設定 duel state
+    const duelState = {
+        attackerIndex: attIdx,
+        defenderIndex: defIdx,
+        state: 'waiting',
+        p1_choice: null,   // CPU (p1)
+        p2_choice: null,   // 玩家 (p2)
+        cpu_choice: cpuChoice // 先存起來，玩家出拳後一起揭曉
+    };
+    const fakeGame = { ...gameData, duel: duelState };
+    checkDuelStateCpu(fakeGame);
+}
+
+function checkDuelStateCpu(gameData) {
+    const modal = document.getElementById('duel-modal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+
+    const statusEl = document.getElementById('duel-status');
+    const timerEl  = document.getElementById('duel-timer');
+    const btnsEl   = document.getElementById('rps-buttons');
+
+    if (statusEl) statusEl.innerText = '選擇你的命運！';
+    if (btnsEl) {
+        btnsEl.style.pointerEvents = 'auto';
+        btnsEl.style.opacity = '1';
+    }
+
+    // 倒數
+    if (duelCountdownInterval) clearInterval(duelCountdownInterval);
+    let timeLeft = 5;
+    if (timerEl) { timerEl.style.display = 'block'; timerEl.innerText = timeLeft; }
+
+    duelCountdownInterval = setInterval(() => {
+        timeLeft--;
+        const tEl = document.getElementById('duel-timer');
+        if (tEl) tEl.innerText = timeLeft;
+        if (timeLeft <= 0) {
+            clearInterval(duelCountdownInterval);
+            duelCountdownInterval = null;
+            const fallback = ['attack','magic','trap','defend'];
+            submitDuelChoiceCpu(fallback[Math.floor(Math.random()*4)], gameData);
+        }
+    }, 1000);
+
+    // 覆寫 submitDuelChoice 為 CPU 版
+    window._cpuCurrentGame = gameData;
+    window.submitDuelChoice = (choice) => submitDuelChoiceCpu(choice, window._cpuCurrentGame);
+}
+
+function submitDuelChoiceCpu(playerChoice, gameData) {
+    if (duelCountdownInterval) { clearInterval(duelCountdownInterval); duelCountdownInterval = null; }
+
+    // 視覺回饋
+    document.querySelectorAll('.rps-btn').forEach(b => {
+        if (b.dataset.choice === playerChoice) {
+            b.style.border = '4px solid #00ff00';
+            b.style.boxShadow = '0 0 20px #00ff00';
+            b.style.transform = 'scale(1.1)';
+        } else {
+            b.style.opacity = '0.3';
+            b.style.filter = 'grayscale(100%)';
+        }
+    });
+
+    const btnsEl = document.getElementById('rps-buttons');
+    if (btnsEl) btnsEl.style.pointerEvents = 'none';
+    const timerEl = document.getElementById('duel-timer');
+    if (timerEl) timerEl.innerText = '已確認';
+
+    const cpuChoice = gameData.duel.cpu_choice;
+    // 玩家是 p2，CPU 是 p1
+    const fullDuel = { ...gameData.duel, p1_choice: cpuChoice, p2_choice: playerChoice };
+    const fullGame = { ...gameData, duel: fullDuel };
+
+    setTimeout(() => {
+        revealDuelChoices(fullGame);
+        setTimeout(() => resolveDuelCpu(fullGame), 4000);
+    }, 300);
+}
+
+async function resolveDuelCpu(gameData) {
+    const p1 = gameData.duel.p1_choice; // CPU
+    const p2 = gameData.duel.p2_choice; // 玩家
+    const attIdx = gameData.duel.attackerIndex;
+    const defIdx = gameData.duel.defenderIndex;
+
+    let board = JSON.parse(JSON.stringify(currentBoard));
+    const attackerChar = board[attIdx];
+    const defenderChar = board[defIdx];
+    if (!attackerChar || !defenderChar) { passTurn(gameData); return; }
+
+    const BEATS = { attack: 'magic', magic: 'trap', trap: 'attack' };
+    let result = 'draw', defenderHalved = false;
+
+    if (p1 === p2) { result = 'draw'; }
+    else if (p1 === 'defend' && p2 === 'defend') { result = 'draw'; }
+    else if (p1 === 'defend') { result = 'p2_win'; defenderHalved = true; }
+    else if (p2 === 'defend') { result = 'p1_win'; defenderHalved = true; }
+    else if (BEATS[p1] === p2) { result = 'p1_win'; }
+    else { result = 'p2_win'; }
+
+    if (result !== 'draw') {
+        const winnerId = result === 'p1_win' ? CPU_UID : myUid;
+        let winner, loser, loserIdx;
+        if (attackerChar.owner === winnerId) {
+            winner = attackerChar; loser = defenderChar; loserIdx = defIdx;
+        } else {
+            winner = defenderChar; loser = attackerChar; loserIdx = attIdx;
+        }
+        let damage = winner.attack || 50;
+        if (defenderHalved) damage = Math.floor(damage * 0.5);
+        loser.hp -= damage;
+        if (loser.hp <= 0) board[loserIdx] = null;
+    }
+
+    // 關閉 modal
+    const modal = document.getElementById('duel-modal');
+    if (modal) modal.style.display = 'none';
+
+    // 恢復正常 submitDuelChoice
+    window.submitDuelChoice = window._originalSubmitDuelChoice;
+
+    // 檢查遊戲結束
+    const cpuUnits = board.filter(c => c && c.owner === CPU_UID);
+    const myUnits  = board.filter(c => c && c.owner === myUid);
+
+    const newGame = { ...gameData, board, duel: null, turn: myUid, turn_start_time: Date.now() };
+    currentBoard = board;
+
+    if (cpuUnits.length === 0) { handleGameEndLocal(myUid); return; }
+    if (myUnits.length  === 0) { handleGameEndLocal(CPU_UID); return; }
+
+    renderCpuGame(newGame);
+}
+
+async function handleGameEndLocal(winnerUid) {
+    if (document.getElementById('game-over-modal')) return;
+    const isWinner = (winnerUid === myUid);
+    const reward = isWinner ? 100 : 50;
+    const modal = document.createElement('div');
+    modal.id = 'game-over-modal';
+    modal.style.display = 'flex';
+    modal.innerHTML = `
+        <div class="result-title ${isWinner ? 'victory' : 'defeat'}">${isWinner ? 'VICTORY' : 'DEFEAT'}</div>
+        <div class="reward-box">
+            <div style="color:#aaa;font-size:0.9rem;margin-bottom:5px;">BATTLE REWARDS</div>
+            <div class="reward-coins"><span>💰</span><span>+${reward}</span></div>
+        </div>
+        <button class="home-btn" onclick="location.reload()">RETURN TO LOBBY</button>
+    `;
+    document.body.appendChild(modal);
+    try {
+        const userRef = ref(db, `users/${myUid}`);
+        const snap = await get(userRef);
+        const coins = snap.val()?.coins || 0;
+        await update(userRef, { coins: coins + reward });
+    } catch(e) { console.error('獎勵發放失敗:', e); }
+}
+
 // 初始化遊戲棋盤 (強制置中版)
 export function initGameBoard(gameId, role) {
     currentGameId = gameId;
@@ -420,7 +732,7 @@ function revealDuelChoices(gameData) {
     const modal = document.getElementById('duel-modal');
     const p1Choice = gameData.duel.p1_choice;
     const p2Choice = gameData.duel.p2_choice;
-    const icons = { 'rock': '✊', 'paper': '✋', 'scissors': '✌️' };
+    const icons = { 'attack': '⚔️', 'magic': '✨', 'trap': '🪤', 'defend': '🛡️' };
 
     const amIP1 = (currentRole === 'host');
     const myMove = amIP1 ? p1Choice : p2Choice;
@@ -432,14 +744,18 @@ function revealDuelChoices(gameData) {
     const attackerChar = currentBoard[attIdx] || {};
     const defenderChar = currentBoard[defIdx] || {};
     
-    // 1. 判斷誰贏了猜拳
+    // 1. 判斷誰贏了（攻擊>魔法>陷阱>攻擊，防禦不參與三角）
     let result = "draw";
-    if (p1Choice === p2Choice) result = "draw";
-    else if (
-        (p1Choice === "rock" && p2Choice === "scissors") ||
-        (p1Choice === "paper" && p2Choice === "rock") ||
-        (p1Choice === "scissors" && p2Choice === "paper")
-    ) {
+    const BEATS = { attack: 'magic', magic: 'trap', trap: 'attack' };
+    if (p1Choice === p2Choice) {
+        result = "draw";
+    } else if (p1Choice === 'defend' && p2Choice === 'defend') {
+        result = "draw";
+    } else if (p1Choice === 'defend' || p2Choice === 'defend') {
+        // 有人防禦：防禦方減傷 50%，攻擊方仍算「贏」（傷害打出去但被減半）
+        if (p1Choice === 'defend') result = "p2_win_half"; // p2攻但被擋一半
+        else result = "p1_win_half";
+    } else if (BEATS[p1Choice] === p2Choice) {
         result = "p1_win";
     } else {
         result = "p2_win";
@@ -537,10 +853,11 @@ function checkDuelState(gameData) {
             <div id="duel-timer" style="font-size: 3rem; color: #ffeb3b; font-weight: bold; margin-bottom: 8px; text-shadow: 0 0 10px #ffeb3b;">5</div>
             <div id="duel-status" style="color:#aaa; margin-bottom:28px; font-size:1.1rem;">選擇你的命運</div>
             
-            <div id="rps-buttons" style="display:flex; justify-content:center; gap:clamp(16px,5vw,30px); width:100%; flex-wrap:wrap;">
-                <button class="rps-btn" data-choice="rock" onclick="submitDuelChoice('rock')" style="width:clamp(90px,22vw,110px); height:clamp(90px,22vw,110px); font-size:clamp(3rem,9vw,4rem); display:flex; justify-content:center; align-items:center; background:#333; border:3px solid #555; border-radius:50%; cursor:pointer; padding:0; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition:all 0.2s;">✊</button>
-                <button class="rps-btn" data-choice="paper" onclick="submitDuelChoice('paper')" style="width:clamp(90px,22vw,110px); height:clamp(90px,22vw,110px); font-size:clamp(3rem,9vw,4rem); display:flex; justify-content:center; align-items:center; background:#333; border:3px solid #555; border-radius:50%; cursor:pointer; padding:0; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition:all 0.2s;">✋</button>
-                <button class="rps-btn" data-choice="scissors" onclick="submitDuelChoice('scissors')" style="width:clamp(90px,22vw,110px); height:clamp(90px,22vw,110px); font-size:clamp(3rem,9vw,4rem); display:flex; justify-content:center; align-items:center; background:#333; border:3px solid #555; border-radius:50%; cursor:pointer; padding:0; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition:all 0.2s;">✌️</button>
+            <div id="rps-buttons" style="display:grid; grid-template-columns:1fr 1fr; gap:clamp(10px,3vw,18px); width:100%; max-width:380px; margin:0 auto;">
+                <button class="rps-btn duel-btn-attack" data-choice="attack" onclick="submitDuelChoice('attack')">⚔️<span>攻擊</span><small>剋魔法</small></button>
+                <button class="rps-btn duel-btn-magic"  data-choice="magic"  onclick="submitDuelChoice('magic')">✨<span>魔法</span><small>剋陷阱</small></button>
+                <button class="rps-btn duel-btn-trap"   data-choice="trap"   onclick="submitDuelChoice('trap')">🪤<span>陷阱</span><small>剋攻擊</small></button>
+                <button class="rps-btn duel-btn-defend" data-choice="defend" onclick="submitDuelChoice('defend')">🛡️<span>防禦</span><small>減傷50%</small></button>
             </div>
         `;
         isResolving = false;
@@ -593,7 +910,7 @@ function checkDuelState(gameData) {
                         if (timeLeft <= 0) {
                             clearInterval(duelCountdownInterval);
                             duelCountdownInterval = null;
-                            const choices = ['rock', 'paper', 'scissors'];
+                            const choices = ['attack', 'magic', 'trap', 'defend'];
                             window.submitDuelChoice(choices[Math.floor(Math.random() * 3)]);
                         }
                     }, 1000);
@@ -606,6 +923,7 @@ function checkDuelState(gameData) {
 // ==========================================
 // 1. 提交出拳 (新增視覺回饋)
 // ==========================================
+window._originalSubmitDuelChoice = window.submitDuelChoice;
 window.submitDuelChoice = async function (choice) {
     if (duelCountdownInterval) {
         clearInterval(duelCountdownInterval);
@@ -669,14 +987,19 @@ async function resolveDuel(gameData) {
             return;
         }
 
-        // 1. 判斷勝負 (p1 是 Host, p2 是 Joiner)
+        // 1. 判斷勝負（攻擊>魔法>陷阱>攻擊，防禦減傷50%）
+        const BEATS = { attack: 'magic', magic: 'trap', trap: 'attack' };
         let result = "draw";
-        if (p1 === p2) result = "draw";
-        else if (
-            (p1 === "rock" && p2 === "scissors") ||
-            (p1 === "paper" && p2 === "rock") ||
-            (p1 === "scissors" && p2 === "paper")
-        ) {
+        let defenderHalved = false;
+        if (p1 === p2) {
+            result = "draw";
+        } else if (p1 === 'defend' && p2 === 'defend') {
+            result = "draw";
+        } else if (p1 === 'defend') {
+            result = "p2_win"; defenderHalved = true; // p1防禦，p2打出去但傷害減半
+        } else if (p2 === 'defend') {
+            result = "p1_win"; defenderHalved = true;
+        } else if (BEATS[p1] === p2) {
             result = "p1_win";
         } else {
             result = "p2_win";
@@ -707,9 +1030,9 @@ async function resolveDuel(gameData) {
                 loser = attackerChar; loserIdx = attIdx;
             }
 
-            // 執行扣血 (讀取攻擊力，如果沒有就預設 50)
-            // ★ 屬性相剋可以在這裡加 (目前先做基礎傷害)
-            const damage = winner.attack || 50;
+            // 執行扣血（防禦者減傷 50%）
+            let damage = winner.attack || 50;
+            if (defenderHalved) damage = Math.floor(damage * 0.5);
             loser.hp -= damage;
             console.log(`造成傷害: ${damage}, 剩餘血量: ${loser.hp}`);
 

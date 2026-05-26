@@ -10,6 +10,7 @@ import { CHARACTERS } from "./data.js";
 import * as AuthUser from "./auth.js";
 import * as UI from "./ui.js";
 import * as Matchmaking from "./matchmaking.js";
+import { initCpuGame } from "./game.js";
 
 console.log("系統: main.js 載入中...");
 
@@ -1064,6 +1065,15 @@ document.addEventListener('click', function (e) {
     if (action === 'close-gacha') { if (window.closeGachaResult) window.closeGachaResult(); return; }
 
     // --- 登入 / 登出 ---
+    if (id === 'find-match-btn') {
+        // already handled below by existing code
+    }
+    if (id === 'vs-cpu-btn') {
+        const team = (window.currentTeam || []).filter(Boolean).map(id => window.myInventoryData?.[String(id)]).filter(Boolean);
+        if (team.length === 0) { alert('請先在「我的角色」配置至少1張卡！'); return; }
+        initCpuGame(team);
+        return;
+    }
     if (id === 'google-login-btn') { AuthUser.loginWithGoogle(); return; }
     if (id === 'logout-btn')       { AuthUser.logoutUser();      return; }
 
