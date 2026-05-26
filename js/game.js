@@ -199,15 +199,29 @@ function checkDuelStateCpu(gameData) {
     const btnsEl   = document.getElementById('rps-buttons');
 
     if (statusEl) statusEl.innerText = '選擇你的命運！';
+
+    // ★ 重置所有按鈕視覺（清除上一場決鬥的殘留樣式）
+    document.querySelectorAll('.rps-btn').forEach(b => {
+        b.style.border = '';
+        b.style.boxShadow = '';
+        b.style.transform = '';
+        b.style.opacity = '';
+        b.style.filter = '';
+        b.style.pointerEvents = 'auto';
+    });
+
     if (btnsEl) {
         btnsEl.style.pointerEvents = 'auto';
         btnsEl.style.opacity = '1';
     }
 
-    // 倒數
-    if (duelCountdownInterval) clearInterval(duelCountdownInterval);
+    // ★ 清除所有殘留計時器
+    if (duelCountdownInterval) { clearInterval(duelCountdownInterval); duelCountdownInterval = null; }
+
     let timeLeft = 5;
     if (timerEl) { timerEl.style.display = 'block'; timerEl.innerText = timeLeft; }
+
+    let answered = false; // 防止重複提交
 
     duelCountdownInterval = setInterval(() => {
         timeLeft--;
@@ -216,14 +230,21 @@ function checkDuelStateCpu(gameData) {
         if (timeLeft <= 0) {
             clearInterval(duelCountdownInterval);
             duelCountdownInterval = null;
-            const fallback = ['attack','magic','trap','defend'];
-            submitDuelChoiceCpu(fallback[Math.floor(Math.random()*4)], gameData);
+            if (!answered) {
+                answered = true;
+                const fallback = ['attack','magic','trap','defend'];
+                submitDuelChoiceCpu(fallback[Math.floor(Math.random()*4)], gameData);
+            }
         }
     }, 1000);
 
-    // 覆寫 submitDuelChoice 為 CPU 版
+    // 覆寫 submitDuelChoice 為 CPU 版（加防重複）
     window._cpuCurrentGame = gameData;
-    window.submitDuelChoice = (choice) => submitDuelChoiceCpu(choice, window._cpuCurrentGame);
+    window.submitDuelChoice = (choice) => {
+        if (answered) return;
+        answered = true;
+        submitDuelChoiceCpu(choice, window._cpuCurrentGame);
+    };
 }
 
 function submitDuelChoiceCpu(playerChoice, gameData) {
@@ -296,8 +317,7 @@ async function resolveDuelCpu(gameData) {
     const modal = document.getElementById('duel-modal');
     if (modal) modal.style.display = 'none';
 
-    // 恢復正常 submitDuelChoice
-    window.submitDuelChoice = window._originalSubmitDuelChoice;
+    // CPU 模式不還原 submitDuelChoice（下次決鬥會重新覆寫）
 
     // 決鬥結束後，回合換給「攻擊方的對手」
     // 攻擊方是玩家 → 換 CPU；攻擊方是 CPU → 換玩家
@@ -462,7 +482,7 @@ function renderBoard(gameData) {
     // 換到自己回合時重置行動狀態
     if (isMyTurn && actionUsed === undefined) actionUsed = false;
     if (!isMyTurn) {
-        // 對手回合，清除選取視覺
+        // 對手回合，清除「行動用」選取，但保留「檢視」選取
         selectedIndex = -1;
         pendingActionIndex = -1;
         moveMode = false;
@@ -488,15 +508,20 @@ function renderBoard(gameData) {
             transition: border 0.1s, box-shadow 0.1s;
         `;
 
-        // 選取高亮
+        // 行動選取高亮（黃色）
         if (realIndex === selectedIndex) {
             div.style.border = '2px solid #ffff00';
             div.style.boxShadow = '0 0 18px rgba(255,255,0,0.8), inset 0 0 8px rgba(255,255,0,0.2)';
             div.style.zIndex = '5';
-            // 移動模式下額外脈衝動畫
             if (moveMode) {
                 div.style.animation = 'selectedPulse 0.8s ease-in-out infinite alternate';
             }
+        }
+        // 檢視選取高亮（青色）— 只在沒被行動選取時顯示
+        else if (realIndex === infoSelectedIndex) {
+            div.style.border = '2px solid #22d3ee';
+            div.style.boxShadow = '0 0 18px rgba(34,211,238,0.8), inset 0 0 8px rgba(34,211,238,0.2)';
+            div.style.zIndex = '5';
         }
 
         // ★★★ 4. 如果這格有棋子，畫出戰鬥卡片 ★★★
@@ -520,7 +545,7 @@ function renderBoard(gameData) {
             const borderColor = isMine ? '#4facfe' : '#ff4444';
             const hpColor = isMine ? '#00ff00' : '#ff0000';
 
-            if (realIndex !== selectedIndex) {
+            if (realIndex !== selectedIndex && realIndex !== infoSelectedIndex) {
                 div.style.border = `2px solid ${borderColor}`;
             }
 
@@ -552,15 +577,31 @@ function renderBoard(gameData) {
 let pendingActionIndex = -1;
 let moveMode = false;
 let actionUsed = false; // 每回合只能行動一次
+let infoSelectedIndex = -1; // 純檢視選取（任何卡片、任何回合）
 
 async function handleSquareClick(index, cell, gameData) {
     if (gameData.duel) return;
-    if (gameData.turn !== myUid) return;
-    if (actionUsed) return; // 本回合已行動
+
+    // ── 不是自己的回合，或本回合已行動：只能「檢視」卡片 ──
+    const canAct = (gameData.turn === myUid) && !actionUsed;
+
+    if (!canAct) {
+        // 點空格 → 關閉資訊
+        if (!cell) {
+            infoSelectedIndex = -1;
+            closeCardInfo();
+            renderBoard(gameData);
+            return;
+        }
+        // 點任何卡片（自己或對方）→ 顯示選取示意 + 資訊框
+        infoSelectedIndex = index;
+        renderBoard(gameData);
+        showCardInfo(cell);
+        return;
+    }
 
     // ── 移動模式 ──
     if (moveMode) {
-        // 點到自己另一隻棋子 → 改選，重新顯示選單
         if (cell && cell.owner === myUid && index !== selectedIndex) {
             moveMode = false;
             selectedIndex = index;
@@ -568,13 +609,13 @@ async function handleSquareClick(index, cell, gameData) {
             closeActionMenu();
             renderBoard(gameData);
             showActionMenu(index, cell, gameData);
+            showCardInfo(cell);
             return;
         }
 
         const fromIndex = selectedIndex;
         const toIndex = index;
 
-        // 點同一格取消
         if (fromIndex === toIndex) {
             moveMode = false;
             selectedIndex = -1;
@@ -589,7 +630,6 @@ async function handleSquareClick(index, cell, gameData) {
         const validMove = (diff === 1 && isSameRow) || diff === 5;
 
         if (!validMove) {
-            // 點了無效格 → 取消選取
             moveMode = false;
             selectedIndex = -1;
             pendingActionIndex = -1;
@@ -605,12 +645,12 @@ async function handleSquareClick(index, cell, gameData) {
         selectedIndex = -1;
         pendingActionIndex = -1;
         actionUsed = true;
+        closeCardInfo();
 
         if (!defender) {
             newBoard[toIndex] = attacker;
             newBoard[fromIndex] = null;
             if (isCpuMode) {
-                // CPU 模式：本地處理，換 CPU 回合
                 const newGame = { ...gameData, board: newBoard, turn: CPU_UID, turn_start_time: Date.now() };
                 actionUsed = false;
                 renderCpuGame(newGame);
@@ -627,18 +667,32 @@ async function handleSquareClick(index, cell, gameData) {
         return;
     }
 
-    // ── 有選單開著：點其他地方取消 ──
+    // ── 點對方棋子（自己回合）→ 只顯示資訊，不出選單 ──
+    if (cell && cell.owner !== myUid) {
+        infoSelectedIndex = index;
+        selectedIndex = -1;
+        pendingActionIndex = -1;
+        closeActionMenu();
+        renderBoard(gameData);
+        showCardInfo(cell);
+        return;
+    }
+
+    // ── 有選單開著：點其他地方 ──
     if (pendingActionIndex !== -1 && index !== pendingActionIndex) {
         closeActionMenu();
-        // 如果點的是另一隻自己的棋子，直接換選
         if (cell && cell.owner === myUid) {
             selectedIndex = index;
             pendingActionIndex = index;
+            infoSelectedIndex = index;
             renderBoard(gameData);
             showActionMenu(index, cell, gameData);
+            showCardInfo(cell);
         } else {
             selectedIndex = -1;
             pendingActionIndex = -1;
+            infoSelectedIndex = -1;
+            closeCardInfo();
             renderBoard(gameData);
         }
         return;
@@ -648,9 +702,71 @@ async function handleSquareClick(index, cell, gameData) {
     if (selectedIndex === -1 && cell && cell.owner === myUid) {
         selectedIndex = index;
         pendingActionIndex = index;
+        infoSelectedIndex = index;
         renderBoard(gameData);
         showActionMenu(index, cell, gameData);
+        showCardInfo(cell);
     }
+}
+
+// ── 卡片資訊框（棋盤外空白處）──
+function showCardInfo(cell) {
+    closeCardInfo();
+    if (!cell) return;
+
+    const attrData = getBattleAttr(cell.attribute);
+    const rarity = cell.rarity || 'R';
+    const rarityColor = rarity === 'SSR' ? '#ffd700' : rarity === 'SR' ? '#a855f7' : '#cbd5e1';
+
+    const buildSkill = (skill, type) => {
+        if (!skill) return '';
+        const label = type === 'active' ? '主動' : type === 'leader' ? '隊長' : '被動';
+        const labelColor = type === 'active' ? '#7c3aed' : type === 'leader' ? '#b7860b' : '#1e7d4d';
+        return `<div style="margin-top:8px;padding:8px 10px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.08);">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                <span style="font-size:0.6rem;font-weight:bold;padding:1px 6px;border-radius:3px;background:${labelColor};color:#fff;">${label}</span>
+                <span style="font-size:0.85rem;color:#eee;font-weight:600;">${skill.name||''}</span>
+            </div>
+            <div style="font-size:0.72rem;color:#aaa;line-height:1.5;">${(skill.desc||'').replace('【隊長技】','')}</div>
+        </div>`;
+    };
+
+    const skillsHTML = (cell.active || cell.passive || (cell.rarity==='SSR'&&cell.leader))
+        ? buildSkill(cell.active,'active') + buildSkill(cell.passive,'passive') + (cell.rarity==='SSR'?buildSkill(cell.leader,'leader'):'')
+        : `<div style="color:#555;font-size:0.78rem;text-align:center;padding:12px 0;">此卡無技能資料</div>`;
+
+    const box = document.createElement('div');
+    box.id = 'card-info-box';
+    box.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <span style="font-size:1.4rem;color:${attrData.color};">${attrData.icon}</span>
+            <span style="font-size:1.05rem;font-weight:700;color:#fff;font-family:'Orbitron',sans-serif;">${cell.name||'未知'}</span>
+            <span style="font-size:0.7rem;font-weight:bold;color:${rarityColor};border:1px solid ${rarityColor};border-radius:4px;padding:1px 7px;">${rarity}</span>
+            <button onclick="window._closeCardInfo&&window._closeCardInfo()" style="margin-left:auto;background:rgba(255,255,255,0.08);border:none;color:#aaa;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:0.9rem;">✕</button>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:6px;">
+            <div style="flex:1;text-align:center;background:#1a1a22;border-radius:6px;padding:5px;"><div style="font-size:0.55rem;color:#777;">ATK</div><div style="font-size:1rem;font-weight:bold;color:#ff6b6b;">${cell.attack||0}</div></div>
+            <div style="flex:1;text-align:center;background:#1a1a22;border-radius:6px;padding:5px;"><div style="font-size:0.55rem;color:#777;">HP</div><div style="font-size:1rem;font-weight:bold;color:#6bff9e;">${cell.hp||0}/${cell.max_hp||cell.hp||0}</div></div>
+        </div>
+        ${skillsHTML}
+    `;
+    box.style.cssText = `
+        position:fixed; left:50%; transform:translateX(-50%);
+        bottom:78px; width:90%; max-width:440px;
+        background:linear-gradient(160deg,#16161e,#0c0c10);
+        border:1px solid #333; border-radius:14px;
+        padding:14px 16px; z-index:8000;
+        box-shadow:0 -6px 30px rgba(0,0,0,0.6);
+        animation:cardInfoUp 0.2s ease;
+        max-height:50vh; overflow-y:auto;
+    `;
+    document.body.appendChild(box);
+    window._closeCardInfo = closeCardInfo;
+}
+
+function closeCardInfo() {
+    const box = document.getElementById('card-info-box');
+    if (box) box.remove();
 }
 
 // 顯示動作選單（移動在左，技能在右）
@@ -795,7 +911,8 @@ function revealDuelChoices(gameData) {
     const p2Choice = gameData.duel.p2_choice;
     const icons = { 'attack': '⚔️', 'magic': '✨', 'trap': '🪤', 'defend': '🛡️' };
 
-    const amIP1 = (currentRole === 'host');
+    // 線上模式：host 是 p1。CPU 模式：玩家固定是 p2（CPU 是 p1）
+    const amIP1 = isCpuMode ? false : (currentRole === 'host');
     const myMove = amIP1 ? p1Choice : p2Choice;
     const oppMove = amIP1 ? p2Choice : p1Choice;
 
@@ -972,7 +1089,7 @@ function checkDuelState(gameData) {
                             clearInterval(duelCountdownInterval);
                             duelCountdownInterval = null;
                             const choices = ['attack', 'magic', 'trap', 'defend'];
-                            window.submitDuelChoice(choices[Math.floor(Math.random() * 3)]);
+                            window.submitDuelChoice(choices[Math.floor(Math.random() * 4)]);
                         }
                     }, 1000);
                 }
@@ -984,7 +1101,9 @@ function checkDuelState(gameData) {
 // ==========================================
 // 1. 提交出拳 (新增視覺回饋)
 // ==========================================
-window._originalSubmitDuelChoice = window.submitDuelChoice;
+// ==========================================
+// 1. 提交出拳 (線上模式)
+// ==========================================
 window.submitDuelChoice = async function (choice) {
     if (duelCountdownInterval) {
         clearInterval(duelCountdownInterval);
