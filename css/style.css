@@ -1533,3 +1533,31 @@ body::before {
 .action-btn i { font-size: 0.9rem; pointer-events: none; }
 .action-btn span { pointer-events: none; }
 
+/* =========================================
+   決鬥四選項按鈕
+   ========================================= */
+.rps-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 14px 8px;
+    border-radius: 16px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    font-size: 2rem;
+    transition: transform 0.15s, box-shadow 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+}
+.rps-btn span { font-size: 0.95rem; font-weight: bold; color: #fff; pointer-events: none; }
+.rps-btn small { font-size: 0.62rem; color: rgba(255,255,255,0.55); pointer-events: none; }
+.rps-btn:active { transform: scale(0.94); }
+
+.duel-btn-attack { background: linear-gradient(135deg, #7f1d1d, #dc2626); border-color: #ef4444; }
+.duel-btn-magic  { background: linear-gradient(135deg, #1e1b4b, #6d28d9); border-color: #8b5cf6; }
+.duel-btn-trap   { background: linear-gradient(135deg, #1c2a1c, #15803d); border-color: #22c55e; }
+.duel-btn-defend { background: linear-gradient(135deg, #1e293b, #1d4ed8); border-color: #3b82f6; }
+
