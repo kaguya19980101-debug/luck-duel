@@ -129,14 +129,23 @@
 
                 <div id="lobby-view">
                     <h2 style="color:#eee; margin-bottom: 20px; font-weight:bold; text-align: center;">準備好迎接運氣決鬥了嗎？</h2>
-                    <button id="find-match-btn" style="
-                        padding: 15px 40px; font-size: 1.5rem;
-                        background: linear-gradient(45deg, #ff00cc, #3333ff);
-                        color: white; border: none; border-radius: 50px; cursor: pointer;
-                        font-family: 'Orbitron'; box-shadow: 0 0 20px rgba(255, 0, 204, 0.4);
-                        transition: 0.3s; width: 100%; max-width: 300px;">
-                        START BATTLE
-                    </button>
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:300px;">
+                        <button id="find-match-btn" style="
+                            padding: 15px 40px; font-size: 1.5rem;
+                            background: linear-gradient(45deg, #ff00cc, #3333ff);
+                            color: white; border: none; border-radius: 50px; cursor: pointer;
+                            font-family: 'Orbitron'; box-shadow: 0 0 20px rgba(255, 0, 204, 0.4);
+                            transition: 0.3s; width: 100%;">
+                            ⚔️ START BATTLE
+                        </button>
+                        <button id="vs-cpu-btn" style="
+                            padding: 12px 40px; font-size: 1.1rem;
+                            background: linear-gradient(45deg, #1a1a2e, #16213e);
+                            color: #aaa; border: 2px solid #444; border-radius: 50px; cursor: pointer;
+                            font-family: 'Orbitron'; transition: 0.3s; width: 100%;">
+                            🤖 VS 電腦
+                        </button>
+                    </div>
                     <p id="match-status" style="margin-top: 20px; color: #888; height: 20px; text-align: center;"></p>
                 </div>
 
