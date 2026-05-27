@@ -532,7 +532,6 @@ async function handleGameEnd(winnerUid) {
     // 防止重複執行 (如果畫面已經出來了就跳過)
     if (document.getElementById('game-over-modal')) return;
 
-    const gameState.myUid = auth.currentUser.uid;
     const isWinner = (gameState.myUid === winnerUid);
     const reward = isWinner ? 100 : 50;
 
