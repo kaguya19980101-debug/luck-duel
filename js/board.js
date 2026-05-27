@@ -270,11 +270,15 @@ export function showActionMenu(index, cell, gameData) {
     // 技能（右）
     const skillBtn = _makeActionBtn(
         'action-skill action-float' + (hasActive ? '' : ' no-skill'),
-        '✨', '技能',
+        hasActive ? '✨' : '—',
+        hasActive ? '技能' : '無技能',
         { left: rect.right + 6, top: rect.top, width: cellH, height: cellH }
     );
     if (!hasActive) {
-        skillBtn.disabled = true;
+        skillBtn.onclick = (e) => {
+            e.stopPropagation(); e.preventDefault();
+            showToast('此卡無主動技能');
+        };
     } else {
         skillBtn.onclick = (e) => {
             e.stopPropagation(); e.preventDefault();
@@ -316,6 +320,27 @@ function _makeActionBtn(className, emoji, label, pos) {
     return btn;
 }
 
+
+// ── Toast 提示 ──
+export function showToast(msg, duration = 1800) {
+    const existing = document.getElementById('game-toast');
+    if (existing) existing.remove();
+    const t = document.createElement('div');
+    t.id = 'game-toast';
+    t.textContent = msg;
+    t.style.cssText = `
+        position:fixed; left:50%; transform:translateX(-50%);
+        bottom:160px; background:rgba(30,30,40,0.95);
+        color:#e2e8f0; font-size:0.9rem; padding:10px 20px;
+        border-radius:20px; border:1px solid #475569;
+        z-index:99999; pointer-events:none;
+        animation:toastIn 0.2s ease;
+        box-shadow:0 4px 20px rgba(0,0,0,0.5);
+        white-space:nowrap;
+    `;
+    document.body.appendChild(t);
+    setTimeout(() => { if (t.parentNode) t.remove(); }, duration);
+}
 export function closeActionMenu() {
     document.querySelectorAll('.action-float').forEach(el => el.remove());
 }
@@ -393,6 +418,13 @@ export function showCardInfo(cell) {
     const box = document.createElement('div');
     box.id = 'card-info-box';
     box.innerHTML = `
+        <div style="text-align:center;margin-bottom:14px;">
+            <img src="img/characters/${String(cell.id)}.webp"
+                 onerror="this.src='img/characters/default.png'"
+                 style="width:120px;height:160px;object-fit:cover;object-position:top;
+                        border-radius:10px;border:2px solid #334155;
+                        box-shadow:0 4px 16px rgba(0,0,0,0.5);">
+        </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
             <div style="display:flex;align-items:center;gap:8px;">
                 <span style="font-size:1.5rem;filter:drop-shadow(0 0 6px ${attrData.color});">${attrData.icon}</span>

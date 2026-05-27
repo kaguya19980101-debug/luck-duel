@@ -229,6 +229,192 @@ window.handleCardClick = function (id) {
     if (window.checkTeamStatus) window.checkTeamStatus();
 }
 
+// ==========================================
+// 快速編隊
+// ==========================================
+let quickTeamSelectedSlot = -1; // 目前選中的槽位 index
+
+window.openQuickTeam = function () {
+    const panel    = document.getElementById('quick-team-panel');
+    const teamSection = document.querySelector('.team-section');
+    const invContainer = document.querySelector('.inventory-container');
+    if (!panel) return;
+    panel.style.display = 'flex';
+    if (teamSection)    teamSection.style.display = 'none';
+    if (invContainer)   invContainer.style.display = 'none';
+    quickTeamSelectedSlot = -1;
+    _renderQuickSlots();
+    _renderQuickGrid();
+};
+
+window.closeQuickTeam = function () {
+    const panel    = document.getElementById('quick-team-panel');
+    const teamSection = document.querySelector('.team-section');
+    const invContainer = document.querySelector('.inventory-container');
+    if (panel)          panel.style.display = 'none';
+    if (teamSection)    teamSection.style.display = '';
+    if (invContainer)   invContainer.style.display = '';
+    quickTeamSelectedSlot = -1;
+    window.renderTeamDisplay();
+};
+
+function _renderQuickSlots() {
+    const container = document.getElementById('quick-team-slots');
+    if (!container) return;
+    container.innerHTML = '';
+
+    for (let i = 0; i < 5; i++) {
+        const charId   = window.currentTeam[i];
+        const charData = charId ? window.myInventoryData[String(charId)] : null;
+        const isLeader = (i === 2);
+        const isSelected = (i === quickTeamSelectedSlot);
+
+        const slot = document.createElement('div');
+        slot.style.cssText = `
+            width:58px; height:72px; border-radius:8px; position:relative;
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            cursor:pointer; transition:0.15s; box-sizing:border-box;
+            ${isSelected
+                ? 'border:2px solid #22d3ee; box-shadow:0 0 14px rgba(34,211,238,0.8);'
+                : charData
+                    ? `border:2px solid ${charData.rarity==='SSR'?'#ffd700':charData.rarity==='SR'?'#a855f7':'#64748b'};`
+                    : 'border:2px dashed #334155; background:rgba(255,255,255,0.02);'}
+        `;
+
+        if (isLeader) {
+            const crown = document.createElement('div');
+            crown.textContent = '👑';
+            crown.style.cssText = 'position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:0.8rem;';
+            slot.appendChild(crown);
+        }
+
+        if (charData) {
+            const img = document.createElement('img');
+            img.src = window.getCharImage(String(charId));
+            img.onerror = () => img.src = 'img/characters/default.png';
+            img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:6px;';
+            slot.appendChild(img);
+
+            // 移除小 X
+            const del = document.createElement('div');
+            del.textContent = '✕';
+            del.style.cssText = `
+                position:absolute; top:2px; right:3px;
+                font-size:0.6rem; color:rgba(255,255,255,0.7);
+                background:rgba(0,0,0,0.5); border-radius:50%;
+                width:14px; height:14px; display:flex; align-items:center; justify-content:center;
+                cursor:pointer;
+            `;
+            del.onclick = (e) => {
+                e.stopPropagation();
+                window.currentTeam[i] = null;
+                _saveTeam();
+                quickTeamSelectedSlot = -1;
+                _renderQuickSlots();
+                _renderQuickGrid();
+            };
+            slot.appendChild(del);
+        } else {
+            const plus = document.createElement('span');
+            plus.textContent = isSelected ? '▼' : '+';
+            plus.style.cssText = `color:${isSelected?'#22d3ee':'#475569'};font-size:1.2rem;`;
+            slot.appendChild(plus);
+        }
+
+        slot.onclick = () => {
+            quickTeamSelectedSlot = (quickTeamSelectedSlot === i) ? -1 : i;
+            _renderQuickSlots();
+        };
+        container.appendChild(slot);
+    }
+}
+
+function _renderQuickGrid() {
+    const grid = document.getElementById('quick-team-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const inventory = window.myInventoryData || {};
+    const keys      = Object.keys(inventory);
+
+    keys.forEach(key => {
+        const char = inventory[key];
+        if (!char) return;
+
+        const inTeamIdx = window.currentTeam.findIndex(m => String(m) === String(key));
+        const inTeam    = inTeamIdx !== -1;
+
+        const rarityColor = char.rarity === 'SSR' ? '#ffd700' : char.rarity === 'SR' ? '#a855f7' : '#64748b';
+
+        const card = document.createElement('div');
+        card.style.cssText = `
+            position:relative; border-radius:8px; overflow:hidden; cursor:pointer;
+            aspect-ratio:2/3; border:2px solid ${inTeam ? rarityColor : '#1e293b'};
+            opacity:${inTeam ? '0.5' : '1'};
+            transition:0.15s; background:#0f172a;
+            box-shadow:${inTeam ? `0 0 8px ${rarityColor}66` : 'none'};
+        `;
+
+        const img = document.createElement('img');
+        img.src = window.getCharImage(String(key));
+        img.onerror = () => img.src = 'img/characters/default.png';
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+        card.appendChild(img);
+
+        // 在隊標記
+        if (inTeam) {
+            const badge = document.createElement('div');
+            badge.textContent = `槽${inTeamIdx + 1}`;
+            badge.style.cssText = `
+                position:absolute; bottom:0; left:0; right:0;
+                background:rgba(0,0,0,0.75); color:${rarityColor};
+                font-size:0.6rem; text-align:center; padding:2px 0; font-weight:bold;
+            `;
+            card.appendChild(badge);
+        }
+
+        card.onclick = () => {
+            if (inTeam) {
+                // 已在隊，點擊移除
+                window.currentTeam[inTeamIdx] = null;
+                _saveTeam();
+                quickTeamSelectedSlot = -1;
+                _renderQuickSlots();
+                _renderQuickGrid();
+                return;
+            }
+
+            // 有選中槽位 → 填入
+            if (quickTeamSelectedSlot !== -1) {
+                const oldId = window.currentTeam[quickTeamSelectedSlot];
+                // 如果這張卡在其他槽，先移除
+                const existIdx = window.currentTeam.findIndex(m => String(m) === String(key));
+                if (existIdx !== -1) window.currentTeam[existIdx] = null;
+                window.currentTeam[quickTeamSelectedSlot] = String(key);
+                quickTeamSelectedSlot = -1;
+            } else {
+                // 沒選槽位 → 填入第一個空槽
+                const emptyIdx = window.currentTeam.findIndex(m => m === null);
+                if (emptyIdx === -1) { return; } // 滿了
+                window.currentTeam[emptyIdx] = String(key);
+            }
+
+            _saveTeam();
+            _renderQuickSlots();
+            _renderQuickGrid();
+        };
+
+        grid.appendChild(card);
+    });
+}
+
+function _saveTeam() {
+    const user = auth.currentUser;
+    if (user) {
+        update(ref(db, `users/${user.uid}`), { team: window.currentTeam }).catch(console.error);
+    }
+}
+
 // 渲染上方隊伍格子（含隊長槽、隊長技欄）
 window.renderTeamDisplay = function () {
     const container = document.getElementById('team-row');
@@ -238,7 +424,7 @@ window.renderTeamDisplay = function () {
 
     for (let i = 0; i < 5; i++) {
         const charId = window.currentTeam[i];
-        const isLeaderSlot = (i === 0);
+        const isLeaderSlot = (i === 2); // ★ 隊長槽改為第 3 格（中間）
         const slot = document.createElement('div');
         slot.className = 'team-slot' + (isLeaderSlot ? ' captain-slot' : '');
 
@@ -291,9 +477,9 @@ window.renderTeamDisplay = function () {
         container.appendChild(slot);
     }
 
-    // ── 隊長技欄 ──
+    // ── 隊長技欄（讀取第 3 格，index 2）──
     if (leaderSkillBar) {
-        const captainId = window.currentTeam[0];
+        const captainId   = window.currentTeam[2];
         const captainData = captainId ? window.myInventoryData[String(captainId)] : null;
         const leader = captainData?.leader;
 
@@ -1040,6 +1226,9 @@ document.addEventListener('click', function (e) {
         el.classList.add('active');
         return;
     }
+
+    if (id === 'quick-team-btn')   { window.openQuickTeam();  return; }
+    if (id === 'quick-team-close') { window.closeQuickTeam(); return; }
 
     // --- 手機 tab bar ---
     if (id === 'tab-feature')  { window.togglePanel('feature');  return; }
