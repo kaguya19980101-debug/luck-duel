@@ -184,11 +184,23 @@ function _showDuelUI(duelData, gameData) {
         gameState.duelCountdownInterval = null;
     }
 
-    // 重置按鈕樣式
-    document.querySelectorAll('.rps-btn').forEach(b => {
-        b.style.border = b.style.boxShadow = b.style.transform = b.style.opacity = b.style.filter = '';
-        b.style.pointerEvents = 'auto';
-    });
+    // ★ 重建決鬥 modal 內容（因為 revealDuelChoices 會覆蓋掉按鈕）
+    const modal = document.getElementById('duel-modal');
+    if (modal) {
+        modal.innerHTML = `
+            <h1 style="color:#ff00cc;font-family:'Orbitron';margin-bottom:8px;font-size:clamp(1.5rem,5vw,2.2rem);">⚔️ DUEL ⚔️</h1>
+            <div id="duel-timer" style="font-size:3rem;color:#ffeb3b;font-weight:bold;margin-bottom:8px;text-shadow:0 0 10px #ffeb3b;">5</div>
+            <div id="duel-status" style="color:#aaa;margin-bottom:28px;font-size:1.1rem;">選擇你的命運</div>
+            <div id="rps-buttons" style="display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,3vw,18px);width:100%;max-width:380px;margin:0 auto;">
+                <button class="rps-btn duel-btn-attack" data-choice="attack" onclick="submitDuelChoice('attack')">⚔️<span>攻擊</span><small>剋魔法</small></button>
+                <button class="rps-btn duel-btn-magic"  data-choice="magic"  onclick="submitDuelChoice('magic')">✨<span>魔法</span><small>剋陷阱</small></button>
+                <button class="rps-btn duel-btn-trap"   data-choice="trap"   onclick="submitDuelChoice('trap')">🪤<span>陷阱</span><small>剋攻擊</small></button>
+                <button class="rps-btn duel-btn-defend" data-choice="defend" onclick="submitDuelChoice('defend')">🛡️<span>防禦</span><small>減傷50%</small></button>
+            </div>
+        `;
+        modal.style.display = 'flex';
+    }
+
     const btnsEl = document.getElementById('rps-buttons');
     if (btnsEl) { btnsEl.style.pointerEvents = 'auto'; btnsEl.style.opacity = '1'; }
 
@@ -209,7 +221,6 @@ function _showDuelUI(duelData, gameData) {
             gameState.duelCountdownInterval = null;
             if (!answered) {
                 answered = true;
-                console.log('[CPU DUEL] Timeout — auto selecting');
                 _submitPlayerChoice(CHOICES[Math.floor(Math.random() * 4)], duelData, gameData);
             }
         }
@@ -217,7 +228,6 @@ function _showDuelUI(duelData, gameData) {
 
     // 覆寫全域 submitDuelChoice
     window.submitDuelChoice = (choice) => {
-        console.log('[CPU DUEL] Player chose:', choice, '| answered:', answered);
         if (answered) return;
         answered = true;
         clearInterval(gameState.duelCountdownInterval);

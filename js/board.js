@@ -147,7 +147,6 @@ async function handleSquareClick(index, cell, gameData) {
             closeActionMenu();
             renderBoard(gameData);
             showActionMenu(index, cell, gameData);
-            showCardInfo(cell);
             return;
         }
 
@@ -216,7 +215,6 @@ async function handleSquareClick(index, cell, gameData) {
             gameState.infoSelectedIndex  = index;
             renderBoard(gameData);
             showActionMenu(index, cell, gameData);
-            showCardInfo(cell);
         } else {
             gameState.selectedIndex      = -1;
             gameState.pendingActionIndex = -1;
@@ -234,7 +232,6 @@ async function handleSquareClick(index, cell, gameData) {
         gameState.infoSelectedIndex  = index;
         renderBoard(gameData);
         showActionMenu(index, cell, gameData);
-        showCardInfo(cell);
     }
 }
 
