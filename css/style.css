@@ -1569,3 +1569,10 @@ body::before {
     from { transform: translate(-50%, 20px); opacity: 0; }
     to   { transform: translate(-50%, 0);    opacity: 1; }
 }
+
+/* 資訊按鈕樣式 */
+.action-info {
+    background: linear-gradient(135deg, #0f4c75, #1b6ca8);
+    color: #fff;
+    border-radius: 8px !important;
+}
