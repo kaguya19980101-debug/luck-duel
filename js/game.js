@@ -709,59 +709,109 @@ async function handleSquareClick(index, cell, gameData) {
     }
 }
 
-// ── 卡片資訊框（棋盤外空白處）──
+// ── 卡片資訊框（棋盤下方） ──
 function showCardInfo(cell) {
     closeCardInfo();
     if (!cell) return;
 
     const attrData = getBattleAttr(cell.attribute);
     const rarity = cell.rarity || 'R';
-    const rarityColor = rarity === 'SSR' ? '#ffd700' : rarity === 'SR' ? '#a855f7' : '#cbd5e1';
+    const rarityColors = { R: '#94a3b8', SR: '#a855f7', SSR: '#ffd700' };
+    const rarityGlow   = { R: 'rgba(148,163,184,0.15)', SR: 'rgba(168,85,247,0.15)', SSR: 'rgba(255,215,0,0.15)' };
+    const rc = rarityColors[rarity] || '#94a3b8';
+    const rg = rarityGlow[rarity]   || 'transparent';
+
+    const TRIGGER_LABELS = {
+        on_win_duel: '猜拳勝後', on_lose_duel: '猜拳敗後',
+        on_attack: '攻擊時', on_defend: '被攻擊時',
+        on_move: '移動時', on_death: '死亡時', on_turn_start: '回合開始'
+    };
 
     const buildSkill = (skill, type) => {
         if (!skill) return '';
-        const label = type === 'active' ? '主動' : type === 'leader' ? '隊長' : '被動';
-        const labelColor = type === 'active' ? '#7c3aed' : type === 'leader' ? '#b7860b' : '#1e7d4d';
-        return `<div style="margin-top:8px;padding:8px 10px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.08);">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-                <span style="font-size:0.6rem;font-weight:bold;padding:1px 6px;border-radius:3px;background:${labelColor};color:#fff;">${label}</span>
-                <span style="font-size:0.85rem;color:#eee;font-weight:600;">${skill.name||''}</span>
+        const cfg = {
+            active:  { label:'主動技', bg:'#4c1d95', border:'#7c3aed', dot:'#a78bfa' },
+            passive: { label:'被動技', bg:'#14532d', border:'#15803d', dot:'#4ade80' },
+            leader:  { label:'隊長技', bg:'#78350f', border:'#b45309', dot:'#fcd34d' },
+        }[type] || {};
+        const trig = TRIGGER_LABELS[skill.trigger] || '';
+        return `
+        <div style="border-radius:10px;border:1px solid ${cfg.border};background:${cfg.bg}22;padding:10px 12px;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;">
+                <span style="font-size:0.58rem;font-weight:bold;padding:2px 7px;border-radius:4px;background:${cfg.bg};border:1px solid ${cfg.border};color:#fff;">${cfg.label}</span>
+                <span style="font-size:0.88rem;font-weight:700;color:#e2e8f0;">${skill.name||''}</span>
             </div>
-            <div style="font-size:0.72rem;color:#aaa;line-height:1.5;">${(skill.desc||'').replace('【隊長技】','')}</div>
+            ${trig ? `<div style="font-size:0.65rem;color:${cfg.dot};margin-bottom:5px;">◆ ${trig}</div>` : ''}
+            <div style="font-size:0.75rem;color:#94a3b8;line-height:1.6;">${(skill.desc||'').replace('【隊長技】','')}</div>
         </div>`;
     };
 
-    const skillsHTML = (cell.active || cell.passive || (cell.rarity==='SSR'&&cell.leader))
-        ? buildSkill(cell.active,'active') + buildSkill(cell.passive,'passive') + (cell.rarity==='SSR'?buildSkill(cell.leader,'leader'):'')
-        : `<div style="color:#555;font-size:0.78rem;text-align:center;padding:12px 0;">此卡無技能資料</div>`;
+    const currentHp = cell.hp ?? cell.max_hp ?? 0;
+    const maxHp = cell.max_hp ?? currentHp;
+    const hpPct = maxHp > 0 ? Math.round((currentHp/maxHp)*100) : 100;
+    const hpColor = hpPct > 60 ? '#4ade80' : hpPct > 30 ? '#facc15' : '#f87171';
+
+    const skillsHTML = (cell.active || cell.passive || (rarity==='SSR'&&cell.leader))
+        ? buildSkill(cell.active,'active') + buildSkill(cell.passive,'passive') + (rarity==='SSR'?buildSkill(cell.leader,'leader'):'')
+        : `<div style="color:#475569;font-size:0.78rem;text-align:center;padding:14px 0;">此卡尚無技能資料</div>`;
 
     const box = document.createElement('div');
     box.id = 'card-info-box';
     box.innerHTML = `
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-            <span style="font-size:1.4rem;color:${attrData.color};">${attrData.icon}</span>
-            <span style="font-size:1.05rem;font-weight:700;color:#fff;font-family:'Orbitron',sans-serif;">${cell.name||'未知'}</span>
-            <span style="font-size:0.7rem;font-weight:bold;color:${rarityColor};border:1px solid ${rarityColor};border-radius:4px;padding:1px 7px;">${rarity}</span>
-            <button onclick="window._closeCardInfo&&window._closeCardInfo()" style="margin-left:auto;background:rgba(255,255,255,0.08);border:none;color:#aaa;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:0.9rem;">✕</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:1.5rem;filter:drop-shadow(0 0 6px ${attrData.color});">${attrData.icon}</span>
+                <div>
+                    <div style="font-size:1rem;font-weight:700;color:#f1f5f9;font-family:'Orbitron',sans-serif;letter-spacing:1px;">${cell.name||'???'}</div>
+                    <div style="display:flex;gap:6px;margin-top:2px;align-items:center;">
+                        <span style="font-size:0.6rem;font-weight:bold;color:${rc};border:1px solid ${rc};border-radius:3px;padding:1px 6px;background:${rg};">${rarity}</span>
+                        <span style="font-size:0.65rem;color:${attrData.color};">${attrData.label||''}</span>
+                    </div>
+                </div>
+            </div>
+            <button id="card-info-close" style="background:rgba(255,255,255,0.06);border:1px solid #334155;color:#94a3b8;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
         </div>
-        <div style="display:flex;gap:10px;margin-bottom:6px;">
-            <div style="flex:1;text-align:center;background:#1a1a22;border-radius:6px;padding:5px;"><div style="font-size:0.55rem;color:#777;">ATK</div><div style="font-size:1rem;font-weight:bold;color:#ff6b6b;">${cell.attack||0}</div></div>
-            <div style="flex:1;text-align:center;background:#1a1a22;border-radius:6px;padding:5px;"><div style="font-size:0.55rem;color:#777;">HP</div><div style="font-size:1rem;font-weight:bold;color:#6bff9e;">${cell.hp||0}/${cell.max_hp||cell.hp||0}</div></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+            <div style="background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:8px;text-align:center;">
+                <div style="font-size:0.55rem;letter-spacing:1px;color:#64748b;margin-bottom:2px;">ATK</div>
+                <div style="font-size:1.1rem;font-weight:bold;color:#f87171;">${cell.attack||0}</div>
+            </div>
+            <div style="background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:8px;text-align:center;">
+                <div style="font-size:0.55rem;letter-spacing:1px;color:#64748b;margin-bottom:2px;">HP</div>
+                <div style="font-size:1.1rem;font-weight:bold;color:${hpColor};">${currentHp}<span style="font-size:0.7rem;color:#64748b;">/${maxHp}</span></div>
+            </div>
         </div>
+
+        <div style="background:#0f172a;border-radius:6px;overflow:hidden;margin-bottom:12px;height:6px;">
+            <div style="width:${hpPct}%;height:100%;background:${hpColor};transition:width 0.3s;border-radius:6px;box-shadow:0 0 8px ${hpColor}66;"></div>
+        </div>
+
+        <div style="font-size:0.6rem;letter-spacing:2px;color:#475569;margin-bottom:8px;text-transform:uppercase;">技能</div>
         ${skillsHTML}
     `;
     box.style.cssText = `
-        position:fixed; left:50%; transform:translateX(-50%);
-        bottom:78px; width:90%; max-width:440px;
-        background:linear-gradient(160deg,#16161e,#0c0c10);
-        border:1px solid #333; border-radius:14px;
-        padding:14px 16px; z-index:8000;
-        box-shadow:0 -6px 30px rgba(0,0,0,0.6);
-        animation:cardInfoUp 0.2s ease;
-        max-height:50vh; overflow-y:auto;
+        position:fixed;
+        left:50%; transform:translateX(-50%);
+        bottom:80px;
+        width:min(92vw, 440px);
+        background:linear-gradient(160deg,#1e293b,#0f172a);
+        border:1px solid #334155;
+        border-radius:16px;
+        padding:16px 18px;
+        z-index:8000;
+        box-shadow:0 -8px 40px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.04);
+        animation:cardInfoUp 0.22s cubic-bezier(0.34,1.3,0.64,1);
+        max-height:55vh;
+        overflow-y:auto;
+        -webkit-overflow-scrolling:touch;
     `;
     document.body.appendChild(box);
-    window._closeCardInfo = closeCardInfo;
+
+    document.getElementById('card-info-close').onclick = (e) => {
+        e.stopPropagation();
+        closeCardInfo();
+    };
 }
 
 function closeCardInfo() {
@@ -829,9 +879,26 @@ function showActionMenu(index, cell, gameData) {
         };
     }
 
-    // append 到 body（fixed 定位，不受 board overflow 影響）
+    // 資訊按鈕（下方）— 與格子等寬，半高
+    const infoBtn = document.createElement('button');
+    infoBtn.className = 'action-btn action-info action-float';
+    infoBtn.innerHTML = '📋<span>資訊</span>';
+    infoBtn.style.position = 'fixed';
+    infoBtn.style.left  = rect.left + 'px';
+    infoBtn.style.top   = (rect.bottom + 6) + 'px';
+    infoBtn.style.width = rect.width + 'px';
+    infoBtn.style.height = Math.round(cellH * 0.55) + 'px';
+    infoBtn.onclick = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const existing = document.getElementById('card-info-box');
+        if (existing) { closeCardInfo(); return; }
+        showCardInfo(cell);
+    };
+
     document.body.appendChild(moveBtn);
     document.body.appendChild(skillBtn);
+    document.body.appendChild(infoBtn);
 }
 
 function closeActionMenu() {
