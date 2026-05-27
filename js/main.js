@@ -10,7 +10,7 @@ import { CHARACTERS } from "./data.js";
 import * as AuthUser from "./auth.js";
 import * as UI from "./ui.js";
 import * as Matchmaking from "./matchmaking.js";
-import { initCpuGame } from "./game.js";
+import { initCpuGame } from "./cpu.js";
 
 console.log("系統: main.js 載入中...");
 
