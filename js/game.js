@@ -24,7 +24,7 @@ function _initBoardCallbacks() {
             await triggerDuel(fromIdx, toIdx);
         },
         onSkill: (index, cell, gameData) => {
-            alert(\`【\${cell.active.name}】\n\${cell.active.desc}\`);
+            alert(`【${cell.active.name}】\n${cell.active.desc}`);
         },
     });
 }
@@ -34,6 +34,7 @@ export function initGameBoard(gameId, role) {
     gameState.role = role;
     gameState.myUid = auth.currentUser.uid;
     gameState.isResolving = false;
+    _initBoardCallbacks();
 
     const gameArea = document.querySelector('.game-frame');
 
@@ -131,7 +132,7 @@ export function initGameBoard(gameId, role) {
 // 渲染棋盤
 async function commitMove(newBoard, gameData) {
     const nextTurn = gameData.player1 === gameState.myUid ? gameData.player2 : gameData.player1;
-    actionUsed = false; // 換回合重置
+    gameState.actionUsed = false; // 換回合重置
 
     // 1. 準備更新資料
     const updates = {
