@@ -168,7 +168,7 @@ async function triggerDuel(attackerIdx, defenderIdx) {
 // ==========================================
 // 3. 揭曉結果 (加入陳述文字)
 // ==========================================
-function revealDuelChoices(gameData) {
+export function revealDuelChoices(gameData) {
     const modal = document.getElementById('duel-modal');
     const p1Choice = gameData.duel.p1_choice;
     const p2Choice = gameData.duel.p2_choice;
