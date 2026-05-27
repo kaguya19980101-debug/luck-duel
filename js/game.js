@@ -190,17 +190,20 @@ function cpuDuel(attIdx, defIdx, gameData) {
 }
 
 function checkDuelStateCpu(gameData) {
+    console.log('[CPU DUEL] checkDuelStateCpu called, answered will be reset to false');
     const modal = document.getElementById('duel-modal');
-    if (!modal) return;
+    if (!modal) { console.error('[CPU DUEL] duel-modal not found!'); return; }
     modal.style.display = 'flex';
 
     const statusEl = document.getElementById('duel-status');
     const timerEl  = document.getElementById('duel-timer');
     const btnsEl   = document.getElementById('rps-buttons');
 
+    console.log('[CPU DUEL] btnsEl found:', !!btnsEl, '| rps-btn count:', document.querySelectorAll('.rps-btn').length);
+
     if (statusEl) statusEl.innerText = '選擇你的命運！';
 
-    // ★ 重置所有按鈕視覺（清除上一場決鬥的殘留樣式）
+    // ★ 重置所有按鈕視覺
     document.querySelectorAll('.rps-btn').forEach(b => {
         b.style.border = '';
         b.style.boxShadow = '';
@@ -215,13 +218,12 @@ function checkDuelStateCpu(gameData) {
         btnsEl.style.opacity = '1';
     }
 
-    // ★ 清除所有殘留計時器
     if (duelCountdownInterval) { clearInterval(duelCountdownInterval); duelCountdownInterval = null; }
 
     let timeLeft = 5;
     if (timerEl) { timerEl.style.display = 'block'; timerEl.innerText = timeLeft; }
 
-    let answered = false; // 防止重複提交
+    let answered = false;
 
     duelCountdownInterval = setInterval(() => {
         timeLeft--;
@@ -231,6 +233,7 @@ function checkDuelStateCpu(gameData) {
             clearInterval(duelCountdownInterval);
             duelCountdownInterval = null;
             if (!answered) {
+                console.log('[CPU DUEL] Timeout - auto selecting');
                 answered = true;
                 const fallback = ['attack','magic','trap','defend'];
                 submitDuelChoiceCpu(fallback[Math.floor(Math.random()*4)], gameData);
@@ -238,13 +241,14 @@ function checkDuelStateCpu(gameData) {
         }
     }, 1000);
 
-    // 覆寫 submitDuelChoice 為 CPU 版（加防重複）
     window._cpuCurrentGame = gameData;
     window.submitDuelChoice = (choice) => {
-        if (answered) return;
+        console.log('[CPU DUEL] submitDuelChoice called with:', choice, '| answered:', answered);
+        if (answered) { console.warn('[CPU DUEL] Already answered, ignoring'); return; }
         answered = true;
         submitDuelChoiceCpu(choice, window._cpuCurrentGame);
     };
+    console.log('[CPU DUEL] window.submitDuelChoice overwritten, ready for player input');
 }
 
 function submitDuelChoiceCpu(playerChoice, gameData) {
