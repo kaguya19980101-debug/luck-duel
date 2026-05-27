@@ -126,13 +126,15 @@ async function handleSquareClick(index, cell, gameData) {
     if (!canAct) {
         if (!cell) {
             gameState.infoSelectedIndex = -1;
+            closeActionMenu();
             closeCardInfo();
             renderBoard(gameData);
             return;
         }
         gameState.infoSelectedIndex = index;
+        closeActionMenu();
         renderBoard(gameData);
-        showCardInfo(cell);
+        showInfoOnlyBtn(index, cell);
         return;
     }
 
@@ -195,14 +197,15 @@ async function handleSquareClick(index, cell, gameData) {
         return;
     }
 
-    // ── 點對方棋子：只看資訊 ──
+    // ── 點對方棋子：顯示資訊按鈕 ──
     if (cell && cell.owner !== gameState.myUid) {
         gameState.infoSelectedIndex  = index;
         gameState.selectedIndex      = -1;
         gameState.pendingActionIndex = -1;
         closeActionMenu();
+        closeCardInfo();
         renderBoard(gameData);
-        showCardInfo(cell);
+        showInfoOnlyBtn(index, cell);
         return;
     }
 
@@ -315,6 +318,30 @@ function _makeActionBtn(className, emoji, label, pos) {
 
 export function closeActionMenu() {
     document.querySelectorAll('.action-float').forEach(el => el.remove());
+}
+
+// 只有資訊按鈕（用於對方棋子或對方回合）
+function showInfoOnlyBtn(index, cell) {
+    closeActionMenu();
+
+    const boardEl = document.getElementById('chess-board');
+    if (!boardEl) return;
+    const cellEl = boardEl.querySelectorAll(':scope > div')[index];
+    if (!cellEl) return;
+
+    const rect  = cellEl.getBoundingClientRect();
+    const cellH = rect.height;
+
+    const infoBtn = _makeActionBtn('action-info action-float', '📋', '資訊', {
+        left: rect.left, top: rect.bottom + 6,
+        width: rect.width, height: Math.round(cellH * 0.55)
+    });
+    infoBtn.onclick = (e) => {
+        e.stopPropagation(); e.preventDefault();
+        if (document.getElementById('card-info-box')) { closeCardInfo(); return; }
+        showCardInfo(cell);
+    };
+    document.body.appendChild(infoBtn);
 }
 
 // ==========================================
