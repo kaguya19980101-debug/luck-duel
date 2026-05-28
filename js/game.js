@@ -340,7 +340,7 @@ function checkDuelState(gameData) {
                 buttons.style.opacity = "1";
 
                 if (!gameState.duelCountdownInterval) {
-                    let timeLeft = 5;
+                    let timeLeft = 10;
                     if (timerEl) { timerEl.style.display = 'block'; timerEl.innerText = timeLeft; }
 
                     gameState.duelCountdownInterval = setInterval(() => {

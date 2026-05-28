@@ -210,18 +210,20 @@ function _showDuelUI(duelData, gameData) {
         gameState.duelCountdownInterval = null;
     }
 
-    // ★ 重建決鬥 modal 內容（因為 revealDuelChoices 會覆蓋掉按鈕）
+    // ★ 重建決鬥 modal 內容（底部列格式）
     const modal = document.getElementById('duel-modal');
     if (modal) {
         modal.innerHTML = `
-            <h1 style="color:#ff00cc;font-family:'Orbitron';margin-bottom:8px;font-size:clamp(1.5rem,5vw,2.2rem);">⚔️ DUEL ⚔️</h1>
-            <div id="duel-timer" style="font-size:3rem;color:#ffeb3b;font-weight:bold;margin-bottom:8px;text-shadow:0 0 10px #ffeb3b;">5</div>
-            <div id="duel-status" style="color:#aaa;margin-bottom:28px;font-size:1.1rem;">選擇你的命運</div>
-            <div id="rps-buttons" style="display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,3vw,18px);width:100%;max-width:380px;margin:0 auto;">
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
+                <span style="color:#ff00cc;font-family:'Orbitron';font-size:1.1rem;">⚔️ DUEL</span>
+                <span id="duel-timer" style="font-size:1.6rem;color:#ffeb3b;font-weight:bold;text-shadow:0 0 10px #ffeb3b;">10</span>
+                <span id="duel-status" style="color:#aaa;font-size:0.85rem;">選擇命運</span>
+            </div>
+            <div id="rps-buttons" style="display:flex;gap:8px;width:100%;max-width:440px;margin:0 auto;">
                 <button class="rps-btn duel-btn-attack" data-choice="attack" onclick="submitDuelChoice('attack')">⚔️<span>攻擊</span><small>剋魔法</small></button>
                 <button class="rps-btn duel-btn-magic"  data-choice="magic"  onclick="submitDuelChoice('magic')">✨<span>魔法</span><small>剋陷阱</small></button>
                 <button class="rps-btn duel-btn-trap"   data-choice="trap"   onclick="submitDuelChoice('trap')">🪤<span>陷阱</span><small>剋攻擊</small></button>
-                <button class="rps-btn duel-btn-defend" data-choice="defend" onclick="submitDuelChoice('defend')">🛡️<span>防禦</span><small>減傷50%</small></button>
+                <button class="rps-btn duel-btn-defend" data-choice="defend" onclick="submitDuelChoice('defend')">🛡️<span>防禦</span><small>減傷</small></button>
             </div>
         `;
         modal.style.display = 'flex';
@@ -232,9 +234,9 @@ function _showDuelUI(duelData, gameData) {
 
     const statusEl = document.getElementById('duel-status');
     const timerEl  = document.getElementById('duel-timer');
-    if (statusEl) statusEl.innerText = '選擇你的命運！';
+    if (statusEl) statusEl.innerText = '選擇命運';
 
-    let timeLeft = 5;
+    let timeLeft = 10;
     let answered = false;
     if (timerEl) { timerEl.style.display = 'block'; timerEl.innerText = timeLeft; }
 

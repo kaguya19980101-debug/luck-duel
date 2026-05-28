@@ -239,84 +239,75 @@ async function handleSquareClick(index, cell, gameData) {
 }
 
 // ==========================================
-// 行動選單（移動左、技能右、資訊下）
+// 行動列（固定在棋盤下方一排）
 // ==========================================
 export function showActionMenu(index, cell, gameData) {
     closeActionMenu();
-
-    const boardEl = document.getElementById('chess-board');
-    if (!boardEl) return;
-    const cellEl = boardEl.querySelectorAll(':scope > div')[index];
-    if (!cellEl) return;
-
-    const rect     = cellEl.getBoundingClientRect();
-    const cellH    = rect.height;
     const hasActive = !!(cell.active);
 
-    // 移動（左）
-    const moveBtn = _makeActionBtn('action-move action-float', '🚶', '移動', {
-        left: rect.left - cellH - 6,
-        top:  rect.top,
-        width: cellH, height: cellH
-    });
+    const bar = _makeActionBar();
+
+    // 移動
+    const moveBtn = _makeBarBtn('action-move', '🚶', '移動');
     moveBtn.onclick = (e) => {
         e.stopPropagation(); e.preventDefault();
         closeActionMenu();
-        gameState.moveMode          = true;
+        gameState.moveMode           = true;
         gameState.pendingActionIndex = -1;
+        renderBoard(gameData);
+        showToast('選擇要移動到的格子');
+    };
+
+    // 技能
+    const skillBtn = _makeBarBtn(
+        'action-skill' + (hasActive ? '' : ' no-skill'),
+        hasActive ? '✨' : '—',
+        hasActive ? '技能' : '無技能'
+    );
+    skillBtn.onclick = (e) => {
+        e.stopPropagation(); e.preventDefault();
+        if (!hasActive) { showToast('此卡無主動技能'); return; }
+        closeActionMenu();
+        if (_onSkill) _onSkill(index, cell, gameData);
+        gameState.selectedIndex      = -1;
+        gameState.pendingActionIndex = -1;
+        gameState.moveMode           = false;
         renderBoard(gameData);
     };
 
-    // 技能（右）
-    const skillBtn = _makeActionBtn(
-        'action-skill action-float' + (hasActive ? '' : ' no-skill'),
-        hasActive ? '✨' : '—',
-        hasActive ? '技能' : '無技能',
-        { left: rect.right + 6, top: rect.top, width: cellH, height: cellH }
-    );
-    if (!hasActive) {
-        skillBtn.onclick = (e) => {
-            e.stopPropagation(); e.preventDefault();
-            showToast('此卡無主動技能');
-        };
-    } else {
-        skillBtn.onclick = (e) => {
-            e.stopPropagation(); e.preventDefault();
-            closeActionMenu();
-            if (_onSkill) _onSkill(index, cell, gameData);
-            else alert(`【${cell.active.name}】\n${cell.active.desc}`);
-            gameState.selectedIndex      = -1;
-            gameState.pendingActionIndex = -1;
-            gameState.moveMode          = false;
-            renderBoard(gameData);
-        };
-    }
-
-    // 資訊（下）
-    const infoBtn = _makeActionBtn('action-info action-float', '📋', '資訊', {
-        left: rect.left, top: rect.bottom + 6,
-        width: rect.width, height: Math.round(cellH * 0.55)
-    });
+    // 資訊
+    const infoBtn = _makeBarBtn('action-info', '📋', '資訊');
     infoBtn.onclick = (e) => {
         e.stopPropagation(); e.preventDefault();
         if (document.getElementById('card-info-box')) { closeCardInfo(); return; }
         showCardInfo(cell);
     };
 
-    document.body.appendChild(moveBtn);
-    document.body.appendChild(skillBtn);
-    document.body.appendChild(infoBtn);
+    bar.appendChild(moveBtn);
+    bar.appendChild(skillBtn);
+    bar.appendChild(infoBtn);
+    document.body.appendChild(bar);
 }
 
-function _makeActionBtn(className, emoji, label, pos) {
+function _makeActionBar() {
+    const bar = document.createElement('div');
+    bar.id = 'action-bar';
+    bar.className = 'action-float';
+    bar.style.cssText = `
+        position:fixed; left:50%; transform:translateX(-50%);
+        bottom:84px; display:flex; gap:10px; z-index:9000;
+        background:rgba(10,10,18,0.92); padding:8px 12px;
+        border-radius:16px; border:1px solid #1e293b;
+        box-shadow:0 6px 24px rgba(0,0,0,0.6);
+    `;
+    return bar;
+}
+
+function _makeBarBtn(className, emoji, label) {
     const btn = document.createElement('button');
     btn.className = `action-btn ${className}`;
     btn.innerHTML = `${emoji}<span>${label}</span>`;
-    btn.style.cssText = `
-        position:fixed;
-        left:${pos.left}px; top:${pos.top}px;
-        width:${pos.width}px; height:${pos.height}px;
-    `;
+    btn.style.cssText = `width:64px; height:56px;`;
     return btn;
 }
 
@@ -348,25 +339,15 @@ export function closeActionMenu() {
 // 只有資訊按鈕（用於對方棋子或對方回合）
 function showInfoOnlyBtn(index, cell) {
     closeActionMenu();
-
-    const boardEl = document.getElementById('chess-board');
-    if (!boardEl) return;
-    const cellEl = boardEl.querySelectorAll(':scope > div')[index];
-    if (!cellEl) return;
-
-    const rect  = cellEl.getBoundingClientRect();
-    const cellH = rect.height;
-
-    const infoBtn = _makeActionBtn('action-info action-float', '📋', '資訊', {
-        left: rect.left, top: rect.bottom + 6,
-        width: rect.width, height: Math.round(cellH * 0.55)
-    });
+    const bar = _makeActionBar();
+    const infoBtn = _makeBarBtn('action-info', '📋', '資訊');
     infoBtn.onclick = (e) => {
         e.stopPropagation(); e.preventDefault();
         if (document.getElementById('card-info-box')) { closeCardInfo(); return; }
         showCardInfo(cell);
     };
-    document.body.appendChild(infoBtn);
+    bar.appendChild(infoBtn);
+    document.body.appendChild(bar);
 }
 
 // ==========================================
@@ -374,6 +355,7 @@ function showInfoOnlyBtn(index, cell) {
 // ==========================================
 export function showCardInfo(cell) {
     closeCardInfo();
+    closeActionMenu(); // 開資訊時收掉行動列，避免疊住
     if (!cell) return;
 
     const attrData = getBattleAttr(cell.attribute);
@@ -459,11 +441,21 @@ export function showCardInfo(cell) {
         bottom:80px; width:min(92vw, 440px);
         background:linear-gradient(160deg,#1e293b,#0f172a);
         border:1px solid #334155; border-radius:16px;
-        padding:16px 18px; z-index:8000;
+        padding:16px 18px; z-index:100000;
         box-shadow:0 -8px 40px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.04);
         animation:cardInfoUp 0.22s cubic-bezier(0.34,1.3,0.64,1);
         max-height:55vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
     `;
+    // 半透明背景遮罩（點外面關閉）
+    const backdrop = document.createElement('div');
+    backdrop.id = 'card-info-backdrop';
+    backdrop.style.cssText = `
+        position:fixed; inset:0; z-index:99999;
+        background:rgba(0,0,0,0.4);
+    `;
+    backdrop.onclick = () => closeCardInfo();
+    document.body.appendChild(backdrop);
+
     document.body.appendChild(box);
     document.getElementById('card-info-close').onclick = (e) => {
         e.stopPropagation();
@@ -536,7 +528,7 @@ export function buildBattleLogPanel() {
         background:rgba(10,10,18,0.92);
         border:1px solid #1e293b;
         border-radius:14px;
-        z-index:500;
+        z-index:90000;
         display:flex; flex-direction:column;
         box-shadow:0 8px 32px rgba(0,0,0,0.6);
         overflow:hidden;
@@ -600,6 +592,8 @@ export function showFloatingText(cellIndex, text, color = '#fff') {
 export function closeCardInfo() {
     const box = document.getElementById('card-info-box');
     if (box) box.remove();
+    const backdrop = document.getElementById('card-info-backdrop');
+    if (backdrop) backdrop.remove();
 }
 
 // ==========================================
@@ -645,15 +639,17 @@ export function buildGameUI(gameArea) {
         <div style="width:100%;display:flex;justify-content:center;">
             <div id="chess-board" style="display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(6,1fr);gap:5px;width:100%;max-width:520px;aspect-ratio:5/6;background:#2b2b2b;padding:7px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.5);"></div>
         </div>
-        <div id="duel-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.92);z-index:9999;flex-direction:column;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
-            <h1 style="color:#ff00cc;font-family:'Orbitron';margin-bottom:8px;font-size:clamp(1.5rem,5vw,2.2rem);">⚔️ DUEL ⚔️</h1>
-            <div id="duel-timer" style="font-size:3rem;color:#ffeb3b;font-weight:bold;margin-bottom:8px;text-shadow:0 0 10px #ffeb3b;">5</div>
-            <div id="duel-status" style="color:#aaa;margin-bottom:28px;font-size:1.1rem;">選擇你的命運</div>
-            <div id="rps-buttons" style="display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,3vw,18px);width:100%;max-width:380px;margin:0 auto;">
+        <div id="duel-modal" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:9999;flex-direction:column;align-items:center;padding:14px 16px calc(env(safe-area-inset-bottom) + 16px);box-sizing:border-box;background:linear-gradient(0deg,rgba(8,8,14,0.98),rgba(8,8,14,0.92));border-top:1px solid #1e293b;border-radius:18px 18px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,0.7);">
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
+                <span style="color:#ff00cc;font-family:'Orbitron';font-size:1.1rem;">⚔️ DUEL</span>
+                <span id="duel-timer" style="font-size:1.6rem;color:#ffeb3b;font-weight:bold;text-shadow:0 0 10px #ffeb3b;">10</span>
+                <span id="duel-status" style="color:#aaa;font-size:0.85rem;">選擇命運</span>
+            </div>
+            <div id="rps-buttons" style="display:flex;gap:8px;width:100%;max-width:440px;margin:0 auto;">
                 <button class="rps-btn duel-btn-attack" data-choice="attack" onclick="submitDuelChoice('attack')">⚔️<span>攻擊</span><small>剋魔法</small></button>
                 <button class="rps-btn duel-btn-magic"  data-choice="magic"  onclick="submitDuelChoice('magic')">✨<span>魔法</span><small>剋陷阱</small></button>
                 <button class="rps-btn duel-btn-trap"   data-choice="trap"   onclick="submitDuelChoice('trap')">🪤<span>陷阱</span><small>剋攻擊</small></button>
-                <button class="rps-btn duel-btn-defend" data-choice="defend" onclick="submitDuelChoice('defend')">🛡️<span>防禦</span><small>減傷50%</small></button>
+                <button class="rps-btn duel-btn-defend" data-choice="defend" onclick="submitDuelChoice('defend')">🛡️<span>防禦</span><small>減傷</small></button>
             </div>
         </div>
     `;
