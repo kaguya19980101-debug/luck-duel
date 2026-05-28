@@ -9,6 +9,8 @@ import { db } from './firebase-config.js';
 import { gameState, CPU_UID, getBattleAttr } from './state.js';
 import { buildGameUI, renderBoard, updateTimer, setBoardCallbacks, closeCardInfo } from './board.js';
 import { revealDuelChoices } from './game.js';
+import { resolveDuelDamage, resolveTurnStart, resolveOnMove, makeLog } from './skill-engine.js';
+import { addBattleLog, addTurnHeader, buildBattleLogPanel, showFloatingText, clearBattleLog } from './board.js';
 
 // ── 決鬥選項 ──
 const CHOICES = ['attack', 'magic', 'trap', 'defend'];
@@ -76,6 +78,8 @@ function _render(gameData) {
 
     if (!document.getElementById('chess-board')) {
         buildGameUI(gameArea);
+        buildBattleLogPanel();
+        clearBattleLog();
     }
 
     renderBoard(gameData);
@@ -84,6 +88,17 @@ function _render(gameData) {
     const turnText = document.getElementById('turn-text');
     if (turnText) {
         turnText.innerText = gameData.turn === gameState.myUid ? '⚔️ 你的回合' : '🤖 電腦回合';
+    }
+
+    // 回合開始：觸發被動（回血等）
+    const { newBoard: boardAfterTurn, logs: turnLogs } = resolveTurnStart({
+        board: gameData.board,
+        myUid: gameState.myUid,
+    });
+    if (turnLogs.length > 0) {
+        gameState.board = boardAfterTurn;
+        gameData = { ...gameData, board: boardAfterTurn };
+        addBattleLog(turnLogs);
     }
 
     if (gameData.turn === CPU_UID) {
@@ -95,9 +110,20 @@ function _render(gameData) {
 // 玩家行動回呼
 // ==========================================
 async function handlePlayerMove(from, to, newBoard, gameData) {
-    gameState.board = newBoard;
+    // 移動後觸發被動（移動回血）
+    const { newBoard: boardAfterMove, logs: moveLogs } = resolveOnMove({
+        board: newBoard,
+        moverIdx: to,
+        myUid: gameState.myUid,
+    });
+    if (moveLogs.length > 0) {
+        addBattleLog(moveLogs);
+        moveLogs.forEach(l => showFloatingText(to, '+' + (l.text.match(/\d+/) || [''])[0], '#4ade80'));
+    }
+    gameState.board = boardAfterMove;
+    addBattleLog([makeLog('info', `→ ${boardAfterMove[to]?.name || '棋子'} 移動`)]);
     const nextGame  = _makeGameData(CPU_UID);
-    nextGame.board  = newBoard;
+    nextGame.board  = boardAfterMove;
     gameState.actionUsed = false;
     _render(nextGame);
 }
@@ -269,55 +295,60 @@ function _submitPlayerChoice(playerChoice, duelData, gameData) {
 }
 
 function _resolveDuel(gameData) {
-    const p1 = gameData.duel.p1_choice; // CPU
-    const p2 = gameData.duel.p2_choice; // 玩家
-    const attIdx = gameData.duel.attackerIndex;
-    const defIdx = gameData.duel.defenderIndex;
+    const p1Choice = gameData.duel.p1_choice; // CPU
+    const p2Choice = gameData.duel.p2_choice; // 玩家
+    const attIdx   = gameData.duel.attackerIndex;
+    const defIdx   = gameData.duel.defenderIndex;
 
     const board = JSON.parse(JSON.stringify(gameState.board));
     const atk   = board[attIdx];
     const def   = board[defIdx];
     if (!atk || !def) { _render(_makeGameData(gameState.myUid)); return; }
 
-    // 勝負判斷
-    let result = 'draw', defenderHalved = false;
-    if (p1 === p2) { result = 'draw'; }
-    else if (p1 === 'defend' && p2 === 'defend') { result = 'draw'; }
-    else if (p1 === 'defend') { result = 'p2_win'; defenderHalved = true; }
-    else if (p2 === 'defend') { result = 'p1_win'; defenderHalved = true; }
-    else if (BEATS[p1] === p2) { result = 'p1_win'; }
-    else { result = 'p2_win'; }
+    // 攻擊方是誰（attIdx 棋子的 owner）
+    const attackerIsPlayer = atk.owner === gameState.myUid;
+    // CPU是p1出p1Choice，玩家是p2出p2Choice
+    // attIdx棋子若是玩家，他出p2Choice；若是CPU，他出p1Choice
+    const attackerChoice = attackerIsPlayer ? p2Choice : p1Choice;
+    const defenderChoice = attackerIsPlayer ? p1Choice : p2Choice;
 
-    if (result !== 'draw') {
-        const winnerId = result === 'p1_win' ? CPU_UID : gameState.myUid;
-        const [winner, loser, loserIdx] = atk.owner === winnerId
-            ? [atk, def, defIdx]
-            : [def, atk, attIdx];
-        let dmg = winner.attack || 50;
-        if (defenderHalved) dmg = Math.floor(dmg * 0.5);
-        loser.hp -= dmg;
-        if (loser.hp <= 0) board[loserIdx] = null;
-    }
+    // 用 skill-engine 計算
+    const { newBoard, logs } = resolveDuelDamage({
+        board,
+        attackerIdx: attIdx,
+        defenderIdx: defIdx,
+        attackerChoice,
+        defenderChoice,
+        myUid: gameState.myUid,
+    });
 
-    // 關閉決鬥 modal
+    // 加入戰鬥日誌 + 浮字
+    addBattleLog(logs);
+    logs.forEach(log => {
+        const idx = log.type === 'damage' || log.type === 'death' ? defIdx : attIdx;
+        const color = { damage:'#f87171', heal:'#4ade80', skill:'#facc15', death:'#f87171' }[log.type];
+        if (color && log.type !== 'turn' && log.type !== 'info') {
+            showFloatingText(idx, log.text.split(' ')[0], color);
+        }
+    });
+
+    // 關閉 modal
     const modal = document.getElementById('duel-modal');
     if (modal) modal.style.display = 'none';
 
-    // 回合切換：攻擊方行動完畢，換對方
-    const attackerOwner  = atk.owner;
-    const nextTurn       = (attackerOwner === gameState.myUid) ? CPU_UID : gameState.myUid;
+    const attackerOwner = atk.owner;
+    const nextTurn      = (attackerOwner === gameState.myUid) ? CPU_UID : gameState.myUid;
 
-    gameState.board      = board;
+    gameState.board      = newBoard;
     gameState.actionUsed = false;
 
-    // 檢查遊戲結束
-    const cpuAlive = board.some(c => c && c.owner === CPU_UID);
-    const myAlive  = board.some(c => c && c.owner === gameState.myUid);
+    const cpuAlive = newBoard.some(c => c && c.owner === CPU_UID);
+    const myAlive  = newBoard.some(c => c && c.owner === gameState.myUid);
     if (!cpuAlive) { _handleGameEnd(gameState.myUid); return; }
     if (!myAlive)  { _handleGameEnd(CPU_UID);         return; }
 
     const next = _makeGameData(nextTurn);
-    next.board = board;
+    next.board = newBoard;
     _render(next);
 }
 

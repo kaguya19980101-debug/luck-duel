@@ -471,6 +471,132 @@ export function showCardInfo(cell) {
     };
 }
 
+
+// ==========================================
+// 戰鬥日誌
+// ==========================================
+const _battleLog = [];
+
+export function addBattleLog(logs) {
+    if (!Array.isArray(logs)) logs = [logs];
+    logs.forEach(l => _battleLog.push(l));
+    _renderBattleLog();
+}
+
+export function clearBattleLog() {
+    _battleLog.length = 0;
+    _renderBattleLog();
+}
+
+export function addTurnHeader(turnNum, isMe) {
+    _battleLog.push({
+        type: 'turn',
+        text: `── 回合 ${turnNum}　${isMe ? '你的回合' : '對手回合'} ──`,
+        color: isMe ? '#4facfe' : '#ff6b6b'
+    });
+    _renderBattleLog();
+}
+
+function _renderBattleLog() {
+    const panel = document.getElementById('battle-log-list');
+    if (!panel) return;
+
+    const COLOR_MAP = {
+        red:    '#f87171',
+        green:  '#4ade80',
+        yellow: '#facc15',
+        orange: '#fb923c',
+        cyan:   '#22d3ee',
+        purple: '#c084fc',
+        gray:   '#64748b',
+        white:  '#e2e8f0',
+    };
+
+    panel.innerHTML = _battleLog.slice(-60).map(log => {
+        const c = COLOR_MAP[log.color] || '#e2e8f0';
+        const weight = log.type === 'turn' ? 'bold' : 'normal';
+        const size   = log.type === 'turn' ? '0.72rem' : '0.68rem';
+        const mt     = log.type === 'turn' ? 'margin-top:8px;' : '';
+        return `<div style="color:${c};font-weight:${weight};font-size:${size};${mt}line-height:1.6;padding:1px 0;">${log.text}</div>`;
+    }).join('');
+
+    // 自動捲到底
+    panel.scrollTop = panel.scrollHeight;
+}
+
+export function buildBattleLogPanel() {
+    if (document.getElementById('battle-log-panel')) return;
+
+    const panel = document.createElement('div');
+    panel.id = 'battle-log-panel';
+    panel.style.cssText = `
+        position:fixed;
+        right:12px; top:50%; transform:translateY(-50%);
+        width:220px; max-height:55vh;
+        background:rgba(10,10,18,0.92);
+        border:1px solid #1e293b;
+        border-radius:14px;
+        z-index:500;
+        display:flex; flex-direction:column;
+        box-shadow:0 8px 32px rgba(0,0,0,0.6);
+        overflow:hidden;
+    `;
+
+    panel.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:8px 12px;border-bottom:1px solid #1e293b;flex-shrink:0;">
+            <span style="font-size:0.7rem;font-weight:bold;color:#64748b;letter-spacing:1px;">BATTLE LOG</span>
+            <button id="battle-log-toggle" style="background:none;border:none;color:#475569;
+                    cursor:pointer;font-size:0.8rem;padding:0;">▼</button>
+        </div>
+        <div id="battle-log-list" style="
+            flex:1; overflow-y:auto; padding:8px 12px;
+            -webkit-overflow-scrolling:touch;
+        "></div>
+    `;
+
+    document.body.appendChild(panel);
+
+    // 收合切換
+    const toggle = document.getElementById('battle-log-toggle');
+    const list   = document.getElementById('battle-log-list');
+    let collapsed = false;
+    toggle.onclick = () => {
+        collapsed = !collapsed;
+        list.style.display = collapsed ? 'none' : '';
+        toggle.textContent = collapsed ? '▲' : '▼';
+        panel.style.maxHeight = collapsed ? 'auto' : '55vh';
+    };
+}
+
+// 浮字特效
+export function showFloatingText(cellIndex, text, color = '#fff') {
+    const boardEl = document.getElementById('chess-board');
+    if (!boardEl) return;
+    const cells = boardEl.querySelectorAll(':scope > div');
+    const cell  = cells[cellIndex];
+    if (!cell) return;
+
+    const rect = cell.getBoundingClientRect();
+    const el   = document.createElement('div');
+    el.textContent = text;
+    el.style.cssText = `
+        position:fixed;
+        left:${rect.left + rect.width / 2}px;
+        top:${rect.top}px;
+        transform:translateX(-50%);
+        color:${color};
+        font-size:0.9rem;
+        font-weight:bold;
+        pointer-events:none;
+        z-index:99999;
+        text-shadow:0 2px 6px rgba(0,0,0,0.8);
+        animation:floatUp 1s ease forwards;
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+}
+
 export function closeCardInfo() {
     const box = document.getElementById('card-info-box');
     if (box) box.remove();
