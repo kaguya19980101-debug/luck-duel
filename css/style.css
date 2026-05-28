@@ -1533,23 +1533,25 @@ body::before {
    決鬥四選項按鈕
    ========================================= */
 .rps-btn {
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 14px 8px;
-    border-radius: 16px;
+    gap: 2px;
+    padding: 8px 4px;
+    border-radius: 12px;
     cursor: pointer;
     border: 2px solid transparent;
-    font-size: 2rem;
+    font-size: 1.5rem;
     transition: transform 0.15s, box-shadow 0.15s;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
     box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    min-width: 0;
 }
-.rps-btn span { font-size: 0.95rem; font-weight: bold; color: #fff; pointer-events: none; }
-.rps-btn small { font-size: 0.62rem; color: rgba(255,255,255,0.55); pointer-events: none; }
+.rps-btn span { font-size: 0.78rem; font-weight: bold; color: #fff; pointer-events: none; }
+.rps-btn small { font-size: 0.55rem; color: rgba(255,255,255,0.55); pointer-events: none; }
 .rps-btn:active { transform: scale(0.94); }
 
 .duel-btn-attack { background: linear-gradient(135deg, #7f1d1d, #dc2626); border-color: #ef4444; }
@@ -1611,11 +1613,11 @@ body::before {
 @media (max-width: 768px) {
     #battle-log-panel {
         right: 8px !important;
-        top: auto !important;
-        bottom: 110px !important;
+        top: 70px !important;
+        bottom: auto !important;
         transform: none !important;
-        width: 160px !important;
-        max-height: 35vh !important;
+        width: 150px !important;
+        max-height: 28vh !important;
         font-size: 0.6rem;
     }
 }
