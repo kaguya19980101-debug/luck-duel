@@ -295,25 +295,7 @@ function _renderQuickSlots() {
             img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:6px;';
             slot.appendChild(img);
 
-            // 移除小 X
-            const del = document.createElement('div');
-            del.textContent = '✕';
-            del.style.cssText = `
-                position:absolute; top:2px; right:3px;
-                font-size:0.6rem; color:rgba(255,255,255,0.7);
-                background:rgba(0,0,0,0.5); border-radius:50%;
-                width:14px; height:14px; display:flex; align-items:center; justify-content:center;
-                cursor:pointer;
-            `;
-            del.onclick = (e) => {
-                e.stopPropagation();
-                window.currentTeam[i] = null;
-                _saveTeam();
-                quickTeamSelectedSlot = -1;
-                _renderQuickSlots();
-                _renderQuickGrid();
-            };
-            slot.appendChild(del);
+            // 槽位有卡片 → 點擊直接下場（移除）
         } else {
             const plus = document.createElement('span');
             plus.textContent = isSelected ? '▼' : '+';
@@ -322,8 +304,17 @@ function _renderQuickSlots() {
         }
 
         slot.onclick = () => {
-            quickTeamSelectedSlot = (quickTeamSelectedSlot === i) ? -1 : i;
+            if (charData) {
+                // 有卡片：點擊直接下場
+                window.currentTeam[i] = null;
+                _saveTeam();
+                quickTeamSelectedSlot = -1;
+            } else {
+                // 空槽：選中/取消選中
+                quickTeamSelectedSlot = (quickTeamSelectedSlot === i) ? -1 : i;
+            }
             _renderQuickSlots();
+            _renderQuickGrid();
         };
         container.appendChild(slot);
     }
@@ -450,10 +441,11 @@ window.renderTeamDisplay = function () {
                 if (charData.rarity === 'SSR') { rarityColor = '#ffd700'; glowColor = 'rgba(255,215,0,0.6)'; }
             }
 
-            // 隊長槽 SSR 額外金色邊框加強
-            if (isLeaderSlot && charData?.rarity === 'SSR') {
-                slot.style.border = '2px solid #ffd700';
-                slot.style.boxShadow = '0 0 20px rgba(255,215,0,0.8), inset 0 0 8px rgba(255,215,0,0.2)';
+            // 隊長槽外框：不管是什麼稀有度，都有明顯金框示意
+            if (isLeaderSlot) {
+                slot.style.border = '3px solid #ffd700';
+                slot.style.boxShadow = '0 0 24px rgba(255,215,0,0.9), inset 0 0 10px rgba(255,215,0,0.3), 0 0 4px rgba(255,215,0,0.5)';
+                slot.style.background = 'linear-gradient(135deg, rgba(255,215,0,0.08), transparent)';
             } else {
                 slot.style.border = `2px solid ${rarityColor}`;
                 slot.style.boxShadow = `0 0 15px ${glowColor}`;
