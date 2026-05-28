@@ -1600,3 +1600,22 @@ body::before {
 #quick-team-panel {
     padding: 10px 0;
 }
+
+/* 浮字特效 */
+@keyframes floatUp {
+    0%   { opacity:1; transform:translateX(-50%) translateY(0); }
+    100% { opacity:0; transform:translateX(-50%) translateY(-40px); }
+}
+
+/* 手機版戰鬥日誌收到底部 */
+@media (max-width: 768px) {
+    #battle-log-panel {
+        right: 8px !important;
+        top: auto !important;
+        bottom: 110px !important;
+        transform: none !important;
+        width: 160px !important;
+        max-height: 35vh !important;
+        font-size: 0.6rem;
+    }
+}
