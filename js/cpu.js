@@ -7,7 +7,7 @@ import { auth } from './firebase-config.js';
 import { ref, get, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 import { db } from './firebase-config.js';
 import { gameState, CPU_UID, getBattleAttr } from './state.js';
-import { buildGameUI, renderBoard, updateTimer, setBoardCallbacks, closeCardInfo } from './board.js';
+import { buildGameUI, renderBoard, updateTimer, setBoardCallbacks, closeCardInfo, showDuelAnimation } from './board.js';
 import { revealDuelChoices } from './game.js';
 import { resolveDuelDamage, resolveTurnStart, resolveOnMove, makeLog } from './skill-engine.js';
 import { addBattleLog, addTurnHeader, buildBattleLogPanel, showFloatingText, clearBattleLog } from './board.js';
@@ -221,16 +221,16 @@ function _showDuelUI(duelData, gameData) {
         gameState.duelCountdownInterval = null;
     }
 
-    // ★ 重建決鬥 modal 內容（底部列格式）
+    // ★ 重建決鬥 modal 內容（in-flow 格式，不 fixed）
     const modal = document.getElementById('duel-modal');
     if (modal) {
         modal.innerHTML = `
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;width:100%;max-width:440px;justify-content:center;">
-                <span style="color:#ff00cc;font-family:'Orbitron';font-size:1rem;">⚔️ DUEL</span>
-                <span id="duel-timer" style="font-size:1.4rem;color:#ffeb3b;font-weight:bold;text-shadow:0 0 10px #ffeb3b;min-width:28px;text-align:center;">10</span>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;justify-content:center;">
+                <span style="color:#ff00cc;font-family:'Orbitron';font-size:0.9rem;">⚔️ DUEL</span>
+                <span id="duel-timer" style="font-size:1.4rem;color:#ffeb3b;font-weight:bold;text-shadow:0 0 10px #ffeb3b;min-width:26px;text-align:center;">10</span>
                 <span id="duel-status" style="color:#94a3b8;font-size:0.8rem;">選擇命運</span>
             </div>
-            <div id="rps-buttons" style="display:flex;gap:6px;width:100%;max-width:440px;margin:0 auto;">
+            <div id="rps-buttons" style="display:flex;gap:6px;width:100%;">
                 <button class="rps-btn duel-btn-attack" data-choice="attack" onclick="submitDuelChoice('attack')">⚔️<span>攻擊</span><small>剋魔法</small></button>
                 <button class="rps-btn duel-btn-magic"  data-choice="magic"  onclick="submitDuelChoice('magic')">✨<span>魔法</span><small>剋陷阱</small></button>
                 <button class="rps-btn duel-btn-trap"   data-choice="trap"   onclick="submitDuelChoice('trap')">🪤<span>陷阱</span><small>剋攻擊</small></button>
@@ -344,6 +344,13 @@ function _resolveDuel(gameData) {
             showFloatingText(idx, log.text.split(' ')[0], color);
         }
     });
+
+    // 決鬥動畫（結算前播放）
+    if (result !== 'draw') {
+        const wIdx = result === 'p1_win' ? attIdx : defIdx;
+        const lIdx = result === 'p1_win' ? defIdx : attIdx;
+        showDuelAnimation(wIdx, lIdx);
+    }
 
     // 關閉 modal
     const modal = document.getElementById('duel-modal');
