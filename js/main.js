@@ -155,40 +155,28 @@ function updateCoinDisplay(amount) {
     if (el) el.innerText = amount;
 }
 
-function loadMyInventory(user) {
+async function loadMyInventory(user) {
     const inventoryRef = ref(db, `users/${user.uid}/inventory`);
-    const teamRef = ref(db, `users/${user.uid}/team`);
+    const teamRef      = ref(db, `users/${user.uid}/team`);
 
-    // A. 讀取背包
-    onValue(inventoryRef, (invSnap) => {
-        window.myInventoryData = invSnap.val() || {};
+    // 一次性讀取（不佔連線）
+    const [invSnap, teamSnap] = await Promise.all([get(inventoryRef), get(teamRef)]);
 
-        // B. 讀取隊伍
-        onValue(teamRef, (teamSnap) => {
-            const rawData = teamSnap.val();
+    window.myInventoryData = invSnap.val() || {};
 
-            // ★★★ 核心修正：強制重建 5 格陣列 (填補 Firebase 的破洞) ★★★
-            const safeTeam = [null, null, null, null, null];
-
-            if (rawData) {
-                // 不管是陣列還是物件，都用索引位置硬塞回去
-                Object.keys(rawData).forEach(key => {
-                    const idx = Number(key);
-                    if (idx >= 0 && idx < 5) {
-                        safeTeam[idx] = rawData[key];
-                    }
-                });
-            }
-
-            window.currentTeam = safeTeam;
-            console.log("隊伍已修復:", window.currentTeam);
-
-            // C. 渲染畫面
-            window.renderTeamDisplay();
-            renderInventoryGrid();
-            if (window.checkTeamStatus) window.checkTeamStatus();
+    const rawData  = teamSnap.val();
+    const safeTeam = [null, null, null, null, null];
+    if (rawData) {
+        Object.keys(rawData).forEach(key => {
+            const idx = Number(key);
+            if (idx >= 0 && idx < 5) safeTeam[idx] = rawData[key];
         });
-    });
+    }
+    window.currentTeam = safeTeam;
+
+    window.renderTeamDisplay();
+    renderInventoryGrid();
+    if (window.checkTeamStatus) window.checkTeamStatus();
 }
 
 // ==========================================

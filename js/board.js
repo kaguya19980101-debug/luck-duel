@@ -7,20 +7,23 @@
 import { gameState, getBattleAttr, CPU_UID } from './state.js';
 
 // 由 game.js / cpu.js 注入的回呼，board.js 本身不知道決鬥/移動細節
-let _onMove = null;      // onMove(fromIndex, toIndex, gameData)
-let _onDuel = null;      // onDuel(fromIndex, toIndex, gameData)
-let _onSkill = null;     // onSkill(index, cell, gameData)
+let _onMove = null;
+let _onDuel = null;
+let _onSkill = null;
+let _onTurnTimeout = null;
 
-export function setBoardCallbacks({ onMove, onDuel, onSkill }) {
-    _onMove  = onMove;
-    _onDuel  = onDuel;
-    _onSkill = onSkill;
+export function setBoardCallbacks({ onMove, onDuel, onSkill, onTurnTimeout }) {
+    _onMove         = onMove;
+    _onDuel         = onDuel;
+    _onSkill        = onSkill;
+    _onTurnTimeout  = onTurnTimeout || null;
 }
 
 // ==========================================
 // 棋盤渲染
 // ==========================================
 export function renderBoard(gameData) {
+    window._lastGameData = gameData; // 供 closeCardInfo 重建選單用
     const boardEl = document.getElementById('chess-board');
     if (!boardEl) return;
     boardEl.innerHTML = '';
@@ -594,6 +597,17 @@ export function closeCardInfo() {
     if (box) box.remove();
     const backdrop = document.getElementById('card-info-backdrop');
     if (backdrop) backdrop.remove();
+
+    // 如果有選中的自己棋子，重新顯示行動列
+    if (gameState.selectedIndex !== -1 && !gameState.moveMode) {
+        const cell = gameState.board[gameState.selectedIndex];
+        if (cell && cell.owner === gameState.myUid) {
+            // 需要 gameData 才能重建選單，用最後一次的 gameData
+            if (window._lastGameData) {
+                showActionMenu(gameState.selectedIndex, cell, window._lastGameData);
+            }
+        }
+    }
 }
 
 // ==========================================
@@ -621,6 +635,10 @@ export function updateTimer(gameData) {
         if (timeLeft <= 0) {
             clearInterval(gameState.timerInterval);
             gameState.timerInterval = null;
+            // 時間到：若是自己回合，自動跳過（換對方）
+            if (gameData.turn === gameState.myUid && _onTurnTimeout) {
+                _onTurnTimeout(gameData);
+            }
         }
     }, 500);
 }
@@ -639,13 +657,13 @@ export function buildGameUI(gameArea) {
         <div style="width:100%;display:flex;justify-content:center;">
             <div id="chess-board" style="display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(6,1fr);gap:5px;width:100%;max-width:520px;aspect-ratio:5/6;background:#2b2b2b;padding:7px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.5);"></div>
         </div>
-        <div id="duel-modal" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:9999;flex-direction:column;align-items:center;padding:14px 16px calc(env(safe-area-inset-bottom) + 16px);box-sizing:border-box;background:linear-gradient(0deg,rgba(8,8,14,0.98),rgba(8,8,14,0.92));border-top:1px solid #1e293b;border-radius:18px 18px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,0.7);">
-            <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
-                <span style="color:#ff00cc;font-family:'Orbitron';font-size:1.1rem;">⚔️ DUEL</span>
-                <span id="duel-timer" style="font-size:1.6rem;color:#ffeb3b;font-weight:bold;text-shadow:0 0 10px #ffeb3b;">10</span>
-                <span id="duel-status" style="color:#aaa;font-size:0.85rem;">選擇命運</span>
+        <div id="duel-modal" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:9999;flex-direction:column;align-items:center;padding:10px 12px;padding-bottom:calc(env(safe-area-inset-bottom) + 12px);box-sizing:border-box;background:linear-gradient(0deg,rgba(8,8,14,0.99),rgba(8,8,14,0.95));border-top:1px solid #1e293b;box-shadow:0 -4px 30px rgba(0,0,0,0.8);">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;width:100%;max-width:440px;justify-content:center;">
+                <span style="color:#ff00cc;font-family:'Orbitron';font-size:1rem;">⚔️ DUEL</span>
+                <span id="duel-timer" style="font-size:1.4rem;color:#ffeb3b;font-weight:bold;text-shadow:0 0 10px #ffeb3b;min-width:28px;text-align:center;">10</span>
+                <span id="duel-status" style="color:#94a3b8;font-size:0.8rem;">選擇命運</span>
             </div>
-            <div id="rps-buttons" style="display:flex;gap:8px;width:100%;max-width:440px;margin:0 auto;">
+            <div id="rps-buttons" style="display:flex;gap:6px;width:100%;max-width:440px;margin:0 auto;">
                 <button class="rps-btn duel-btn-attack" data-choice="attack" onclick="submitDuelChoice('attack')">⚔️<span>攻擊</span><small>剋魔法</small></button>
                 <button class="rps-btn duel-btn-magic"  data-choice="magic"  onclick="submitDuelChoice('magic')">✨<span>魔法</span><small>剋陷阱</small></button>
                 <button class="rps-btn duel-btn-trap"   data-choice="trap"   onclick="submitDuelChoice('trap')">🪤<span>陷阱</span><small>剋攻擊</small></button>

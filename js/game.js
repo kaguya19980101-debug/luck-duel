@@ -26,6 +26,16 @@ function _initBoardCallbacks() {
         onSkill: (index, cell, gameData) => {
             alert(`【${cell.active.name}】\n${cell.active.desc}`);
         },
+        onTurnTimeout: async (gameData) => {
+            // 時間到：自動跳過，寫入 Firebase 換回合
+            if (gameState.isCpuMode) return;
+            const nextTurn = gameData.player1 === gameState.myUid ? gameData.player2 : gameData.player1;
+            const { ref: dbRef, update: dbUpdate } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+            await dbUpdate(dbRef(db, `games/${gameState.gameId}`), {
+                turn: nextTurn,
+                turn_start_time: Date.now()
+            });
+        },
     });
 }
 
@@ -149,12 +159,14 @@ async function commitMove(newBoard, gameData) {
         updates.duel = null; // 清除決鬥狀態
     }
 
-    // 3. 寫入 Firebase
+    // 3. 寫入 Firebase（CPU 模式不寫入）
+    if (gameState.isCpuMode) return;
     await update(ref(db, `games/${gameState.gameId}`), updates);
 }
 
 // 計時器修正
 async function triggerDuel(attackerIdx, defenderIdx) {
+    if (gameState.isCpuMode) return; // CPU 模式不寫入 Firebase
     await update(ref(db, `games/${gameState.gameId}`), {
         duel: {
             attackerIndex: attackerIdx,
@@ -400,6 +412,7 @@ window.submitDuelChoice = async function (choice) {
     const timerEl = document.getElementById('duel-timer');
     if (timerEl) timerEl.innerText = "已確認";
 
+    if (gameState.isCpuMode) return;
     await update(ref(db, `games/${gameState.gameId}`), updatePayload);
 }
 
@@ -425,6 +438,7 @@ async function resolveDuel(gameData) {
         // 如果找不到棋子 (可能已經被殺掉了或資料不同步)，直接強制解除決鬥，避免卡死
         if (!attackerChar || !defenderChar) {
             console.error("❌ 錯誤：找不到決鬥棋子，強制重置狀態");
+            if (gameState.isCpuMode) return;
             await update(ref(db, `games/${gameState.gameId}`), { duel: null });
             gameState.isResolving = false;
             return;
@@ -504,12 +518,14 @@ async function resolveDuel(gameData) {
             updates.winner = gameWinner;
         }
 
+        if (gameState.isCpuMode) return;
         await update(ref(db, `games/${gameState.gameId}`), updates);
         console.log("✅ 決鬥結算完畢");
 
     } catch (e) {
         console.error("❌ 決鬥結算發生嚴重錯誤:", e);
         // ★ 救命機制：發生錯誤時，強制把 duel 設為 null，不然會永遠卡住
+        if (gameState.isCpuMode) return;
         await update(ref(db, `games/${gameState.gameId}`), { duel: null });
     } finally {
         gameState.isResolving = false; // 解除鎖定

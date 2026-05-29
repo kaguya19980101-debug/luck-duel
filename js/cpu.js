@@ -43,9 +43,10 @@ export function initCpuGame(myTeam) {
 
     // 注入棋盤回呼
     setBoardCallbacks({
-        onMove:  handlePlayerMove,
-        onDuel:  handlePlayerDuel,
-        onSkill: handlePlayerSkill,
+        onMove:         handlePlayerMove,
+        onDuel:         handlePlayerDuel,
+        onSkill:        handlePlayerSkill,
+        onTurnTimeout:  handleTurnTimeout,
     });
 
     const gameData = _makeGameData(CPU_UID);
@@ -132,6 +133,14 @@ async function handlePlayerDuel(fromIdx, toIdx, gameData) {
     _startDuel(fromIdx, toIdx, gameData, false); // false = 玩家是攻擊方
 }
 
+function handleTurnTimeout(gameData) {
+    // 時間到：跳過自己回合，換 CPU
+    addBattleLog([makeLog('info', '⏰ 時間到！自動跳過回合', { color: 'gray' })]);
+    gameState.actionUsed = false;
+    const next = _makeGameData(CPU_UID);
+    next.board = gameState.board;
+    _render(next);
+}
 function handlePlayerSkill(index, cell, gameData) {
     // 技能邏輯待實作
     alert(`【${cell.active.name}】\n${cell.active.desc}`);
@@ -172,6 +181,8 @@ function _cpuTakeTurn(gameData) {
     if (!target) {
         board[to]   = board[from];
         board[from] = null;
+        const movedName = board[to]?.name || 'CPU';
+        addBattleLog([makeLog('info', `🤖 ${movedName} 移動`, { color: 'gray' })]);
         gameState.board = board;
         const next = _makeGameData(gameState.myUid);
         next.board = board;
@@ -214,12 +225,12 @@ function _showDuelUI(duelData, gameData) {
     const modal = document.getElementById('duel-modal');
     if (modal) {
         modal.innerHTML = `
-            <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
-                <span style="color:#ff00cc;font-family:'Orbitron';font-size:1.1rem;">⚔️ DUEL</span>
-                <span id="duel-timer" style="font-size:1.6rem;color:#ffeb3b;font-weight:bold;text-shadow:0 0 10px #ffeb3b;">10</span>
-                <span id="duel-status" style="color:#aaa;font-size:0.85rem;">選擇命運</span>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;width:100%;max-width:440px;justify-content:center;">
+                <span style="color:#ff00cc;font-family:'Orbitron';font-size:1rem;">⚔️ DUEL</span>
+                <span id="duel-timer" style="font-size:1.4rem;color:#ffeb3b;font-weight:bold;text-shadow:0 0 10px #ffeb3b;min-width:28px;text-align:center;">10</span>
+                <span id="duel-status" style="color:#94a3b8;font-size:0.8rem;">選擇命運</span>
             </div>
-            <div id="rps-buttons" style="display:flex;gap:8px;width:100%;max-width:440px;margin:0 auto;">
+            <div id="rps-buttons" style="display:flex;gap:6px;width:100%;max-width:440px;margin:0 auto;">
                 <button class="rps-btn duel-btn-attack" data-choice="attack" onclick="submitDuelChoice('attack')">⚔️<span>攻擊</span><small>剋魔法</small></button>
                 <button class="rps-btn duel-btn-magic"  data-choice="magic"  onclick="submitDuelChoice('magic')">✨<span>魔法</span><small>剋陷阱</small></button>
                 <button class="rps-btn duel-btn-trap"   data-choice="trap"   onclick="submitDuelChoice('trap')">🪤<span>陷阱</span><small>剋攻擊</small></button>
@@ -383,4 +394,19 @@ async function _handleGameEnd(winnerUid) {
     } catch (e) {
         console.error('獎勵發放失敗:', e);
     }
+
+    // 清除意外寫入的 cpu_local 資料（防止積累佔用連線數）
+    try {
+        const { remove, ref: dbRef } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+        const { db: database } = await import('./firebase-config.js');
+        const gamesSnap = await get(dbRef(database, 'games'));
+        if (gamesSnap.exists()) {
+            const games = gamesSnap.val();
+            const delPromises = Object.keys(games)
+                .filter(k => k.startsWith('cpu_local_'))
+                .map(k => remove(dbRef(database, `games/${k}`)));
+            await Promise.all(delPromises);
+            if (delPromises.length > 0) console.log(`[CPU] 清理 ${delPromises.length} 筆 cpu_local 資料`);
+        }
+    } catch(e) { /* 清理失敗不影響遊戲 */ }
 }
