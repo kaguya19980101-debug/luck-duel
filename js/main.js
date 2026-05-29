@@ -159,10 +159,21 @@ async function loadMyInventory(user) {
     const inventoryRef = ref(db, `users/${user.uid}/inventory`);
     const teamRef      = ref(db, `users/${user.uid}/team`);
 
-    // 一次性讀取（不佔連線）
     const [invSnap, teamSnap] = await Promise.all([get(inventoryRef), get(teamRef)]);
 
-    window.myInventoryData = invSnap.val() || {};
+    // ── 合併 Firebase 背包（只有 count）和 CHARACTERS 完整資料 ──
+    const rawInv = invSnap.val() || {};
+    const merged = {};
+    Object.keys(rawInv).forEach(id => {
+        const raw      = rawInv[id];
+        // 從 CHARACTERS 找完整資料
+        const template = CHARACTERS.find(c => String(c.id) === String(id));
+        if (!template) return;
+        // 舊格式相容：如果 raw 是完整物件就只取 count
+        const count = typeof raw === 'object' ? (raw.count || 1) : 1;
+        merged[id] = { ...template, count };
+    });
+    window.myInventoryData = merged;
 
     const rawData  = teamSnap.val();
     const safeTeam = [null, null, null, null, null];
@@ -653,14 +664,13 @@ window.handleSummon = async function (count) {
             const isNew = !window.myInventoryData[card.id];
 
             const invPath = `users/${user.uid}/inventory/${card.id}`;
-            const existingCount = window.myInventoryData[card.id]?.count || 0;
+            const existingCount = (window.myInventoryData[card.id]?.count) || 0;
 
-            if (existingCount === 0) {
-                updates[invPath] = { ...card, count: 1, obtainedAt: Date.now() };
-            } else {
-                updates[`${invPath}/count`] = existingCount + 1;
-            }
+            // 只存 count，不存完整卡牌資料
+            updates[invPath] = { count: existingCount + 1 };
 
+            // 更新本地快取（合併完整資料）
+            window.myInventoryData[card.id] = { ...card, count: existingCount + 1 };
             displayCards.push({ ...card, isNew });
         }
 
