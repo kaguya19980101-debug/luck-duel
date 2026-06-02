@@ -519,6 +519,12 @@ function _renderBattleLog() {
 
     // 自動捲到底
     panel.scrollTop = panel.scrollHeight;
+    // 同步按鈕文字顯示最新一筆
+    const btn = document.getElementById('battle-log-btn');
+    if (btn && _battleLog.length > 0) {
+        const last = _battleLog[_battleLog.length - 1];
+        btn.textContent = `📋 ${last.text.slice(0, 20)}...`;
+    }
 }
 
 export function buildBattleLogPanel() { /* 已整合進 buildGameUI */ }
@@ -658,27 +664,34 @@ export function buildGameUI(gameArea) {
                 </div>
             </div>
 
-            <!-- 戰鬥日誌（棋盤正下方）-->
-            <div id="battle-log-panel" style="width:100%;max-width:480px;margin-top:8px;background:rgba(10,10,18,0.85);border:1px solid #1e293b;border-radius:12px;overflow:hidden;flex-shrink:0;">
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-bottom:1px solid #1e293b;">
-                    <span style="font-size:0.62rem;font-weight:bold;color:#475569;letter-spacing:2px;">BATTLE LOG</span>
-                    <button id="battle-log-toggle" style="background:none;border:none;color:#475569;cursor:pointer;font-size:0.75rem;padding:0;">▼</button>
-                </div>
-                <div id="battle-log-list" style="max-height:120px;overflow-y:auto;padding:6px 12px;-webkit-overflow-scrolling:touch;"></div>
+            <!-- 戰鬥日誌按鈕（點開全螢幕）-->
+            <div style="width:100%;max-width:480px;margin-top:8px;display:flex;justify-content:center;">
+                <button id="battle-log-btn" style="
+                    background:rgba(10,10,18,0.85);border:1px solid #1e293b;
+                    border-radius:10px;padding:7px 20px;color:#475569;
+                    font-size:0.72rem;letter-spacing:2px;cursor:pointer;
+                    font-weight:bold;width:100%;
+                ">📋 BATTLE LOG</button>
             </div>
 
         </div>
+
+        <!-- 戰鬥日誌全螢幕 overlay -->
+        <div id="battle-log-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:99999;flex-direction:column;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #1e293b;flex-shrink:0;">
+                <span style="font-size:0.8rem;font-weight:bold;color:#64748b;letter-spacing:2px;">BATTLE LOG</span>
+                <button id="battle-log-close" style="background:rgba(255,255,255,0.06);border:1px solid #334155;color:#94a3b8;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1rem;">✕</button>
+            </div>
+            <div id="battle-log-list" style="flex:1;overflow-y:auto;padding:12px 16px;-webkit-overflow-scrolling:touch;"></div>
+        </div>
     `;
 
-    // 日誌收合
-    const toggle = document.getElementById('battle-log-toggle');
-    const list   = document.getElementById('battle-log-list');
-    let collapsed = false;
-    if (toggle && list) {
-        toggle.onclick = () => {
-            collapsed = !collapsed;
-            list.style.display = collapsed ? 'none' : '';
-            toggle.textContent = collapsed ? '▲' : '▼';
-        };
+    // 日誌按鈕開關
+    const btn   = document.getElementById('battle-log-btn');
+    const overlay = document.getElementById('battle-log-overlay');
+    const closeBtn = document.getElementById('battle-log-close');
+    if (btn && overlay) {
+        btn.onclick = () => { overlay.style.display = 'flex'; };
+        closeBtn.onclick = () => { overlay.style.display = 'none'; };
     }
 }

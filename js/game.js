@@ -8,9 +8,9 @@
 
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { ref, get, update, set, onValue, remove, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { ref, get, update, set, onValue, remove, off, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { gameState, getBattleAttr, CPU_UID } from "./state.js";
-import { buildGameUI, renderBoard, updateTimer, showActionMenu, closeActionMenu, closeCardInfo, setBoardCallbacks } from "./board.js";
+import { buildGameUI, renderBoard, updateTimer, showActionMenu, closeActionMenu, closeCardInfo, setBoardCallbacks, showDuelAnimation } from "./board.js";
 
 // ==========================================
 // 線上模式：board.js 回呼注入
@@ -47,75 +47,22 @@ export function initGameBoard(gameId, role) {
     _initBoardCallbacks();
 
     const gameArea = document.querySelector('.game-frame');
-
-    // ★★★ 介面重繪區 ★★★
-    gameArea.innerHTML = `
-        <div id="game-hud" style="
-            display: flex;
-            flex-direction: column;      /* 關鍵：讓東西由上往下排 */
-            align-items: center;         /* 關鍵：讓東西左右置中 */
-            justify-content: center;
-            width: 100%;
-            margin-bottom: 20px;
-            position: relative;
-        ">
-            <div id="timer-box" style="
-                background: rgba(0, 0, 0, 0.8);
-                border: 2px solid #555;
-                border-radius: 12px;
-                padding: 2px 0;          /* 減少內距，讓盒子變矮 */
-                width: 80px;             /* ★ 寬度縮小：原本 120px -> 改為 80px */
-                text-align: center;
-                margin-bottom: 8px;      /* 下方間距微調 */
-                box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-                z-index: 10;
-            ">
-                <span id="timer-text" style="
-                    color: #ff4444; 
-                    font-weight: bold; 
-                    font-size: 1.2rem;   /* ★ 字體縮小：原本 1.8rem -> 改為 1.2rem */
-                    font-family: monospace; 
-                    letter-spacing: 1px; /* 字距微調 */
-                ">30s</span>
-            </div>
-
-            <div id="turn-text" style="
-                font-family: sans-serif;
-                font-size: 1.1rem;
-                font-weight: bold;
-                color: white;
-                text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-                background: rgba(255,255,255,0.1);
-                padding: 4px 15px;
-                border-radius: 20px;
-            ">
-                等待同步...
-            </div>
-        </div>
-        
-        <div style="width:100%; display:flex; justify-content:center;">
-            <div id="chess-board" style="
-                display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(6, 1fr);
-                gap: 5px; width: 100%; max-width: 520px; aspect-ratio: 5 / 6;
-                background: #2b2b2b; padding: 7px; border-radius: 14px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            "></div>
-        </div>
-        
-        <div id="duel-modal" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:999; flex-direction:column; justify-content:center; align-items:center; color:white;">
-            </div>
-    `;
-
-    // 綁定決鬥按鈕
-    document.querySelectorAll('.rps-btn').forEach(btn => {
-        btn.onclick = () => submitDuelChoice(btn.dataset.choice);
-    });
+    buildGameUI(gameArea); // ★ 統一用 board.js 的 buildGameUI，不重複寫 HTML
 
     // 監聽 Firebase
     const gameRef = ref(db, `games/${gameId}`);
+
+    // ★ 斷線自動刪除 game（onDisconnect）
+    onDisconnect(gameRef).remove();
     onValue(gameRef, (snapshot) => {
         const gameData = snapshot.val();
         if (!gameData) return;
+
+        // 對手斷線：game 節點被刪除
+        if (!snapshot.exists()) {
+            _showDisconnectNotice('對手已離線，對局取消');
+            return;
+        }
 
         // --- ★ 新增這段：檢查遊戲是否結束 ★ ---
         if (gameData.status === "finished" && gameData.winner) {
@@ -257,35 +204,74 @@ export function revealDuelChoices(gameData) {
     }
 
     // --- 繪製畫面 ---
+    // 播放動畫
+    const _attIdx = gameData.duel?.attackerIndex;
+    const _defIdx = gameData.duel?.defenderIndex;
+    if (_attIdx !== undefined && _defIdx !== undefined) {
+        const _isAttWin = (result === 'p1_win' && amIP1) || (result === 'p2_win' && !amIP1);
+        showDuelAnimation(
+            _isAttWin ? _attIdx : _defIdx,
+            _isAttWin ? _defIdx : _attIdx
+        );
+    }
+
     modal.innerHTML = `
-        <style>@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }</style>
-        
-        <div style="display:flex; flex-direction:column; align-items:center; width:100%; text-align:center; max-width:600px; margin:0 auto;">
-            <h1 style="color:#ff00cc; font-family:'Orbitron'; margin-bottom:30px; text-shadow:0 0 10px #ff00cc; font-size:clamp(1.4rem, 5vw, 2.2rem);">⚔️ 決鬥揭曉 ⚔️</h1>
-            
-            <div style="display:flex; justify-content:space-around; width:100%; align-items:center;">
-                <div style="text-align:center;">
-                    <div style="font-size:clamp(1rem,3vw,1.4rem); color:#4facfe; margin-bottom:12px;">YOU</div>
-                    <div style="font-size:clamp(4.5rem,16vw,8rem); filter:drop-shadow(0 0 20px #4facfe); line-height:1;">
-                        ${icons[myMove]}
-                    </div>
-                </div>
+        <style>
+            @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+            @keyframes attackPulse { 0%{transform:scale(1)} 30%{transform:scale(1.2)} 60%{transform:scale(0.95)} 100%{transform:scale(1)} }
+        </style>
+        <div style="display:flex;flex-direction:column;align-items:center;width:100%;text-align:center;max-width:400px;margin:0 auto;gap:8px;">
+            <h1 style="color:#ff00cc;font-family:'Orbitron';text-shadow:0 0 10px #ff00cc;font-size:clamp(1.1rem,4vw,1.6rem);margin:0 0 6px;">⚔️ 決鬥揭曉 ⚔️</h1>
 
-                <div style="font-size:clamp(1.5rem,5vw,2.5rem); color:white; font-weight:bold; font-style:italic;">VS</div>
-
-                <div style="text-align:center;">
-                    <div style="font-size:clamp(1rem,3vw,1.4rem); color:#ff4444; margin-bottom:12px;">ENEMY</div>
-                    <div style="font-size:clamp(4.5rem,16vw,8rem); filter:drop-shadow(0 0 20px #ff4444); line-height:1;">
-                        ${icons[oppMove]}
-                    </div>
+            <!-- YOU -->
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;background:rgba(79,172,254,0.08);border:1px solid rgba(79,172,254,0.3);border-radius:14px;padding:10px 16px;">
+                <div style="font-size:clamp(0.9rem,3vw,1.1rem);color:#4facfe;font-weight:bold;min-width:60px;text-align:left;">YOU</div>
+                <div style="font-size:clamp(2.5rem,10vw,4rem);line-height:1;filter:drop-shadow(0 0 12px #4facfe);animation:attackPulse 0.5s ease 0.3s both;">
+                    ${icons[myMove]}
                 </div>
+                <div style="font-size:0.75rem;color:#4facfe;min-width:60px;text-align:right;opacity:0.7;">${myMove === 'attack' ? '剋魔法' : myMove === 'magic' ? '剋陷阱' : myMove === 'trap' ? '剋攻擊' : '減傷50%'}</div>
             </div>
-            
-            <div style="margin-top:40px; min-height: 80px; background: rgba(0,0,0,0.5); padding: 18px 30px; border-radius: 12px; border: 1px solid #555; width:90%;">
+
+            <!-- VS -->
+            <div style="font-size:1rem;color:#475569;font-weight:bold;letter-spacing:4px;">VS</div>
+
+            <!-- ENEMY -->
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;background:rgba(255,68,68,0.08);border:1px solid rgba(255,68,68,0.3);border-radius:14px;padding:10px 16px;">
+                <div style="font-size:clamp(0.9rem,3vw,1.1rem);color:#ff4444;font-weight:bold;min-width:60px;text-align:left;">ENEMY</div>
+                <div style="font-size:clamp(2.5rem,10vw,4rem);line-height:1;filter:drop-shadow(0 0 12px #ff4444);animation:attackPulse 0.5s ease 0.5s both;">
+                    ${icons[oppMove]}
+                </div>
+                <div style="font-size:0.75rem;color:#ff4444;min-width:60px;text-align:right;opacity:0.7;">${oppMove === 'attack' ? '剋魔法' : oppMove === 'magic' ? '剋陷阱' : oppMove === 'trap' ? '剋攻擊' : '減傷50%'}</div>
+            </div>
+
+            <!-- 結果 -->
+            <div style="width:100%;background:rgba(0,0,0,0.4);padding:14px 16px;border-radius:12px;border:1px solid #334155;animation:fadeIn 0.4s ease 0.8s both;opacity:0;">
                 ${narrativeHTML}
             </div>
         </div>
     `;
+
+    // 揭曉時用 fixed overlay 覆蓋全螢幕，不影響 in-flow 的 duel-modal
+    let revealOverlay = document.getElementById('duel-reveal-overlay');
+    if (!revealOverlay) {
+        revealOverlay = document.createElement('div');
+        revealOverlay.id = 'duel-reveal-overlay';
+        revealOverlay.style.cssText = `
+            position:fixed;inset:0;background:rgba(0,0,0,0.92);
+            z-index:99998;display:flex;align-items:center;justify-content:center;
+            padding:20px;box-sizing:border-box;
+        `;
+        document.body.appendChild(revealOverlay);
+    }
+    revealOverlay.innerHTML = modal.innerHTML;
+    revealOverlay.style.display = 'flex';
+    modal.style.display = 'none'; // 隱藏 in-flow modal，改用 overlay
+
+    // 3.5 秒後關閉揭曉 overlay
+    setTimeout(() => {
+        const el = document.getElementById('duel-reveal-overlay');
+        if (el) el.style.display = 'none';
+    }, 3500);
 }
 // ==========================================
 // 2. 決鬥狀態控制 (修改按鈕標籤與結算延遲)
@@ -543,10 +529,28 @@ function checkGameOver(board, gameData) {
     return null; // 還沒結束
 }
 
+
+// 斷線提示
+function _showDisconnectNotice(msg) {
+    if (document.getElementById('disconnect-modal')) return;
+    off(ref(db, `games/${gameState.gameId}`)); // 停止監聽
+    const modal = document.createElement('div');
+    modal.id = 'disconnect-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;gap:20px;';
+    modal.innerHTML = `
+        <div style="font-size:3rem;">📡</div>
+        <div style="color:#f87171;font-size:1.3rem;font-weight:bold;font-family:'Orbitron';">連線中斷</div>
+        <div style="color:#94a3b8;font-size:1rem;">${msg}</div>
+        <button onclick="location.reload()" style="margin-top:10px;padding:12px 32px;background:linear-gradient(135deg,#1e293b,#334155);color:#fff;border:1px solid #475569;border-radius:12px;font-size:1rem;cursor:pointer;">返回大廳</button>
+    `;
+    document.body.appendChild(modal);
+}
+
 // 顯示結算畫面並發獎勵
 async function handleGameEnd(winnerUid) {
     // 防止重複執行 (如果畫面已經出來了就跳過)
     if (document.getElementById('game-over-modal')) return;
+    try { onDisconnect(ref(db, `games/${gameState.gameId}`)).cancel(); } catch(e) {}
 
     const isWinner = (gameState.myUid === winnerUid);
     const reward = isWinner ? 100 : 50;
