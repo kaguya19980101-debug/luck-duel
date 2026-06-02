@@ -475,6 +475,8 @@ const _battleLog = [];
 export function addBattleLog(logs) {
     if (!Array.isArray(logs)) logs = [logs];
     logs.forEach(l => _battleLog.push(l));
+    // 上限 50 筆，超過就截掉最舊的
+    if (_battleLog.length > 50) _battleLog.splice(0, _battleLog.length - 50);
     _renderBattleLog();
 }
 
@@ -507,7 +509,7 @@ function _renderBattleLog() {
         white:  '#e2e8f0',
     };
 
-    panel.innerHTML = _battleLog.slice(-60).map(log => {
+    panel.innerHTML = _battleLog.slice(-50).map(log => {
         const c = COLOR_MAP[log.color] || '#e2e8f0';
         const weight = log.type === 'turn' ? 'bold' : 'normal';
         const size   = log.type === 'turn' ? '0.72rem' : '0.68rem';
@@ -519,49 +521,27 @@ function _renderBattleLog() {
     panel.scrollTop = panel.scrollHeight;
 }
 
-export function buildBattleLogPanel() {
-    if (document.getElementById('battle-log-panel')) return;
+export function buildBattleLogPanel() { /* 已整合進 buildGameUI */ }
 
-    const panel = document.createElement('div');
-    panel.id = 'battle-log-panel';
-    panel.style.cssText = `
-        position:fixed;
-        right:12px; top:50%; transform:translateY(-50%);
-        width:220px; max-height:55vh;
-        background:rgba(10,10,18,0.92);
-        border:1px solid #1e293b;
-        border-radius:14px;
-        z-index:90000;
-        display:flex; flex-direction:column;
-        box-shadow:0 8px 32px rgba(0,0,0,0.6);
-        overflow:hidden;
-    `;
 
-    panel.innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:space-between;
-                    padding:8px 12px;border-bottom:1px solid #1e293b;flex-shrink:0;">
-            <span style="font-size:0.7rem;font-weight:bold;color:#64748b;letter-spacing:1px;">BATTLE LOG</span>
-            <button id="battle-log-toggle" style="background:none;border:none;color:#475569;
-                    cursor:pointer;font-size:0.8rem;padding:0;">▼</button>
-        </div>
-        <div id="battle-log-list" style="
-            flex:1; overflow-y:auto; padding:8px 12px;
-            -webkit-overflow-scrolling:touch;
-        "></div>
-    `;
+// ==========================================
+// 決鬥後攻擊動畫（純 CSS）
+// ==========================================
+export function showDuelAnimation(winnerIdx, loserIdx) {
+    const boardEl = document.getElementById('chess-board');
+    if (!boardEl) return;
+    const cells = boardEl.querySelectorAll(':scope > div');
+    const wCell = cells[winnerIdx];
+    const lCell = cells[loserIdx];
 
-    document.body.appendChild(panel);
-
-    // 收合切換
-    const toggle = document.getElementById('battle-log-toggle');
-    const list   = document.getElementById('battle-log-list');
-    let collapsed = false;
-    toggle.onclick = () => {
-        collapsed = !collapsed;
-        list.style.display = collapsed ? 'none' : '';
-        toggle.textContent = collapsed ? '▲' : '▼';
-        panel.style.maxHeight = collapsed ? 'auto' : '55vh';
-    };
+    if (wCell) {
+        wCell.style.animation = 'duelWin 0.5s ease';
+        setTimeout(() => { wCell.style.animation = ''; }, 500);
+    }
+    if (lCell) {
+        lCell.style.animation = 'duelLose 0.5s ease';
+        setTimeout(() => { lCell.style.animation = ''; }, 500);
+    }
 }
 
 // 浮字特效
@@ -648,27 +628,57 @@ export function updateTimer(gameData) {
 // ==========================================
 export function buildGameUI(gameArea) {
     gameArea.innerHTML = `
-        <div id="game-hud" style="display:flex;flex-direction:column;align-items:center;width:100%;margin-bottom:20px;position:relative;">
-            <div id="timer-box" style="background:rgba(0,0,0,0.8);border:2px solid #555;border-radius:12px;padding:2px 0;width:80px;text-align:center;margin-bottom:8px;box-shadow:0 4px 10px rgba(0,0,0,0.5);">
-                <span id="timer-text" style="color:#ff4444;font-weight:bold;font-size:1.2rem;font-family:monospace;letter-spacing:1px;">30s</span>
+        <div id="game-container" style="display:flex;flex-direction:column;align-items:center;width:100%;max-width:540px;margin:0 auto;">
+
+            <!-- HUD -->
+            <div id="game-hud" style="display:flex;align-items:center;justify-content:center;gap:16px;width:100%;padding:6px 0 10px;flex-shrink:0;">
+                <div id="timer-box" style="background:rgba(0,0,0,0.8);border:2px solid #555;border-radius:10px;padding:2px 12px;text-align:center;box-shadow:0 4px 10px rgba(0,0,0,0.5);">
+                    <span id="timer-text" style="color:#ff4444;font-weight:bold;font-size:1.1rem;font-family:monospace;">30s</span>
+                </div>
+                <div id="turn-text" style="font-size:1rem;font-weight:bold;color:white;background:rgba(255,255,255,0.1);padding:4px 14px;border-radius:20px;">等待開始...</div>
             </div>
-            <div id="turn-text" style="font-size:1.1rem;font-weight:bold;color:white;background:rgba(255,255,255,0.1);padding:4px 15px;border-radius:20px;">等待開始...</div>
-        </div>
-        <div style="width:100%;display:flex;justify-content:center;">
-            <div id="chess-board" style="display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(6,1fr);gap:5px;width:100%;max-width:520px;aspect-ratio:5/6;background:#2b2b2b;padding:7px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.5);"></div>
-        </div>
-        <div id="duel-modal" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:9999;flex-direction:column;align-items:center;padding:10px 12px;padding-bottom:calc(env(safe-area-inset-bottom) + 12px);box-sizing:border-box;background:linear-gradient(0deg,rgba(8,8,14,0.99),rgba(8,8,14,0.95));border-top:1px solid #1e293b;box-shadow:0 -4px 30px rgba(0,0,0,0.8);">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;width:100%;max-width:440px;justify-content:center;">
-                <span style="color:#ff00cc;font-family:'Orbitron';font-size:1rem;">⚔️ DUEL</span>
-                <span id="duel-timer" style="font-size:1.4rem;color:#ffeb3b;font-weight:bold;text-shadow:0 0 10px #ffeb3b;min-width:28px;text-align:center;">10</span>
-                <span id="duel-status" style="color:#94a3b8;font-size:0.8rem;">選擇命運</span>
+
+            <!-- 棋盤 -->
+            <div style="width:100%;display:flex;justify-content:center;flex-shrink:0;">
+                <div id="chess-board" style="display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(6,1fr);gap:4px;width:100%;max-width:480px;aspect-ratio:5/6;background:#2b2b2b;padding:6px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.5);"></div>
             </div>
-            <div id="rps-buttons" style="display:flex;gap:6px;width:100%;max-width:440px;margin:0 auto;">
-                <button class="rps-btn duel-btn-attack" data-choice="attack" onclick="submitDuelChoice('attack')">⚔️<span>攻擊</span><small>剋魔法</small></button>
-                <button class="rps-btn duel-btn-magic"  data-choice="magic"  onclick="submitDuelChoice('magic')">✨<span>魔法</span><small>剋陷阱</small></button>
-                <button class="rps-btn duel-btn-trap"   data-choice="trap"   onclick="submitDuelChoice('trap')">🪤<span>陷阱</span><small>剋攻擊</small></button>
-                <button class="rps-btn duel-btn-defend" data-choice="defend" onclick="submitDuelChoice('defend')">🛡️<span>防禦</span><small>減傷</small></button>
+
+            <!-- 決鬥選項（棋盤正下方，in-flow，不 fixed）-->
+            <div id="duel-modal" style="display:none;flex-direction:column;align-items:center;width:100%;max-width:480px;padding:10px 8px 8px;background:linear-gradient(0deg,rgba(8,8,14,0.99),rgba(8,8,14,0.92));border-top:1px solid #1e293b;border-radius:0 0 12px 12px;flex-shrink:0;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;justify-content:center;">
+                    <span style="color:#ff00cc;font-family:'Orbitron';font-size:0.9rem;">⚔️ DUEL</span>
+                    <span id="duel-timer" style="font-size:1.4rem;color:#ffeb3b;font-weight:bold;text-shadow:0 0 10px #ffeb3b;min-width:26px;text-align:center;">10</span>
+                    <span id="duel-status" style="color:#94a3b8;font-size:0.8rem;">選擇命運</span>
+                </div>
+                <div id="rps-buttons" style="display:flex;gap:6px;width:100%;">
+                    <button class="rps-btn duel-btn-attack" data-choice="attack" onclick="submitDuelChoice('attack')">⚔️<span>攻擊</span><small>剋魔法</small></button>
+                    <button class="rps-btn duel-btn-magic"  data-choice="magic"  onclick="submitDuelChoice('magic')">✨<span>魔法</span><small>剋陷阱</small></button>
+                    <button class="rps-btn duel-btn-trap"   data-choice="trap"   onclick="submitDuelChoice('trap')">🪤<span>陷阱</span><small>剋攻擊</small></button>
+                    <button class="rps-btn duel-btn-defend" data-choice="defend" onclick="submitDuelChoice('defend')">🛡️<span>防禦</span><small>減傷</small></button>
+                </div>
             </div>
+
+            <!-- 戰鬥日誌（棋盤正下方）-->
+            <div id="battle-log-panel" style="width:100%;max-width:480px;margin-top:8px;background:rgba(10,10,18,0.85);border:1px solid #1e293b;border-radius:12px;overflow:hidden;flex-shrink:0;">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-bottom:1px solid #1e293b;">
+                    <span style="font-size:0.62rem;font-weight:bold;color:#475569;letter-spacing:2px;">BATTLE LOG</span>
+                    <button id="battle-log-toggle" style="background:none;border:none;color:#475569;cursor:pointer;font-size:0.75rem;padding:0;">▼</button>
+                </div>
+                <div id="battle-log-list" style="max-height:120px;overflow-y:auto;padding:6px 12px;-webkit-overflow-scrolling:touch;"></div>
+            </div>
+
         </div>
     `;
+
+    // 日誌收合
+    const toggle = document.getElementById('battle-log-toggle');
+    const list   = document.getElementById('battle-log-list');
+    let collapsed = false;
+    if (toggle && list) {
+        toggle.onclick = () => {
+            collapsed = !collapsed;
+            list.style.display = collapsed ? 'none' : '';
+            toggle.textContent = collapsed ? '▲' : '▼';
+        };
+    }
 }
