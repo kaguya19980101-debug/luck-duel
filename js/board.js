@@ -46,6 +46,9 @@ export function renderBoard(gameData) {
         gameState.pendingActionIndex = -1;
         gameState.moveMode          = false;
         closeActionMenu();
+    } else {
+        // ★ 換到自己回合時，重置 actionUsed（保險措施）
+        gameState.actionUsed = false;
     }
 
     for (let visualIndex = 0; visualIndex < 30; visualIndex++) {
@@ -124,6 +127,17 @@ async function handleSquareClick(index, cell, gameData) {
     if (gameData.duel) return;
 
     const canAct = (gameData.turn === gameState.myUid) && !gameState.actionUsed;
+
+    // ★ 診斷 log
+    console.log('[CLICK]', {
+        index,
+        cellOwner: cell?.owner,
+        myUid: gameState.myUid,
+        turn: gameData.turn,
+        isMyTurn: gameData.turn === gameState.myUid,
+        actionUsed: gameState.actionUsed,
+        canAct,
+    });
 
     // ── 無法行動：只能查看 ──
     if (!canAct) {
@@ -510,11 +524,11 @@ function _renderBattleLog() {
     };
 
     panel.innerHTML = _battleLog.slice(-50).map(log => {
-        const c = COLOR_MAP[log.color] || '#e2e8f0';
-        const weight = log.type === 'turn' ? 'bold' : 'normal';
-        const size   = log.type === 'turn' ? '0.72rem' : '0.68rem';
-        const mt     = log.type === 'turn' ? 'margin-top:8px;' : '';
-        return `<div style="color:${c};font-weight:${weight};font-size:${size};${mt}line-height:1.6;padding:1px 0;">${log.text}</div>`;
+        const c = COLOR_MAP[log.color] || '#cbd5e1';
+        const weight = log.type === 'turn' ? '600' : 'normal';
+        const size   = log.type === 'turn' ? '0.72rem' : '0.7rem';
+        const mt     = log.type === 'turn' ? 'margin-top:6px;' : '';
+        return `<div style="color:${c};font-weight:${weight};font-size:${size};${mt}line-height:1.35;padding:0;">${log.text}</div>`;
     }).join('');
 
     // 自動捲到底
@@ -650,7 +664,7 @@ export function buildGameUI(gameArea) {
             </div>
 
             <!-- 決鬥選項（棋盤正下方，in-flow，不 fixed）-->
-            <div id="duel-modal" style="display:none;flex-direction:column;align-items:center;width:100%;max-width:480px;padding:10px 8px 8px;background:linear-gradient(0deg,rgba(8,8,14,0.99),rgba(8,8,14,0.92));border-top:1px solid #1e293b;border-radius:0 0 12px 12px;flex-shrink:0;">
+            <div id="duel-modal" style="display:none;position:static;flex-direction:column;align-items:center;width:100%;max-width:480px;padding:10px 8px 8px;margin-top:8px;background:linear-gradient(0deg,rgba(8,8,14,0.99),rgba(8,8,14,0.92));border:1px solid #1e293b;border-radius:12px;flex-shrink:0;">
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;justify-content:center;">
                     <span style="color:#ff00cc;font-family:'Orbitron';font-size:0.9rem;">⚔️ DUEL</span>
                     <span id="duel-timer" style="font-size:1.4rem;color:#ffeb3b;font-weight:bold;text-shadow:0 0 10px #ffeb3b;min-width:26px;text-align:center;">10</span>
@@ -676,13 +690,15 @@ export function buildGameUI(gameArea) {
 
         </div>
 
-        <!-- 戰鬥日誌全螢幕 overlay -->
-        <div id="battle-log-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:99999;flex-direction:column;">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #1e293b;flex-shrink:0;">
-                <span style="font-size:0.8rem;font-weight:bold;color:#64748b;letter-spacing:2px;">BATTLE LOG</span>
-                <button id="battle-log-close" style="background:rgba(255,255,255,0.06);border:1px solid #334155;color:#94a3b8;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1rem;">✕</button>
+        <!-- 戰鬥日誌 overlay（彈窗形式，不滿版）-->
+        <div id="battle-log-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;" onclick="if(event.target===this)this.style.display='none'">
+            <div style="background:#0f172a;border:1px solid #334155;border-radius:14px;width:100%;max-width:520px;max-height:75vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.8);" onclick="event.stopPropagation()">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #1e293b;flex-shrink:0;">
+                    <span style="font-size:0.75rem;font-weight:bold;color:#64748b;letter-spacing:2px;">📋 BATTLE LOG</span>
+                    <button id="battle-log-close" style="background:rgba(255,255,255,0.06);border:1px solid #334155;color:#94a3b8;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:0.9rem;">✕</button>
+                </div>
+                <div id="battle-log-list" style="flex:1;overflow-y:auto;padding:10px 14px;-webkit-overflow-scrolling:touch;"></div>
             </div>
-            <div id="battle-log-list" style="flex:1;overflow-y:auto;padding:12px 16px;-webkit-overflow-scrolling:touch;"></div>
         </div>
     `;
 
