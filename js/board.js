@@ -424,18 +424,16 @@ export function showCardInfo(cell) {
                         border-radius:10px;border:2px solid #334155;
                         box-shadow:0 4px 16px rgba(0,0,0,0.5);">
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:1.5rem;filter:drop-shadow(0 0 6px ${attrData.color});">${attrData.icon}</span>
-                <div>
-                    <div style="font-size:1rem;font-weight:700;color:#f1f5f9;font-family:'Orbitron',sans-serif;letter-spacing:1px;">${cell.name || '???'}</div>
-                    <div style="display:flex;gap:6px;margin-top:2px;align-items:center;">
-                        <span style="font-size:0.6rem;font-weight:bold;color:${rc};border:1px solid ${rc};border-radius:3px;padding:1px 6px;background:${rg};">${rarity}</span>
-                        <span style="font-size:0.65rem;color:${attrData.color};">${attrData.label || ''}</span>
-                    </div>
-                </div>
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:14px;gap:8px;">
+            <!-- 左：屬性 + 稀有度 -->
+            <div style="display:flex;align-items:center;gap:6px;justify-self:start;">
+                <span style="font-size:1.4rem;filter:drop-shadow(0 0 6px ${attrData.color});">${attrData.icon}</span>
+                <span style="font-size:0.6rem;font-weight:bold;color:${rc};border:1px solid ${rc};border-radius:3px;padding:1px 6px;background:${rg};">${rarity}</span>
             </div>
-            <button id="card-info-close" style="background:rgba(255,255,255,0.06);border:1px solid #334155;color:#94a3b8;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+            <!-- 中：名字 -->
+            <div style="font-size:1.1rem;font-weight:700;color:#f1f5f9;font-family:'Orbitron',sans-serif;letter-spacing:1px;text-align:center;white-space:nowrap;">${cell.name || '???'}</div>
+            <!-- 右：X -->
+            <button id="card-info-close" style="justify-self:end;background:rgba(255,255,255,0.06);border:1px solid #334155;color:#94a3b8;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;">✕</button>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
             <div style="background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:8px;text-align:center;">
@@ -656,15 +654,15 @@ export function buildGameUI(gameArea) {
 
             <!-- HUD -->
             <div id="game-hud" style="display:flex;align-items:center;justify-content:center;gap:16px;width:100%;padding:6px 0 10px;flex-shrink:0;">
-                <div id="timer-box" style="background:rgba(0,0,0,0.8);border:2px solid #555;border-radius:10px;padding:2px 12px;text-align:center;box-shadow:0 4px 10px rgba(0,0,0,0.5);">
-                    <span id="timer-text" style="color:#ff4444;font-weight:bold;font-size:1.1rem;font-family:monospace;">30s</span>
+                <div id="timer-box" style="background:rgba(0,0,0,0.85);border:2px solid #666;border-radius:12px;padding:4px 16px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.6);">
+                    <span id="timer-text" style="color:#ff4444;font-weight:bold;font-size:1.4rem;font-family:monospace;letter-spacing:1px;">30s</span>
                 </div>
                 <div id="turn-text" style="font-size:1rem;font-weight:bold;color:white;background:rgba(255,255,255,0.1);padding:4px 14px;border-radius:20px;">等待開始...</div>
             </div>
 
             <!-- 棋盤 -->
             <div style="width:100%;display:flex;justify-content:center;flex-shrink:0;">
-                <div id="chess-board" style="display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(6,1fr);gap:4px;width:100%;max-width:480px;aspect-ratio:5/6;background:#2b2b2b;padding:6px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.5);"></div>
+                <div id="chess-board" style="display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(6,1fr);gap:4px;width:100%;max-width:480px;aspect-ratio:5/7.2;background:#2b2b2b;padding:6px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.5);"></div>
             </div>
 
             <!-- 決鬥選項（棋盤正下方，in-flow，不 fixed）-->
