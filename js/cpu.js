@@ -325,8 +325,8 @@ function _resolveDuel(gameData) {
     const attackerChoice = attackerIsPlayer ? p2Choice : p1Choice;
     const defenderChoice = attackerIsPlayer ? p1Choice : p2Choice;
 
-    // 用 skill-engine 計算
-    const { newBoard, logs } = resolveDuelDamage({
+    // 用 skill-engine 計算（取所有回傳）
+    const { newBoard, logs, result, winnerIdx, loserIdx } = resolveDuelDamage({
         board,
         attackerIdx: attIdx,
         defenderIdx: defIdx,
@@ -345,11 +345,9 @@ function _resolveDuel(gameData) {
         }
     });
 
-    // 決鬥動畫（結算前播放）
-    if (result !== 'draw') {
-        const wIdx = result === 'p1_win' ? attIdx : defIdx;
-        const lIdx = result === 'p1_win' ? defIdx : attIdx;
-        showDuelAnimation(wIdx, lIdx);
+    // 決鬥動畫（用 skill-engine 給的 winnerIdx/loserIdx）
+    if (result !== 'draw' && winnerIdx !== undefined && loserIdx !== undefined) {
+        showDuelAnimation(winnerIdx, loserIdx);
     }
 
     // 關閉 modal
@@ -359,17 +357,37 @@ function _resolveDuel(gameData) {
     const attackerOwner = atk.owner;
     const nextTurn      = (attackerOwner === gameState.myUid) ? CPU_UID : gameState.myUid;
 
+    // ── 動畫流程 ──
+    // 先用「未死亡」的棋盤渲染（讓動畫有目標），播放完再用 newBoard 重新渲染
+    const boardBeforeDeath = JSON.parse(JSON.stringify(newBoard));
+    // 暫時把死亡棋子放回去顯示動畫
+    if (newBoard[winnerIdx] === null && board[winnerIdx]) boardBeforeDeath[winnerIdx] = { ...board[winnerIdx], hp: 0 };
+    if (newBoard[loserIdx]  === null && board[loserIdx])  boardBeforeDeath[loserIdx]  = { ...board[loserIdx],  hp: 0 };
+
+    gameState.board = boardBeforeDeath;
+    const animGame  = _makeGameData(nextTurn);
+    animGame.board  = boardBeforeDeath;
+    renderBoard(animGame);
+
+    // 播動畫
+    if (result !== 'draw' && winnerIdx !== undefined && loserIdx !== undefined) {
+        showDuelAnimation(winnerIdx, loserIdx);
+    }
+
     gameState.board      = newBoard;
     gameState.actionUsed = false;
 
     const cpuAlive = newBoard.some(c => c && c.owner === CPU_UID);
     const myAlive  = newBoard.some(c => c && c.owner === gameState.myUid);
-    if (!cpuAlive) { _handleGameEnd(gameState.myUid); return; }
-    if (!myAlive)  { _handleGameEnd(CPU_UID);         return; }
+    if (!cpuAlive) { setTimeout(() => _handleGameEnd(gameState.myUid), 600); return; }
+    if (!myAlive)  { setTimeout(() => _handleGameEnd(CPU_UID),         600); return; }
 
-    const next = _makeGameData(nextTurn);
-    next.board = newBoard;
-    _render(next);
+    // 等動畫跑完再正式 render（移除死掉的棋子）
+    setTimeout(() => {
+        const next = _makeGameData(nextTurn);
+        next.board = newBoard;
+        _render(next);
+    }, 600);
 }
 
 // ==========================================
