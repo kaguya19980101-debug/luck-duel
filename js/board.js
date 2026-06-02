@@ -417,25 +417,31 @@ export function showCardInfo(cell) {
     const box = document.createElement('div');
     box.id = 'card-info-box';
     box.innerHTML = `
-        <div style="text-align:center;margin-bottom:14px;">
+        <!-- 頂部列：左 屬性+稀有度，右 X -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:1.5rem;filter:drop-shadow(0 0 6px ${attrData.color});">${attrData.icon}</span>
+                <span style="font-size:0.65rem;font-weight:bold;color:${rc};border:1px solid ${rc};border-radius:4px;padding:2px 8px;background:${rg};letter-spacing:1px;">${rarity}</span>
+            </div>
+            <button id="card-info-close" style="background:rgba(255,255,255,0.06);border:1px solid #334155;color:#94a3b8;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+        </div>
+
+        <!-- 大角色圖 -->
+        <div style="text-align:center;margin-bottom:10px;">
             <img src="img/characters/${String(cell.id)}.webp"
                  onerror="this.src='img/characters/default.png'"
-                 style="width:120px;height:160px;object-fit:cover;object-position:top;
-                        border-radius:10px;border:2px solid #334155;
-                        box-shadow:0 4px 16px rgba(0,0,0,0.5);">
+                 style="width:140px;height:186px;object-fit:cover;object-position:top;
+                        border-radius:12px;border:2px solid ${rc};
+                        box-shadow:0 6px 20px rgba(0,0,0,0.6), 0 0 12px ${rg};">
         </div>
-        <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:14px;gap:8px;">
-            <!-- 左：屬性 + 稀有度 -->
-            <div style="display:flex;align-items:center;gap:6px;justify-self:start;">
-                <span style="font-size:1.4rem;filter:drop-shadow(0 0 6px ${attrData.color});">${attrData.icon}</span>
-                <span style="font-size:0.6rem;font-weight:bold;color:${rc};border:1px solid ${rc};border-radius:3px;padding:1px 6px;background:${rg};">${rarity}</span>
-            </div>
-            <!-- 中：名字 -->
-            <div style="font-size:1.1rem;font-weight:700;color:#f1f5f9;font-family:'Orbitron',sans-serif;letter-spacing:1px;text-align:center;white-space:nowrap;">${cell.name || '???'}</div>
-            <!-- 右：X -->
-            <button id="card-info-close" style="justify-self:end;background:rgba(255,255,255,0.06);border:1px solid #334155;color:#94a3b8;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;">✕</button>
+
+        <!-- 角色名字（圖下方置中）-->
+        <div style="text-align:center;font-size:1.25rem;font-weight:700;color:#f1f5f9;font-family:'Orbitron',sans-serif;letter-spacing:2px;margin-bottom:14px;">
+            ${cell.name || '???'}
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+
+        <!-- ATK / HP 數據 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
             <div style="background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:8px;text-align:center;">
                 <div style="font-size:0.55rem;letter-spacing:1px;color:#64748b;margin-bottom:2px;">ATK</div>
                 <div style="font-size:1.1rem;font-weight:bold;color:#f87171;">${cell.attack || 0}</div>
@@ -445,9 +451,13 @@ export function showCardInfo(cell) {
                 <div style="font-size:1.1rem;font-weight:bold;color:${hpColor};">${currentHp}<span style="font-size:0.7rem;color:#64748b;">/${maxHp}</span></div>
             </div>
         </div>
-        <div style="background:#0f172a;border-radius:6px;overflow:hidden;margin-bottom:12px;height:6px;">
+
+        <!-- HP 條 -->
+        <div style="background:#0f172a;border-radius:6px;overflow:hidden;margin-bottom:14px;height:6px;">
             <div style="width:${hpPct}%;height:100%;background:${hpColor};border-radius:6px;box-shadow:0 0 8px ${hpColor}66;"></div>
         </div>
+
+        <!-- 技能 -->
         <div style="font-size:0.6rem;letter-spacing:2px;color:#475569;margin-bottom:8px;text-transform:uppercase;">技能</div>
         ${skillsHTML}
     `;
@@ -653,7 +663,7 @@ export function buildGameUI(gameArea) {
         <div id="game-container" style="display:flex;flex-direction:column;align-items:center;width:100%;max-width:540px;margin:0 auto;">
 
             <!-- HUD -->
-            <div id="game-hud" style="display:flex;align-items:center;justify-content:center;gap:16px;width:100%;padding:6px 0 10px;flex-shrink:0;">
+            <div id="game-hud" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:6px 4px 10px;flex-shrink:0;">
                 <div id="timer-box" style="background:rgba(0,0,0,0.85);border:2px solid #666;border-radius:12px;padding:4px 16px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.6);">
                     <span id="timer-text" style="color:#ff4444;font-weight:bold;font-size:1.4rem;font-family:monospace;letter-spacing:1px;">30s</span>
                 </div>
