@@ -454,21 +454,21 @@ export function showCardInfo(cell) {
         ${skillsHTML}
     `;
     box.style.cssText = `
-        position:fixed; left:50%; transform:translateX(-50%);
-        bottom:80px; width:min(92vw, 440px);
+        position:fixed; left:50%; top:50%; transform:translate(-50%, -50%);
+        width:min(92vw, 520px); max-height:75vh;
         background:linear-gradient(160deg,#1e293b,#0f172a);
         border:1px solid #334155; border-radius:16px;
         padding:16px 18px; z-index:100000;
-        box-shadow:0 -8px 40px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.04);
+        box-shadow:0 20px 60px rgba(0,0,0,0.8),0 0 0 1px rgba(255,255,255,0.04);
         animation:cardInfoUp 0.22s cubic-bezier(0.34,1.3,0.64,1);
-        max-height:55vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+        overflow-y:auto; -webkit-overflow-scrolling:touch;
     `;
     // 半透明背景遮罩（點外面關閉）
     const backdrop = document.createElement('div');
     backdrop.id = 'card-info-backdrop';
     backdrop.style.cssText = `
         position:fixed; inset:0; z-index:99999;
-        background:rgba(0,0,0,0.4);
+        background:rgba(0,0,0,0.7);
     `;
     backdrop.onclick = () => closeCardInfo();
     document.body.appendChild(backdrop);

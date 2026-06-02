@@ -86,10 +86,7 @@ function _render(gameData) {
     renderBoard(gameData);
     updateTimer(gameData);
 
-    const turnText = document.getElementById('turn-text');
-    if (turnText) {
-        turnText.innerText = gameData.turn === gameState.myUid ? '⚔️ 你的回合' : '🤖 電腦回合';
-    }
+    // turn-text 由 board.js 統一處理，這裡不再覆寫
 
     // 回合開始：觸發被動（回血等）
     const { newBoard: boardAfterTurn, logs: turnLogs } = resolveTurnStart({
