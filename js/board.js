@@ -545,7 +545,7 @@ export function buildBattleLogPanel() { /* 已整合進 buildGameUI */ }
 
 
 // ==========================================
-// 決鬥後攻擊動畫（純 CSS）
+// 決鬥後攻擊動畫（純 CSS，1.2 秒）
 // ==========================================
 export function showDuelAnimation(winnerIdx, loserIdx) {
     const boardEl = document.getElementById('chess-board');
@@ -555,12 +555,16 @@ export function showDuelAnimation(winnerIdx, loserIdx) {
     const lCell = cells[loserIdx];
 
     if (wCell) {
-        wCell.style.animation = 'duelWin 0.5s ease';
-        setTimeout(() => { wCell.style.animation = ''; }, 500);
+        wCell.style.animation = 'none'; // 重置
+        wCell.offsetHeight; // 強制 reflow
+        wCell.style.animation = 'duelWin 1.2s ease-out';
+        setTimeout(() => { if (wCell) wCell.style.animation = ''; }, 1300);
     }
     if (lCell) {
-        lCell.style.animation = 'duelLose 0.5s ease';
-        setTimeout(() => { lCell.style.animation = ''; }, 500);
+        lCell.style.animation = 'none';
+        lCell.offsetHeight;
+        lCell.style.animation = 'duelLose 1.2s ease-out';
+        setTimeout(() => { if (lCell) lCell.style.animation = ''; }, 1300);
     }
 }
 

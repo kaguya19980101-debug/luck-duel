@@ -379,15 +379,15 @@ function _resolveDuel(gameData) {
 
     const cpuAlive = newBoard.some(c => c && c.owner === CPU_UID);
     const myAlive  = newBoard.some(c => c && c.owner === gameState.myUid);
-    if (!cpuAlive) { setTimeout(() => _handleGameEnd(gameState.myUid), 600); return; }
-    if (!myAlive)  { setTimeout(() => _handleGameEnd(CPU_UID),         600); return; }
+    if (!cpuAlive) { setTimeout(() => _handleGameEnd(gameState.myUid), 1300); return; }
+    if (!myAlive)  { setTimeout(() => _handleGameEnd(CPU_UID),         1300); return; }
 
     // 等動畫跑完再正式 render（移除死掉的棋子）
     setTimeout(() => {
         const next = _makeGameData(nextTurn);
         next.board = newBoard;
         _render(next);
-    }, 600);
+    }, 1300);
 }
 
 // ==========================================
