@@ -1568,8 +1568,8 @@ body::before {
 
 /* 卡片資訊框滑入動畫 */
 @keyframes cardInfoUp {
-    from { transform: translate(-50%, 20px); opacity: 0; }
-    to   { transform: translate(-50%, 0);    opacity: 1; }
+    from { transform: translate(-50%, -50%) scale(0.92); opacity: 0; }
+    to   { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
 }
 
 /* 資訊按鈕樣式 */
