@@ -1348,33 +1348,36 @@ body::before {
     /* 加上陰影避免被白背景吃掉 */
 }
 
-/* 4. 下半部：血條與數值容器 (不再重疊於圖片上) */
+/* 4. 下半部：血條與數值容器 */
 .battle-hp-container {
     width: 100%;
-    background: #1a1a1a;
-    padding: 3px 0 4px 0;
-    /* 讓血條區有點高度 */
+    background: rgba(0,0,0,0.85);
+    padding: 4px 4px 5px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 3px;
+    position: relative;
 }
 
 /* 血量數字 */
 .battle-hp-text {
-    color: #aaffaa;
-    font-size: 0.7rem;
+    color: #fff;
+    font-size: 0.78rem;
     font-weight: bold;
     line-height: 1;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.9);
+    letter-spacing: 0.5px;
 }
 
 /* 血條外框 */
 .battle-hp-bar-bg {
-    width: 90%;
-    height: 4px;
-    background: #444;
-    border-radius: 2px;
+    width: 92%;
+    height: 5px;
+    background: #2a2a2a;
+    border-radius: 3px;
     overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.6);
 }
 
 /* 血條內層 */
@@ -1383,6 +1386,7 @@ body::before {
     height: 100%;
     background: #00ff00;
     transition: width 0.3s ease-in-out;
+    box-shadow: 0 0 4px currentColor;
 }
 
 /* =========================================
