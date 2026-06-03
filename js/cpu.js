@@ -344,7 +344,9 @@ function _resolveDuel(gameData) {
 
     // 決鬥動畫（用 skill-engine 給的 winnerIdx/loserIdx）
     if (result !== 'draw' && winnerIdx !== undefined && loserIdx !== undefined) {
-        showDuelAnimation(winnerIdx, loserIdx);
+        const winnerChoice = winnerIdx === attIdx ? attackerChoice : defenderChoice;
+        const loserChoice  = loserIdx  === attIdx ? attackerChoice : defenderChoice;
+        showDuelAnimation(winnerIdx, loserIdx, winnerChoice, loserChoice);
     }
 
     // 關閉 modal
@@ -368,7 +370,9 @@ function _resolveDuel(gameData) {
 
     // 播動畫
     if (result !== 'draw' && winnerIdx !== undefined && loserIdx !== undefined) {
-        showDuelAnimation(winnerIdx, loserIdx);
+        const winnerChoice2 = winnerIdx === attIdx ? attackerChoice : defenderChoice;
+        const loserChoice2  = loserIdx  === attIdx ? attackerChoice : defenderChoice;
+        showDuelAnimation(winnerIdx, loserIdx, winnerChoice2, loserChoice2);
     }
 
     gameState.board      = newBoard;

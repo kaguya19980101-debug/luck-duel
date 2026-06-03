@@ -306,18 +306,52 @@ export function showActionMenu(index, cell, gameData) {
     document.body.appendChild(bar);
 }
 
+// 視窗大小變化時重新定位浮動行動列
+window.addEventListener('resize', () => {
+    const bar = document.getElementById('action-bar');
+    if (bar) _positionAdaptiveBar(bar);
+});
+
 function _makeActionBar() {
     const bar = document.createElement('div');
     bar.id = 'action-bar';
-    bar.className = 'action-float';
+    bar.className = 'action-float action-bar-adaptive';
     bar.style.cssText = `
-        position:fixed; left:50%; transform:translateX(-50%);
-        bottom:84px; display:flex; gap:10px; z-index:9000;
+        z-index:9000;
         background:rgba(10,10,18,0.92); padding:8px 12px;
         border-radius:16px; border:1px solid #1e293b;
         box-shadow:0 6px 24px rgba(0,0,0,0.6);
     `;
+    // 定位由 CSS 處理（依寬螢幕/窄螢幕）
+    _positionAdaptiveBar(bar);
     return bar;
+}
+
+// 依視窗寬度決定按鈕列位置
+function _positionAdaptiveBar(bar) {
+    const isDesktop = window.innerWidth >= 900;
+    if (isDesktop) {
+        const board = document.getElementById('chess-board');
+        if (board) {
+            const rect = board.getBoundingClientRect();
+            bar.style.position = 'fixed';
+            bar.style.left = (rect.right + 20) + 'px';
+            bar.style.top = (rect.top + rect.height / 2) + 'px';
+            bar.style.transform = 'translateY(-50%)';
+            bar.style.flexDirection = 'column';
+            bar.style.display = 'flex';
+            bar.style.gap = '10px';
+        }
+    } else {
+        // 手機：底部置中
+        bar.style.position = 'fixed';
+        bar.style.left = '50%';
+        bar.style.bottom = '84px';
+        bar.style.transform = 'translateX(-50%)';
+        bar.style.flexDirection = 'row';
+        bar.style.display = 'flex';
+        bar.style.gap = '10px';
+    }
 }
 
 function _makeBarBtn(className, emoji, label) {
@@ -553,25 +587,36 @@ export function buildBattleLogPanel() { /* 已整合進 buildGameUI */ }
 
 
 // ==========================================
-// 決鬥後攻擊動畫（純 CSS，1.2 秒）
+// 決鬥後攻擊動畫（純 CSS，依出招類型不同特效）
 // ==========================================
-export function showDuelAnimation(winnerIdx, loserIdx) {
+export function showDuelAnimation(winnerIdx, loserIdx, winnerChoice, loserChoice) {
     const boardEl = document.getElementById('chess-board');
     if (!boardEl) return;
     const cells = boardEl.querySelectorAll(':scope > div');
     const wCell = cells[winnerIdx];
     const lCell = cells[loserIdx];
 
+    // 勝方動畫：依出招類型
+    const winAnimMap = {
+        attack: 'duelWinAttack',  // 紅色衝擊
+        magic:  'duelWinMagic',   // 紫色光球
+        trap:   'duelWinTrap',    // 綠色閃爍
+    };
+    const winAnim = winAnimMap[winnerChoice] || 'duelWin';
+
+    // 敗方動畫：依出招類型（防禦另外處理）
+    const loseAnim = loserChoice === 'defend' ? 'duelLoseDefend' : 'duelLose';
+
     if (wCell) {
-        wCell.style.animation = 'none'; // 重置
-        wCell.offsetHeight; // 強制 reflow
-        wCell.style.animation = 'duelWin 1.2s ease-out';
+        wCell.style.animation = 'none';
+        wCell.offsetHeight;
+        wCell.style.animation = `${winAnim} 1.2s ease-out`;
         setTimeout(() => { if (wCell) wCell.style.animation = ''; }, 1300);
     }
     if (lCell) {
         lCell.style.animation = 'none';
         lCell.offsetHeight;
-        lCell.style.animation = 'duelLose 1.2s ease-out';
+        lCell.style.animation = `${loseAnim} 1.2s ease-out`;
         setTimeout(() => { if (lCell) lCell.style.animation = ''; }, 1300);
     }
 }
