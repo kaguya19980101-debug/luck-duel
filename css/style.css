@@ -1565,8 +1565,8 @@ body::before {
 
 /* 選取棋子脈衝動畫 */
 @keyframes selectedPulse {
-    from { box-shadow: 0 0 8px rgba(251,191,36,0.3); }
-    to   { box-shadow: 0 0 14px rgba(251,191,36,0.6); }
+    from { box-shadow: 0 0 4px rgba(184,134,11,0.2); }
+    to   { box-shadow: 0 0 10px rgba(184,134,11,0.4); }
 }
 
 /* 卡片資訊框滑入動畫 */
