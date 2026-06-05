@@ -180,10 +180,11 @@ export const CHARACTERS = [
             desc: "每回合開始回復 20 HP"
         },
         leader: {
-            name: "大地脈動",
-            effect: "team_heal_per_turn",
-            value: 10,
-            desc: "【隊長技】全隊每回合額外回復 10 HP"
+            name: "自然恩賜",
+            effect: "team_heal_on_win",
+            value: 20,
+            trigger: "on_win_duel",
+            desc: "【隊長技】猜拳勝後全隊回血 +20"
         }
     },
 
@@ -263,10 +264,11 @@ export const CHARACTERS = [
             desc: "被攻擊時受到傷害減少 30%"
         },
         leader: {
-            name: "深海守護",
-            effect: "team_dr_pct",
-            value: 0.10,
-            desc: "【隊長技】全隊受到傷害減少 10%"
+            name: "潮汐積累",
+            effect: "team_atk_stack_per_turn",
+            value: 5,
+            trigger: "on_turn_start",
+            desc: "【隊長技】每回合全隊 ATK +5（累積）"
         }
     },
 
@@ -345,10 +347,11 @@ export const CHARACTERS = [
             desc: "被攻擊時受到傷害減少 20%"
         },
         leader: {
-            name: "神聖降臨",
-            effect: "team_atk_pct",
-            value: 0.12,
-            desc: "【隊長技】全隊 ATK +12%"
+            name: "聖光庇護",
+            effect: "team_heal_on_move",
+            value: 10,
+            trigger: "on_move",
+            desc: "【隊長技】全隊每次移動後回血 +10"
         }
     },
 
@@ -428,10 +431,11 @@ export const CHARACTERS = [
             desc: "死亡時對擊殺自己的敵人造成 50 點傷害"
         },
         leader: {
-            name: "獻血誓約",
-            effect: "team_atk_pct",
-            value: 0.15,
-            desc: "【隊長技】全隊 ATK +15%（每回合全隊損失 5 HP）"
+            name: "獻祭爆炎",
+            effect: "team_death_random_damage",
+            value: 100,
+            trigger: "on_death",
+            desc: "【隊長技】我方死亡時對隨機敵人造成 100 傷害"
         }
     }
 ];

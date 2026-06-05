@@ -169,25 +169,26 @@ export function revealDuelChoices(gameData) {
     if (result === "draw") {
         narrativeHTML = `<div style="color:#ffd700; font-size:1.3rem; font-weight:bold; ${fadeAnimation}">平手！雙方無傷退開。</div>`;
     } else {
-        const isP1Winner = (result === "p1_win");
-        const amIWinner = amIP1 ? isP1Winner : !isP1Winner; // 我是不是贏家
+        const isP1Winner = result.startsWith("p1_win");
+        const isHalf     = result.includes("_half"); // 防禦減傷
+        const amIWinner = amIP1 ? isP1Winner : !isP1Winner;
         
-        // 找出我的角色 (看 owner 是不是 gameState.myUid)
         const myChar = (attackerChar.owner === gameState.myUid) ? attackerChar : defenderChar;
         const myCharName = myChar.name || "未知角色";
         
-        // 找出造成傷害的贏家角色 (用來抓攻擊力)
         const winnerChar = isP1Winner ? 
             (attackerChar.owner === gameData.player1 ? attackerChar : defenderChar) : 
             (attackerChar.owner === gameData.player2 ? attackerChar : defenderChar);
         
-        const damage = winnerChar.attack || 50;
+        let damage = winnerChar.attack || 50;
+        if (isHalf) damage = Math.floor(damage * 0.5);
 
-        // 根據勝負產生文字
+        const halfNote = isHalf ? '（🛡️ 防禦減傷 50%）' : '';
+
         if (amIWinner) {
             narrativeHTML = `
                 <div style="color:#00ff00; font-size:1.3rem; font-weight:bold; text-shadow: 0 0 5px black; ${fadeAnimation}">
-                    🎉 我方勝利！<br>
+                    🎉 我方勝利！${halfNote}<br>
                     <span style="color:white; font-size:1.1rem; display:inline-block; margin-top:10px;">
                         【${myCharName}】造成了 <span style="color:#ff4444; font-size:1.6rem; margin:0 5px;">${damage}</span> 點傷害！
                     </span>
@@ -195,7 +196,7 @@ export function revealDuelChoices(gameData) {
         } else {
             narrativeHTML = `
                 <div style="color:#ff4444; font-size:1.3rem; font-weight:bold; text-shadow: 0 0 5px black; ${fadeAnimation}">
-                    💀 對方勝利...<br>
+                    💀 對方勝利...${halfNote}<br>
                     <span style="color:white; font-size:1.1rem; display:inline-block; margin-top:10px;">
                         【${myCharName}】受到了 <span style="color:#ff4444; font-size:1.6rem; margin:0 5px;">${damage}</span> 點傷害！
                     </span>

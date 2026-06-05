@@ -64,10 +64,10 @@ export function renderBoard(gameData) {
             transition:border 0.1s, box-shadow 0.1s;
         `;
 
-        // 選取高亮（統一顏色，不分敵我）
+        // 選取高亮（統一顏色，不分敵我，柔和）
         if (realIndex === gameState.selectedIndex) {
-            div.style.border    = '2px solid #fbbf24';
-            div.style.boxShadow = '0 0 10px rgba(251,191,36,0.5)';
+            div.style.border    = '2px solid #b8860b';
+            div.style.boxShadow = '0 0 6px rgba(184,134,11,0.3)';
             div.style.zIndex    = '5';
             if (gameState.moveMode) {
                 div.style.animation = 'selectedPulse 0.8s ease-in-out infinite alternate';
@@ -75,8 +75,8 @@ export function renderBoard(gameData) {
         }
         // 檢視選取（同色）
         else if (realIndex === gameState.infoSelectedIndex) {
-            div.style.border    = '2px solid #fbbf24';
-            div.style.boxShadow = '0 0 10px rgba(251,191,36,0.5)';
+            div.style.border    = '2px solid #b8860b';
+            div.style.boxShadow = '0 0 6px rgba(184,134,11,0.3)';
             div.style.zIndex    = '5';
         }
 
@@ -89,6 +89,10 @@ export function renderBoard(gameData) {
             const hpPercent  = Math.max(0, Math.min(100, (currentHp / maxHp) * 100));
             const borderColor = isMine ? '#4facfe' : '#ff4444';
             const hpColor     = isMine ? '#00ff00' : '#ff0000';
+
+            // ATK 顏色：被 buff 過用青色，正常用白色
+            const baseAtk  = cell._baseAtk || atk;
+            const atkColor = atk > baseAtk ? '#22d3ee' : '#fff';
 
             if (realIndex !== gameState.selectedIndex && realIndex !== gameState.infoSelectedIndex) {
                 div.style.border = `2px solid ${borderColor}`;
@@ -108,7 +112,7 @@ export function renderBoard(gameData) {
                     <div class="battle-img-area">
                         ${imgHTML}
                         <div class="battle-attr" style="color:${attrData.color};">${attrData.icon}</div>
-                        <div class="battle-atk">${atk}</div>
+                        <div class="battle-atk" style="color:${atkColor};">${atk}</div>
                     </div>
                     <div class="battle-hp-container">
                         <div class="battle-hp-text">${currentHp}</div>

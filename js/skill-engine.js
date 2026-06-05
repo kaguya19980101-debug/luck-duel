@@ -264,3 +264,114 @@ export function resolveOnMove({ board, moverIdx, myUid }) {
 
     return { newBoard, logs };
 }
+
+// ==========================================
+// 隊長技
+// ==========================================
+
+// 開局套用（立即生效型）— 修改棋盤數值
+export function applyLeaderSkills({ board, myLeader, enemyLeader, myUid }) {
+    const logs = [];
+    const newBoard = JSON.parse(JSON.stringify(board));
+
+    const apply = (leader, ownerUid) => {
+        if (!leader) return;
+        if (leader.effect === 'team_atk_pct') {
+            const pct = leader.value;
+            newBoard.forEach(cell => {
+                if (!cell || cell.owner !== ownerUid) return;
+                const base = cell.attack;
+                cell.attack = Math.round(base * (1 + pct));
+                cell._baseAtk = base; // 記住原始值（用於顏色標示）
+            });
+            logs.push(makeLog('skill', `👑 【${leader.name}】全隊 ATK +${Math.round(pct*100)}%`, { color: 'yellow' }));
+        }
+        // 其他「開局型」隊長技在這裡擴充
+    };
+
+    apply(myLeader, myUid);
+    const enemyUid = newBoard.find(c => c && c.owner !== myUid)?.owner;
+    if (enemyUid) apply(enemyLeader, enemyUid);
+
+    return { newBoard, logs };
+}
+
+// 隊長技：回合開始觸發
+export function resolveLeaderTurnStart({ board, leader, ownerUid }) {
+    if (!leader) return { newBoard: board, logs: [] };
+    const logs = [];
+    const newBoard = JSON.parse(JSON.stringify(board));
+
+    if (leader.effect === 'team_atk_stack_per_turn') {
+        newBoard.forEach(cell => {
+            if (!cell || cell.owner !== ownerUid) return;
+            cell.attack += leader.value;
+        });
+        logs.push(makeLog('skill', `👑 【${leader.name}】全隊 ATK +${leader.value}`, { color: 'cyan' }));
+    }
+
+    return { newBoard, logs };
+}
+
+// 隊長技：猜拳勝後全隊回血
+export function resolveLeaderOnWin({ board, leader, ownerUid }) {
+    if (!leader || leader.effect !== 'team_heal_on_win') return { newBoard: board, logs: [] };
+    const logs = [];
+    const newBoard = JSON.parse(JSON.stringify(board));
+
+    newBoard.forEach(cell => {
+        if (!cell || cell.owner !== ownerUid) return;
+        const before = cell.hp;
+        cell.hp = Math.min(cell.max_hp, cell.hp + leader.value);
+        const actual = cell.hp - before;
+        if (actual > 0) {
+            logs.push(makeLog('heal', `👑 【${leader.name}】${cell.name} +${actual} HP`, { color: 'green' }));
+        }
+    });
+
+    return { newBoard, logs };
+}
+
+// 隊長技：移動後全隊回血
+export function resolveLeaderOnMove({ board, leader, ownerUid }) {
+    if (!leader || leader.effect !== 'team_heal_on_move') return { newBoard: board, logs: [] };
+    const logs = [];
+    const newBoard = JSON.parse(JSON.stringify(board));
+
+    newBoard.forEach(cell => {
+        if (!cell || cell.owner !== ownerUid) return;
+        const before = cell.hp;
+        cell.hp = Math.min(cell.max_hp, cell.hp + leader.value);
+        const actual = cell.hp - before;
+        if (actual > 0) {
+            logs.push(makeLog('heal', `👑 【${leader.name}】${cell.name} +${actual} HP`, { color: 'green' }));
+        }
+    });
+
+    return { newBoard, logs };
+}
+
+// 隊長技：死亡時對隨機敵人造成傷害
+export function resolveLeaderOnDeath({ board, leader, ownerUid, deadIdx }) {
+    if (!leader || leader.effect !== 'team_death_random_damage') return { newBoard: board, logs: [] };
+    const logs = [];
+    const newBoard = JSON.parse(JSON.stringify(board));
+
+    // 找敵方活著的棋子
+    const enemies = newBoard.map((c, i) => ({ c, i })).filter(x => x.c && x.c.owner !== ownerUid);
+    if (enemies.length === 0) return { newBoard, logs };
+
+    const target = enemies[Math.floor(Math.random() * enemies.length)];
+    target.c.hp -= leader.value;
+    logs.push(makeLog('skill',
+        `👑 【${leader.name}】對 ${target.c.name} 造成 ${leader.value} 傷害（剩 ${Math.max(0, target.c.hp)} HP）`,
+        { color: 'orange' }
+    ));
+
+    if (target.c.hp <= 0) {
+        logs.push(makeLog('death', `💀 ${target.c.name} 因隊長技陣亡`, { color: 'red' }));
+        newBoard[target.i] = null;
+    }
+
+    return { newBoard, logs };
+}
