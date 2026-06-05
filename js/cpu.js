@@ -30,7 +30,7 @@ export function initCpuGame(myTeam) {
         id: `cpu_${i}`, name: `CPU ${i + 1}`,
         attribute: 'dark', rarity: 'R',
         hp: 100, max_hp: 100, attack: 50, range: 1,
-        img: 'img/characters/0001.webp',
+        img: null, isCpu: true,
         owner: CPU_UID, team: 'red'
     }));
 
@@ -380,7 +380,7 @@ function _resolveDuel(gameData) {
 
     const cpuAlive = newBoard.some(c => c && c.owner === CPU_UID);
     const myAlive  = newBoard.some(c => c && c.owner === gameState.myUid);
-    if (!cpuAlive) { setTimeout(() => _handleGameEnd(gameState.myUid), 1300); return; }
+    if (!cpuAlive) { setTimeout(() => _handleGameEnd(gameState.myUid), 1800); return; }
     if (!myAlive)  { setTimeout(() => _handleGameEnd(CPU_UID),         1300); return; }
 
     // 等動畫跑完再正式 render（移除死掉的棋子）
@@ -388,7 +388,7 @@ function _resolveDuel(gameData) {
         const next = _makeGameData(nextTurn);
         next.board = newBoard;
         _render(next);
-    }, 1300);
+    }, 1800);
 }
 
 // ==========================================

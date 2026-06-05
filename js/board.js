@@ -64,19 +64,19 @@ export function renderBoard(gameData) {
             transition:border 0.1s, box-shadow 0.1s;
         `;
 
-        // 行動選取（黃色）
+        // 選取高亮（統一顏色，不分敵我）
         if (realIndex === gameState.selectedIndex) {
-            div.style.border    = '2px solid #ffff00';
-            div.style.boxShadow = '0 0 18px rgba(255,255,0,0.8), inset 0 0 8px rgba(255,255,0,0.2)';
+            div.style.border    = '2px solid #fbbf24';
+            div.style.boxShadow = '0 0 10px rgba(251,191,36,0.5)';
             div.style.zIndex    = '5';
             if (gameState.moveMode) {
                 div.style.animation = 'selectedPulse 0.8s ease-in-out infinite alternate';
             }
         }
-        // 檢視選取（青色）
+        // 檢視選取（同色）
         else if (realIndex === gameState.infoSelectedIndex) {
-            div.style.border    = '2px solid #22d3ee';
-            div.style.boxShadow = '0 0 18px rgba(34,211,238,0.8), inset 0 0 8px rgba(34,211,238,0.2)';
+            div.style.border    = '2px solid #fbbf24';
+            div.style.boxShadow = '0 0 10px rgba(251,191,36,0.5)';
             div.style.zIndex    = '5';
         }
 
@@ -95,13 +95,18 @@ export function renderBoard(gameData) {
             }
 
             const idStr       = String(cell.id);
-            const battleImg   = `img/characters/${idStr}battle.webp`;
+            const isCpuCard   = cell.isCpu || idStr.startsWith('cpu_');
+            const battleImg   = isCpuCard ? '' : `img/characters/${idStr}battle.webp`;
             const fallbackImg = 'img/characters/default.png';
+
+            const imgHTML = isCpuCard
+                ? `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2rem;background:#1a1a2e;">🤖</div>`
+                : `<img src="${battleImg}" onerror="this.src='${fallbackImg}'">`;
 
             div.innerHTML = `
                 <div class="battle-card" style="width:100%;height:100%;border:none;border-radius:0;">
                     <div class="battle-img-area">
-                        <img src="${battleImg}" onerror="this.src='${fallbackImg}'">
+                        ${imgHTML}
                         <div class="battle-attr" style="color:${attrData.color};">${attrData.icon}</div>
                         <div class="battle-atk">${atk}</div>
                     </div>
@@ -596,29 +601,31 @@ export function showDuelAnimation(winnerIdx, loserIdx, winnerChoice, loserChoice
     const wCell = cells[winnerIdx];
     const lCell = cells[loserIdx];
 
-    // 勝方動畫：依出招類型
     const winAnimMap = {
-        attack: 'duelWinAttack',  // 紅色衝擊
-        magic:  'duelWinMagic',   // 紫色光球
-        trap:   'duelWinTrap',    // 綠色閃爍
+        attack: 'duelWinAttack',
+        magic:  'duelWinMagic',
+        trap:   'duelWinTrap',
     };
     const winAnim = winAnimMap[winnerChoice] || 'duelWin';
-
-    // 敗方動畫：依出招類型（防禦另外處理）
     const loseAnim = loserChoice === 'defend' ? 'duelLoseDefend' : 'duelLose';
 
+    // 1. 先播勝方動畫
     if (wCell) {
         wCell.style.animation = 'none';
         wCell.offsetHeight;
         wCell.style.animation = `${winAnim} 1.2s ease-out`;
         setTimeout(() => { if (wCell) wCell.style.animation = ''; }, 1300);
     }
-    if (lCell) {
-        lCell.style.animation = 'none';
-        lCell.offsetHeight;
-        lCell.style.animation = `${loseAnim} 1.2s ease-out`;
-        setTimeout(() => { if (lCell) lCell.style.animation = ''; }, 1300);
-    }
+
+    // 2. 延遲 0.5 秒後播敗方動畫（先攻再受擊）
+    setTimeout(() => {
+        if (lCell) {
+            lCell.style.animation = 'none';
+            lCell.offsetHeight;
+            lCell.style.animation = `${loseAnim} 1.2s ease-out`;
+            setTimeout(() => { if (lCell) lCell.style.animation = ''; }, 1300);
+        }
+    }, 500);
 }
 
 // 浮字特效
