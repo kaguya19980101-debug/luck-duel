@@ -137,16 +137,6 @@ async function handleSquareClick(index, cell, gameData) {
 
     const canAct = (gameData.turn === gameState.myUid) && !gameState.actionUsed;
 
-    // ★ 診斷 log
-    console.log('[CLICK]', {
-        index,
-        cellOwner: cell?.owner,
-        myUid: gameState.myUid,
-        turn: gameData.turn,
-        isMyTurn: gameData.turn === gameState.myUid,
-        actionUsed: gameState.actionUsed,
-        canAct,
-    });
 
     // ── 無法行動：只能查看 ──
     if (!canAct) {
@@ -168,9 +158,7 @@ async function handleSquareClick(index, cell, gameData) {
     if (gameState.moveMode) {
         // 改選另一隻自己的棋子
         if (cell && cell.owner === gameState.myUid && index !== gameState.selectedIndex) {
-            gameState.moveMode          = false;
             gameState.selectedIndex     = index;
-            gameState.pendingActionIndex = index;
             gameState.infoSelectedIndex  = index;
             closeActionMenu();
             renderBoard(gameData);
@@ -235,30 +223,23 @@ async function handleSquareClick(index, cell, gameData) {
         return;
     }
 
-    // ── 有選單開著：點其他地方 ──
-    if (gameState.pendingActionIndex !== -1 && index !== gameState.pendingActionIndex) {
+    // ── 點空格或非相鄰格：取消選取 ──
+    if (!cell && gameState.selectedIndex !== -1 && !gameState.moveMode) {
+        gameState.selectedIndex      = -1;
+        gameState.pendingActionIndex = -1;
+        gameState.infoSelectedIndex  = -1;
         closeActionMenu();
-        if (cell && cell.owner === gameState.myUid) {
-            gameState.selectedIndex      = index;
-            gameState.pendingActionIndex = index;
-            gameState.infoSelectedIndex  = index;
-            renderBoard(gameData);
-            showActionMenu(index, cell, gameData);
-        } else {
-            gameState.selectedIndex      = -1;
-            gameState.pendingActionIndex = -1;
-            gameState.infoSelectedIndex  = -1;
-            closeCardInfo();
-            renderBoard(gameData);
-        }
+        closeCardInfo();
+        renderBoard(gameData);
         return;
     }
 
-    // ── 第一次點自己的棋子 ──
+    // ── 第一次點自己的棋子：直接進入移動模式 + 顯示技能/資訊 ──
     if (gameState.selectedIndex === -1 && cell && cell.owner === gameState.myUid) {
         gameState.selectedIndex      = index;
-        gameState.pendingActionIndex = index;
+        gameState.pendingActionIndex = -1;
         gameState.infoSelectedIndex  = index;
+        gameState.moveMode           = true;
         renderBoard(gameData);
         showActionMenu(index, cell, gameData);
     }
@@ -273,18 +254,7 @@ export function showActionMenu(index, cell, gameData) {
 
     const bar = _makeActionBar();
 
-    // 移動
-    const moveBtn = _makeBarBtn('action-move', '🚶', '移動');
-    moveBtn.onclick = (e) => {
-        e.stopPropagation(); e.preventDefault();
-        closeActionMenu();
-        gameState.moveMode           = true;
-        gameState.pendingActionIndex = -1;
-        renderBoard(gameData);
-        showToast('選擇要移動到的格子');
-    };
-
-    // 技能
+    // 技能（移動已改為自動，不需要按鈕）
     const skillBtn = _makeBarBtn(
         'action-skill' + (hasActive ? '' : ' no-skill'),
         hasActive ? '✨' : '—',
@@ -309,7 +279,6 @@ export function showActionMenu(index, cell, gameData) {
         showCardInfo(cell);
     };
 
-    bar.appendChild(moveBtn);
     bar.appendChild(skillBtn);
     bar.appendChild(infoBtn);
     document.body.appendChild(bar);

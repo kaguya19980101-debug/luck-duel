@@ -345,23 +345,22 @@ function _renderQuickGrid() {
             box-shadow:${inTeam ? `0 0 8px ${rarityColor}66` : 'none'};
         `;
 
-        const img = document.createElement('img');
-        img.src = window.getCharImage(String(key));
-        img.onerror = () => img.src = 'img/characters/default.png';
-        img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
-        card.appendChild(img);
+        const attrIcons = { fire:'🔥', water:'💧', grass:'🌿', light:'✨', dark:'🌑' };
+        const attrIcon = attrIcons[char.attribute] || '❓';
 
-        // 在隊標記
-        if (inTeam) {
-            const badge = document.createElement('div');
-            badge.textContent = `槽${inTeamIdx + 1}`;
-            badge.style.cssText = `
-                position:absolute; bottom:0; left:0; right:0;
-                background:rgba(0,0,0,0.75); color:${rarityColor};
-                font-size:0.6rem; text-align:center; padding:2px 0; font-weight:bold;
-            `;
-            card.appendChild(badge);
-        }
+        card.innerHTML = `
+            <img src="${window.getCharImage(String(key))}" onerror="this.src='img/characters/default.png'" style="width:100%;height:100%;object-fit:cover;">
+            <div style="position:absolute;top:2px;left:3px;font-size:0.6rem;">${attrIcon}</div>
+            <div style="position:absolute;top:2px;right:3px;font-size:0.5rem;font-weight:bold;color:${rarityColor};border:1px solid ${rarityColor};border-radius:2px;padding:0 3px;background:rgba(0,0,0,0.6);">${char.rarity}</div>
+            <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.8);padding:3px 4px;">
+                <div style="font-size:0.55rem;color:#f1f5f9;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${char.name || '???'}</div>
+                <div style="display:flex;justify-content:space-between;margin-top:1px;">
+                    <span style="font-size:0.48rem;color:#f87171;">⚔${char.attack||0}</span>
+                    <span style="font-size:0.48rem;color:#4ade80;">♥${char.hp||0}</span>
+                </div>
+            </div>
+            ${inTeam ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;"><span style="font-size:0.7rem;font-weight:bold;color:${rarityColor};">IN TEAM</span></div>` : ''}
+        `;
 
         card.onclick = () => {
             if (inTeam) {
@@ -403,6 +402,8 @@ function _saveTeam() {
     if (user) {
         update(ref(db, `users/${user.uid}`), { team: window.currentTeam }).catch(console.error);
     }
+    // 同步更新外部隊伍顯示
+    if (window.renderTeamDisplay) window.renderTeamDisplay();
 }
 
 // 渲染上方隊伍格子（含隊長槽、隊長技欄）
@@ -1249,7 +1250,7 @@ document.addEventListener('click', function (e) {
     }
     if (id === 'vs-cpu-btn') {
         const team = (window.currentTeam || []).filter(Boolean).map(id => window.myInventoryData?.[String(id)]).filter(Boolean);
-        if (team.length === 0) { alert('請先在「我的角色」配置至少1張卡！'); return; }
+        if (team.length < 5) { alert('請配置 5 張卡再進入戰鬥！'); return; }
         initCpuGame(team);
         return;
     }
