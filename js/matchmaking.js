@@ -1,7 +1,7 @@
 import { db } from "./firebase-config.js";
 import { ref, set, get, remove, onValue, off, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import * as Game from "./game.js";
-import { getRandomTeam } from "./data.js";
+
 
 // 狀態旗標：用來標記「現在是否正在排隊」，防止重複執行或誤判
 let isSearching = false;
