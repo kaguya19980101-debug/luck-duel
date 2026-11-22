@@ -5,8 +5,9 @@
 // ==========================================
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { ref, get, update, push, set, onValue, remove, off, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { ref, get, update, push, set, onValue, remove, off, onDisconnect, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { CHARACTERS } from "./data.js";
+import { normalizeAccount, applySummon } from "./economy.js";
 import * as AuthUser from "./auth.js";
 import * as UI from "./ui.js";
 import * as Matchmaking from "./matchmaking.js";
@@ -99,7 +100,7 @@ window.getCharImage = function (id) {
 // 🛠️ 視窗切換工具 (標準寫法)
 // 這會自動隱藏其他視窗，並顯示指定的視窗
 window.switchView = function (viewId) {
-    const views = ['lobby-view', 'char-view', 'summon-view', 'glossary-view', 'history-view'];
+    const views = ['lobby-view', 'home-view', 'char-view', 'summon-view', 'glossary-view', 'history-view'];
 
     views.forEach(id => {
         const el = document.getElementById(id);
@@ -115,6 +116,7 @@ window.switchView = function (viewId) {
             el.style.display = 'none';
         }
     });
+    if (viewId === 'home-view') window.renderHomeCharacter();
 }
 // ==========================================
 // 3. 系統初始化與登入監聽
@@ -143,16 +145,22 @@ onAuthStateChanged(auth, async (user) => {
 
 async function initUserData(user) {
     const userRef = ref(db, `users/${user.uid}`);
-    const s = await get(userRef);
-    if (!s.exists() || s.val().coins === undefined) {
-        await update(userRef, { coins: 10000 });
-    }
-    updateCoinDisplay(s.val()?.coins || 0);
+    const result = await runTransaction(userRef, normalizeAccount, { applyLocally: false });
+    updateBalances(result.snapshot.val() || {});
 }
 
-function updateCoinDisplay(amount) {
-    const el = document.getElementById('user-coins');
-    if (el) el.innerText = amount;
+function updateBalances(account) {
+    const values = {
+        'user-coins': account.coins ?? 0,
+        'lobby-coins': account.coins ?? 0,
+        'user-soul-shards': account.soulShards ?? 0,
+        'lobby-soul-shards': account.soulShards ?? 0,
+        'home-powder': account.soulShards ?? 0,
+    };
+    for (const [id, value] of Object.entries(values)) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = Number(value).toLocaleString('zh-TW');
+    }
 }
 
 async function loadMyInventory(user) {
@@ -190,6 +198,43 @@ async function loadMyInventory(user) {
     if (window.checkTeamStatus) window.checkTeamStatus();
 }
 
+window.renderHomeCharacter = function () {
+    const img = document.getElementById('home-character-art');
+    if (!img) return;
+    const inventory = window.myInventoryData || {};
+    const chosen = window.currentTeam?.[2]
+        || window.currentTeam?.find(id => id != null)
+        || Object.keys(inventory)[0];
+    const char = chosen == null ? null : inventory[String(chosen)];
+    img.src = char ? window.getCharImage(String(chosen)) : 'img/characters/default.png';
+    img.alt = char ? `${char.name} 的角色圖` : '尚未選擇展示角色';
+
+    const values = {
+        'home-character-name': char?.name || '尚未選擇角色',
+        'home-character-job': char?.profession || char?.job || '待設定',
+        'home-character-rarity': char?.rarity || '—',
+        'home-character-attribute': char ? getAttrStyle(char.attribute).label : '—',
+        'home-character-hp': char?.hp ?? '—',
+        'home-character-atk': char?.attack ?? '—',
+    };
+    for (const [id, value] of Object.entries(values)) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    }
+};
+
+window.switchHomeBagTab = function (selected) {
+    for (const kind of ['equipment', 'skills']) {
+        const button = document.getElementById(`home-bag-${kind}-tab`);
+        const page = document.getElementById(`home-bag-${kind}`);
+        const active = kind === selected;
+        if (button) {
+            button.setAttribute('aria-selected', String(active));
+        }
+        if (page) page.hidden = !active;
+    }
+};
+
 // ==========================================
 // 4. 核心互動：隊伍與卡片 (無勾勾版)
 // ==========================================
@@ -225,6 +270,7 @@ window.handleCardClick = function (id) {
     // 更新畫面
     window.renderTeamDisplay();
     window.updateCardVisual(targetId);
+    window.renderHomeCharacter();
     if (window.checkTeamStatus) window.checkTeamStatus();
 }
 
@@ -495,6 +541,7 @@ window.renderTeamDisplay = function () {
             leaderSkillBar.style.display = 'flex';
         }
     }
+    window.renderHomeCharacter();
 };
 // 相容舊命名
 window.renderTeamSlots = window.renderTeamDisplay;
@@ -634,24 +681,20 @@ window.toggleSort = function () {
 // ==========================================
 // 5. 抽卡系統 (Gacha System)
 // ==========================================
+let summonInProgress = false;
 window.handleSummon = async function (count) {
     const user = auth.currentUser;
     if (!user) return alert("請先登入");
+    if (summonInProgress) return;
+    summonInProgress = true;
+    const summonButtons = document.querySelectorAll('.summon-btn');
+    summonButtons.forEach(btn => { btn.disabled = true; });
 
     const cost = count === 1 ? 100 : 1000;
 
     try {
         const userRef = ref(db, `users/${user.uid}`);
-        const snap = await get(userRef);
-        const currentCoins = snap.val()?.coins || 0;
-
-        if (currentCoins < cost) return alert("金幣不足！");
-
-        const displayCards = [];
-        const updates = {};
-        const newCoins = currentCoins - cost;
-        updates[`users/${user.uid}/coins`] = newCoins;
-
+        const rolledCards = [];
         for (let i = 0; i < count; i++) {
             const rand = Math.random() * 100;
             let targetRarity = 'R';
@@ -660,27 +703,45 @@ window.handleSummon = async function (count) {
 
             const pool = CHARACTERS.filter(c => c.rarity === targetRarity);
             const finalPool = pool.length > 0 ? pool : CHARACTERS;
-            const card = finalPool[Math.floor(Math.random() * finalPool.length)];
-
-            const isNew = !window.myInventoryData[card.id];
-
-            const invPath = `users/${user.uid}/inventory/${card.id}`;
-            const existingCount = (window.myInventoryData[card.id]?.count) || 0;
-
-            // 只存 count，不存完整卡牌資料
-            updates[invPath] = { count: existingCount + 1 };
-
-            // 更新本地快取（合併完整資料）
-            window.myInventoryData[card.id] = { ...card, count: existingCount + 1 };
-            displayCards.push({ ...card, isNew });
+            rolledCards.push(finalPool[Math.floor(Math.random() * finalPool.length)]);
+        }
+        // 十連至少一張 SR（SSR 也符合「SR 以上」）。
+        if (count === 10 && rolledCards.every(card => card.rarity === 'R')) {
+            const srPool = CHARACTERS.filter(card => card.rarity === 'SR');
+            rolledCards[9] = srPool[Math.floor(Math.random() * srPool.length)];
         }
 
-        await update(ref(db), updates);
-        updateCoinDisplay(newCoins);
+        let displayCards;
+        const result = await runTransaction(userRef, account => {
+            const outcome = applySummon(account, rolledCards, cost);
+            if (!outcome) return; // 金幣不足或帳號尚未建立：中止交易
+            displayCards = outcome.results;
+            return outcome.account;
+        }, { applyLocally: false });
+
+        if (!result.committed) {
+            alert('金幣不足，或帳號資料尚未就緒！');
+            return;
+        }
+
+        const account = result.snapshot.val();
+        updateBalances(account);
+        window.myInventoryData = Object.fromEntries(
+            Object.keys(account.inventory || {}).map(id => {
+                const card = CHARACTERS.find(c => c.id === id);
+                return card ? [id, { ...card, count: 1 }] : null;
+            }).filter(Boolean)
+        );
+        window.renderInventoryGrid();
+        window.renderHomeCharacter();
         showSummonResults(displayCards);
 
     } catch (e) {
         console.error("抽卡錯誤:", e);
+        alert('召喚失敗，請稍後再試。');
+    } finally {
+        summonInProgress = false;
+        summonButtons.forEach(btn => { btn.disabled = false; });
     }
 }
 
@@ -692,6 +753,12 @@ function showSummonResults(cards) {
     document.body.style.overflow = 'hidden'; // 鎖住背景捲動
     grid.innerHTML = '';
     overlay.style.display = 'flex'; // 顯示遮罩
+    const shardSummary = document.getElementById('summon-shard-summary');
+    const shardTotal = cards.reduce((sum, card) => sum + card.shards, 0);
+    if (shardSummary) {
+        shardSummary.hidden = shardTotal === 0;
+        shardSummary.textContent = `重複角色已轉化：+${shardTotal.toLocaleString('zh-TW')} 粉末`;
+    }
 
     // 根據數量切換 CSS class (單抽置中)
     if (cards.length === 1) {
@@ -749,6 +816,7 @@ function showSummonResults(cards) {
                     <span>❤️ ${hp}</span>
                 </div>
             </div>
+            ${char.shards ? `<div class="duplicate-shard-badge">重複轉化 ✦ +${char.shards} 粉末</div>` : ''}
         `;
 
         grid.appendChild(cardEl);
@@ -1192,6 +1260,7 @@ window.closeCardModal = function() {
 
 const NAV_MAP = {
     'nav-lobby':    'lobby-view',
+    'nav-home':     'home-view',
     'nav-char':     'char-view',
     'nav-summon':   'summon-view',
     'nav-glossary': 'glossary-view',
@@ -1220,6 +1289,16 @@ document.addEventListener('click', function (e) {
 
     if (id === 'quick-team-btn')   { window.openQuickTeam();  return; }
     if (id === 'quick-team-close') { window.closeQuickTeam(); return; }
+    if (id === 'home-details-toggle') {
+        const details = document.getElementById('home-character-details');
+        if (details) {
+            details.hidden = !details.hidden;
+            el.setAttribute('aria-expanded', String(!details.hidden));
+        }
+        return;
+    }
+    const bagTab = el.getAttribute('data-bag-tab');
+    if (bagTab) { window.switchHomeBagTab(bagTab); return; }
 
     // --- 手機 tab bar ---
     if (id === 'tab-feature')  { window.togglePanel('feature');  return; }
