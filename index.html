@@ -41,6 +41,9 @@
                 <button id="nav-lobby" class="active">
                     <i class="fas fa-gamepad"></i> <span class="nav-label">對戰大廳</span>
                 </button>
+                <button id="nav-home">
+                    <i class="fas fa-house-user"></i> <span class="nav-label">我的主頁</span>
+                </button>
                 <button id="nav-char">
                     <i class="fas fa-user-astronaut"></i> <span class="nav-label">我的角色</span>
                 </button>
@@ -70,6 +73,10 @@
                 <div id="panel-feature" class="panel-section">
                     <div class="panel-title">功能</div>
                     <div class="panel-grid">
+                        <button class="panel-btn" data-nav="home-view" data-ref="nav-home">
+                            <i class="fas fa-house-user"></i>
+                            <span>我的主頁</span>
+                        </button>
                         <button class="panel-btn" data-nav="char-view" data-ref="nav-char">
                             <i class="fas fa-user-astronaut"></i>
                             <span>我的角色</span>
@@ -129,6 +136,10 @@
 
                 <div id="lobby-view">
                     <h2 style="color:#eee; margin-bottom: 20px; font-weight:bold; text-align: center;">準備好迎接運氣決鬥了嗎？</h2>
+                    <div class="lobby-balances" aria-label="帳號資源">
+                        <div class="resource-chip">🪙 金幣 <strong id="lobby-coins">---</strong></div>
+                        <div class="resource-chip resource-shards">✦ 粉末 <strong id="lobby-soul-shards">---</strong></div>
+                    </div>
                     <div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:300px;">
                         <button id="find-match-btn" style="
                             padding: 15px 40px; font-size: 1.5rem;
@@ -148,6 +159,49 @@
                     </div>
                     <p id="match-status" style="margin-top: 20px; color: #888; height: 20px; text-align: center;"></p>
                 </div>
+
+                <section id="home-view" class="home-view" style="display: none;" aria-label="我的主頁">
+                    <header class="home-heading">
+                        <div>
+                            <p class="home-eyebrow">MY PAGE</p>
+                            <h2>我的主頁</h2>
+                        </div>
+                        <div class="home-powder" aria-label="粉末餘額">✦ 粉末 <strong id="home-powder">---</strong></div>
+                    </header>
+                    <div class="home-layout">
+                        <section class="home-character" aria-label="人物畫面">
+                            <div class="home-art-stage">
+                                <img id="home-character-art" src="img/characters/default.png" alt="展示角色" onerror="this.onerror=null;this.src='img/characters/default.png'">
+                            </div>
+                            <div class="home-character-footer">
+                                <div>
+                                    <p class="home-eyebrow">展示角色</p>
+                                    <h3 id="home-character-name">尚未選擇角色</h3>
+                                </div>
+                                <button id="home-details-toggle" class="home-detail-button" type="button" aria-expanded="false" aria-controls="home-character-details">詳細資訊 <span aria-hidden="true">⌄</span></button>
+                            </div>
+                            <div id="home-character-details" class="home-character-details" hidden>
+                                <p>職業：<span id="home-character-job">待設定</span></p>
+                                <p>稀有度：<span id="home-character-rarity">—</span></p>
+                                <p>屬性：<span id="home-character-attribute">—</span></p>
+                                <p>HP：<span id="home-character-hp">—</span>　攻擊：<span id="home-character-atk">—</span></p>
+                            </div>
+                        </section>
+                        <section class="home-bag" aria-label="背包">
+                            <h3>背包</h3>
+                            <div class="home-bag-tabs" role="tablist" aria-label="背包分類">
+                                <button id="home-bag-equipment-tab" type="button" role="tab" aria-selected="true" aria-controls="home-bag-equipment" data-bag-tab="equipment">裝備</button>
+                                <button id="home-bag-skills-tab" type="button" role="tab" aria-selected="false" aria-controls="home-bag-skills" data-bag-tab="skills">技能</button>
+                            </div>
+                            <div id="home-bag-equipment" class="home-bag-page" role="tabpanel" aria-labelledby="home-bag-equipment-tab">
+                                <p class="home-bag-empty">目前沒有裝備</p>
+                            </div>
+                            <div id="home-bag-skills" class="home-bag-page" role="tabpanel" aria-labelledby="home-bag-skills-tab" hidden>
+                                <p class="home-bag-empty">目前沒有技能道具</p>
+                            </div>
+                        </section>
+                    </div>
+                </section>
 
                 <div id="char-view" style="display: none; width: 100%; height: 100%; flex-direction: column;">
                     <div class="team-section">
@@ -193,9 +247,12 @@
                 <div id="summon-view" style="display: none; width: 100%;">
                     <div class="summon-header">
                         <h2 class="glow-text">✨ 命運召喚 ✨</h2>
-                        <div class="coin-display">
-                            <i class="fas fa-coins coin-icon"></i>
-                            <span id="user-coins">---</span>
+                        <div class="summon-balances">
+                            <div class="coin-display">
+                                <i class="fas fa-coins coin-icon"></i>
+                                <span id="user-coins">---</span>
+                            </div>
+                            <div class="shard-display">✦ 粉末 <span id="user-soul-shards">---</span></div>
                         </div>
                     </div>
                     <div class="gacha-machine">
@@ -214,6 +271,7 @@
                     </div>
                     <div id="gacha-result-overlay" class="result-overlay" style="display: none;">
                         <h3 style="color:white; margin-bottom:20px;">召喚結果</h3>
+                        <p id="summon-shard-summary" class="summon-shard-summary" hidden></p>
                         <div id="result-grid" class="result-grid"></div>
                         <button class="close-btn" data-action="close-gacha">確認</button>
                     </div>
