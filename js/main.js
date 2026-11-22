@@ -711,8 +711,12 @@ window.handleSummon = async function (count) {
 
         let displayCards;
         const result = await runTransaction(userRef, account => {
-            const outcome = applySummon(account, rolledCards, cost);
-            if (!outcome) return; // 金幣不足或帳號尚未建立：中止交易
+            // Firebase may pass null before the remote account has reached the
+            // local cache. Use the same starting balance as account setup and
+            // let the transaction retry against the real server value.
+            const readyAccount = normalizeAccount(account) ?? account;
+            const outcome = applySummon(readyAccount, rolledCards, cost);
+            if (!outcome) return; // 金幣不足：中止交易
             displayCards = outcome.results;
             return outcome.account;
         }, { applyLocally: false });
@@ -728,16 +732,21 @@ window.handleSummon = async function (count) {
         }
 
         const account = result.snapshot.val();
-        updateBalances(account);
-        window.myInventoryData = Object.fromEntries(
-            Object.keys(account.inventory || {}).map(id => {
-                const card = CHARACTERS.find(c => c.id === id);
-                return card ? [id, { ...card, count: 1 }] : null;
-            }).filter(Boolean)
-        );
-        window.renderInventoryGrid();
-        window.renderHomeCharacter();
+        // The database has already committed. Show the cards before refreshing
+        // secondary views so a rendering error cannot hide a completed draw.
         showSummonResults(displayCards);
+        try {
+            updateBalances(account);
+            window.myInventoryData = Object.fromEntries(
+                Object.keys(account.inventory || {}).map(id => {
+                    const card = CHARACTERS.find(c => c.id === id);
+                    return card ? [id, { ...card, count: 1 }] : null;
+                }).filter(Boolean)
+            );
+            window.renderInventoryGrid();
+        } catch (renderError) {
+            console.error('抽卡已完成，但背包更新失敗：', renderError);
+        }
 
     } catch (e) {
         console.error("抽卡錯誤:", e);
