@@ -152,9 +152,7 @@ async function initUserData(user) {
 function updateBalances(account) {
     const values = {
         'user-coins': account.coins ?? 0,
-        'lobby-coins': account.coins ?? 0,
         'user-soul-shards': account.soulShards ?? 0,
-        'lobby-soul-shards': account.soulShards ?? 0,
         'home-powder': account.soulShards ?? 0,
     };
     for (const [id, value] of Object.entries(values)) {
@@ -720,7 +718,12 @@ window.handleSummon = async function (count) {
         }, { applyLocally: false });
 
         if (!result.committed) {
-            alert('金幣不足，或帳號資料尚未就緒！');
+            const balance = Number(result.snapshot.val()?.coins);
+            if (Number.isFinite(balance) && balance < cost) {
+                alert(`金幣不足：目前 ${balance.toLocaleString('zh-TW')}，需要 ${cost.toLocaleString('zh-TW')}。`);
+            } else {
+                alert('抽卡未完成：帳號或金幣資料尚未就緒，請重新整理後再試。');
+            }
             return;
         }
 
@@ -738,7 +741,9 @@ window.handleSummon = async function (count) {
 
     } catch (e) {
         console.error("抽卡錯誤:", e);
-        alert('召喚失敗，請稍後再試。');
+        alert(e?.code === 'PERMISSION_DENIED' || e?.code === 'permission-denied'
+            ? '抽卡失敗：資料庫拒絕寫入帳號資料，請檢查 Firebase 規則。'
+            : `抽卡失敗：${e?.message || '請稍後再試。'}`);
     } finally {
         summonInProgress = false;
         summonButtons.forEach(btn => { btn.disabled = false; });

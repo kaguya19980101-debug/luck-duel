@@ -35,7 +35,9 @@ export function normalizeAccount(account) {
 
 // Pure update function; safe to run again if the database transaction retries.
 export function applySummon(account, cards, cost) {
-    if (!account || !Number.isFinite(account.coins) || account.coins < cost) return null;
+    if (!account) return null;
+    const coins = Number(account.coins);
+    if (!Number.isFinite(coins) || coins < cost) return null;
 
     const inventory = { ...(account.inventory || {}) };
     let soulShards = Number(account.soulShards) || 0;
@@ -51,7 +53,7 @@ export function applySummon(account, cards, cost) {
     });
 
     return {
-        account: { ...account, coins: account.coins - cost, soulShards, inventory },
+        account: { ...account, coins: coins - cost, soulShards, inventory },
         results
     };
 }
