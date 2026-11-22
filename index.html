@@ -1,5 +1,234 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LUCK DUEL｜暗選對戰</title><link rel="stylesheet" href="css/style.css"></head><body>
-<header><div><strong>LUCK DUEL</strong><small>暗選對戰・數值草案版</small></div><div id="user-bar"><span id="user-name">尚未登入</span><button id="logout" hidden>登出</button></div></header>
-<div id="notice" role="status"></div><section id="login"><h1>召集你的隊伍</h1><p>主角與四名夥伴，每回合暗選一人行動。</p><button id="login-btn">使用 Google 登入</button></section>
-<div id="app" hidden><nav id="tabs"><button data-tab="home">主角</button><button data-tab="team">夥伴</button><button data-tab="summon">抽取</button><button data-tab="shop">商店</button><button data-tab="battle">對戰</button><button data-tab="rank">積分榜</button></nav><main id="content"></main></div>
-<script type="module" src="js/main.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUCK DUEL - Good Luck</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+    <div id="login-screen">
+        <div class="login-card">
+            <div class="branding">
+                <h1>LUCK DUEL</h1>
+                <p>Good Luck</p>
+            </div>
+            <button id="google-login-btn" class="google-btn">
+                <i class="fab fa-google"></i> 使用 Google 帳號登入
+            </button>
+            <div id="login-msg" style="margin-top:20px; font-size:0.9rem; color:#aaa; min-height:20px;"></div>
+        </div>
+    </div>
+
+    <div id="app-interface" class="hide">
+        <!-- 桌面版側邊欄 -->
+        <nav class="sidebar hide-on-mobile">
+            <div class="user-profile">
+                <img src="" alt="Avatar" id="user-avatar" class="avatar">
+                <div class="user-info">
+                    <h3 id="user-name">Player</h3>
+                    <span>ONLINE</span>
+                </div>
+            </div>
+            <div class="menu-items">
+                <button id="nav-lobby" class="active">
+                    <i class="fas fa-gamepad"></i> <span class="nav-label">對戰大廳</span>
+                </button>
+                <button id="nav-char">
+                    <i class="fas fa-user-astronaut"></i> <span class="nav-label">我的角色</span>
+                </button>
+                <button id="nav-summon">
+                    <i class="fas fa-meteor"></i> <span class="nav-label">角色召喚</span>
+                </button>
+                <button id="nav-glossary">
+                    <i class="fas fa-book"></i> <span class="nav-label">角色圖鑑</span>
+                </button>
+                <button id="nav-history">
+                    <i class="fas fa-history"></i> <span class="nav-label">歷史紀錄</span>
+                </button>
+                <button id="logout-btn" style="margin-top: auto;">
+                    <i class="fas fa-sign-out-alt"></i> <span class="nav-label">登出</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- 手機版底部 3 鈕 Tab Bar -->
+        <div id="mobile-tabbar" class="show-on-mobile">
+            <!-- 展開面板遮罩 -->
+            <div id="tab-overlay"></div>
+
+            <!-- 展開面板內容 -->
+            <div id="tab-panel" class="tab-panel">
+                <!-- 功能 面板 -->
+                <div id="panel-feature" class="panel-section">
+                    <div class="panel-title">功能</div>
+                    <div class="panel-grid">
+                        <button class="panel-btn" data-nav="char-view" data-ref="nav-char">
+                            <i class="fas fa-user-astronaut"></i>
+                            <span>我的角色</span>
+                        </button>
+                        <button class="panel-btn" data-nav="summon-view" data-ref="nav-summon">
+                            <i class="fas fa-meteor"></i>
+                            <span>角色召喚</span>
+                        </button>
+                        <button class="panel-btn" data-nav="glossary-view" data-ref="nav-glossary">
+                            <i class="fas fa-book"></i>
+                            <span>角色圖鑑</span>
+                        </button>
+                        <button class="panel-btn" data-nav="history-view" data-ref="nav-history">
+                            <i class="fas fa-history"></i>
+                            <span>歷史紀錄</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 設定 面板 -->
+                <div id="panel-settings" class="panel-section">
+                    <div class="panel-title">設定</div>
+                    <div class="panel-grid">
+                        <button class="panel-btn danger" data-action="logout">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>登出</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3 個主按鈕 -->
+            <div class="tabbar-row">
+                <button class="tab-btn" id="tab-feature">
+                    <div class="tab-icon-wrap">
+                        <i class="fas fa-th"></i>
+                    </div>
+                    <span>功能</span>
+                </button>
+                <button class="tab-btn tab-btn-center" id="tab-duel">
+                    <div class="tab-icon-wrap center-glow">
+                        <i class="fas fa-khanda"></i>
+                    </div>
+                    <span>決鬥</span>
+                </button>
+                <button class="tab-btn" id="tab-settings">
+                    <div class="tab-icon-wrap">
+                        <i class="fas fa-sliders-h"></i>
+                    </div>
+                    <span>設定</span>
+                </button>
+            </div>
+        </div>
+
+        <main class="game-area">
+            <div class="game-frame">
+
+                <div id="lobby-view">
+                    <h2 style="color:#eee; margin-bottom: 20px; font-weight:bold; text-align: center;">準備好迎接運氣決鬥了嗎？</h2>
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:300px;">
+                        <button id="find-match-btn" style="
+                            padding: 15px 40px; font-size: 1.5rem;
+                            background: linear-gradient(45deg, #ff00cc, #3333ff);
+                            color: white; border: none; border-radius: 50px; cursor: pointer;
+                            font-family: 'Orbitron'; box-shadow: 0 0 20px rgba(255, 0, 204, 0.4);
+                            transition: 0.3s; width: 100%;">
+                            ⚔️ START BATTLE
+                        </button>
+                        <button id="vs-cpu-btn" style="
+                            padding: 12px 40px; font-size: 1.1rem;
+                            background: linear-gradient(45deg, #1a1a2e, #16213e);
+                            color: #aaa; border: 2px solid #444; border-radius: 50px; cursor: pointer;
+                            font-family: 'Orbitron'; transition: 0.3s; width: 100%;">
+                            🤖 VS 電腦
+                        </button>
+                    </div>
+                    <p id="match-status" style="margin-top: 20px; color: #888; height: 20px; text-align: center;"></p>
+                </div>
+
+                <div id="char-view" style="display: none; width: 100%; height: 100%; flex-direction: column;">
+                    <div class="team-section">
+                        <h2 style="color:white; text-align:center; margin-bottom:15px; font-family:'Orbitron'; letter-spacing:2px;">
+                            MY TEAM
+                        </h2>
+                        <div id="team-row" class="team-row"></div>
+                        <div id="leader-skill-bar" class="leader-skill-bar" style="display:none;"></div>
+                        <button id="quick-team-btn" style="
+                            margin-top:12px; width:100%; padding:10px;
+                            background:linear-gradient(135deg,#1e293b,#0f172a);
+                            border:1px solid #334155; border-radius:10px;
+                            color:#94a3b8; font-size:0.85rem; cursor:pointer;
+                            letter-spacing:1px; transition:0.2s;">
+                            ⚡ 快速編隊
+                        </button>
+                    </div>
+
+                    <!-- 快速編隊面板 -->
+                    <div id="quick-team-panel" style="display:none; flex-direction:column; width:100%; padding:0 10px; box-sizing:border-box;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                            <span style="color:#94a3b8; font-size:0.8rem; letter-spacing:1px;">選擇你的陣容</span>
+                            <button id="quick-team-close" style="background:rgba(255,255,255,0.06);border:1px solid #334155;color:#94a3b8;padding:4px 12px;border-radius:8px;cursor:pointer;font-size:0.8rem;">完成</button>
+                        </div>
+                        <!-- 5個槽位 -->
+                        <div id="quick-team-slots" style="display:flex; gap:8px; margin-bottom:16px; justify-content:center;"></div>
+                        <!-- 背包卡片列表 -->
+                        <div id="quick-team-grid" class="char-grid" style="grid-template-columns:repeat(4,1fr); gap:8px;"></div>
+                    </div>
+                    <div class="inventory-container">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 class="inventory-title" style="margin: 0; color: white;">MY CARDS</h3>
+                            <button data-action="sort" class="sort-btn">
+                                <i class="fas fa-sort"></i>
+                                <span id="sort-btn-text">排序: 代號</span>
+                            </button>
+                        </div>
+                        <div id="inventory-grid" class="char-grid"></div>
+                    </div>
+                </div>
+
+                <div id="summon-view" style="display: none; width: 100%;">
+                    <div class="summon-header">
+                        <h2 class="glow-text">✨ 命運召喚 ✨</h2>
+                        <div class="coin-display">
+                            <i class="fas fa-coins coin-icon"></i>
+                            <span id="user-coins">---</span>
+                        </div>
+                    </div>
+                    <div class="gacha-machine">
+                        <div id="gacha-stage" class="gacha-stage"></div>
+                    </div>
+                    <div class="summon-actions">
+                        <button class="summon-btn btn-single" data-action="summon" data-count="1">
+                            <span class="btn-title">單次召喚</span>
+                            <span class="btn-cost"><i class="fas fa-coins"></i> 100</span>
+                        </button>
+                        <button class="summon-btn btn-multi" data-action="summon" data-count="10">
+                            <span class="btn-title">十連召喚</span>
+                            <span class="btn-cost"><i class="fas fa-coins"></i> 1000</span>
+                            <div class="tag-bonus">必中 SR!</div>
+                        </button>
+                    </div>
+                    <div id="gacha-result-overlay" class="result-overlay" style="display: none;">
+                        <h3 style="color:white; margin-bottom:20px;">召喚結果</h3>
+                        <div id="result-grid" class="result-grid"></div>
+                        <button class="close-btn" data-action="close-gacha">確認</button>
+                    </div>
+                </div>
+
+                <div id="history-view" style="display: none; text-align: center;">
+                    <h2 style="color:white;">HISTORY</h2>
+                    <p style="color:#aaa;">暫無紀錄</p>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>
