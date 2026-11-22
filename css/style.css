@@ -12,9 +12,10 @@ body {
     font-family: 'Roboto', sans-serif;
     background: linear-gradient(135deg, #e0c3fc, #8ec5fc, #e0eafc);
     min-height: 100vh;
-    height: 100%;
+    height: auto;
     color: #333;
-    overflow: hidden; /* 桌面版固定版面 */
+    overflow-x: hidden;
+    overflow-y: auto;
     display: flex;
 }
 
@@ -137,7 +138,7 @@ body::before {
    ========================================= */
 #app-interface {
     width: 100%;
-    height: 100vh; /* 桌面版佔滿視窗 */
+    min-height: 100vh;
     display: flex;
     opacity: 0;
     animation: fadeIn 0.8s forwards;
@@ -233,6 +234,7 @@ body::before {
 
 .game-frame {
     flex: 1;
+    min-height: calc(100vh - 60px);
     background: rgba(255, 255, 255, 0.5);
     border: 2px solid rgba(255, 255, 255, 0.8);
     border-radius: 20px;
@@ -1296,6 +1298,45 @@ body::before {
    ⚔️ 戰鬥專用卡片 (圖片 1:1 + 底部血條)
    ========================================= */
 
+.lobby-balances, .summon-balances {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+.lobby-balances { margin: 0 0 24px; }
+.resource-chip, .shard-display {
+    padding: 8px 14px;
+    border-radius: 50px;
+    background: rgba(15, 23, 42, .85);
+    color: #facc15;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.resource-shards, .shard-display { color: #c4b5fd; }
+.summon-balances {
+    position: static;
+    transform: none;
+    z-index: 5;
+}
+.summon-header { flex-direction: column !important; gap: 10px; }
+.summon-header .summon-balances .coin-display {
+    position: static !important;
+    transform: none !important;
+    margin-right: 0;
+    font-size: 1rem !important;
+    padding: 6px 12px !important;
+}
+.summon-shard-summary { color: #c4b5fd; font-weight: 700; margin-bottom: 10px; }
+.duplicate-shard-badge {
+    padding: 6px;
+    background: #24163c;
+    color: #e9d5ff;
+    font-size: .75rem;
+    font-weight: 700;
+    text-align: center;
+}
 .battle-card {
     width: 100%;
     border-radius: 6px;
